@@ -25,10 +25,33 @@ r = ta.atr(atrLength) * atrStopMultiplier
 longEntry = kijunSen - r
 shortEntry = kijunSen + r
 
-// Evaluate for bullish & bearish confluence
+// Assess for high probability setup on the trading timeframe
 
-hasBullishConfluence = senkouSpanB > senkouSpanA // current Kumo is green
-hasBearishConfluence = senkouSpanA > senkouSpanB // current Kumo is red
+// 1. Where is price w.r.t Kumo? [above | below | within]
+
+// 2. Where is Price w.r.t a flat Kumo-Shadow? [far | near]
+
+// 3. Where is price w.r.t Tenkan? [above | below]
+
+// 4. Where is Tenkan w.r.t Kijun? [above | below]
+
+// 5. Where is TK Cross w.r.t Kumo? [above | below | within] <--- This is not a filter. Ignore!
+isFutureKumoGreen = senkouSpanA > senkouSpanB
+isFutureKumoRed = senkouSpanB > senkouSpanA
+
+// 6. How is future Kumo? [bullish | bearish | unknown (twist)]
+
+// 7. Where is Chikou w.r.t Price? [above | below | within]
+
+// 8. Where is Chikou w.r.t Kumo? [above | below | within]
+
+// 9. Where is Chikou w.r.t a flat Senkou-Span-B? [above | below]
+
+// 10. Is Chikou free from congestion ahead? [yes | no]
+
+
+hasBullishConfluence = isFutureKumoGreen
+hasBearishConfluence = isFutureKumoRed
 
 // Plot LONG or SHORT signals based on confluence
 plotshape(hasBullishConfluence, title= "Long Signal", location=location.belowbar, color=color.green, transp=0, style=shape.triangleup, text="")
@@ -44,11 +67,11 @@ f_tickFormat() =>
 // Draw labels to enter or trail a stop-loss order based on confluence
 
 if (hasBullishConfluence)
-    var labelLong = label.new(bar_index, kijunSen,  text = "Trail S.L.", style = label.style_label_lower_left, color = color.green)
+    var labelLong = label.new(bar_index, kijunSen,  text = "Trail S.L.", style = label.style_label_lower_left, color = color.red)
     label.set_xy(labelLong, bar_index, kijunSen)
     label.set_tooltip(labelLong, "Stop loss @ "  + str.tostring(kijunSen, str.tostring(f_tickFormat())))
 else if (hasBearishConfluence)
-    var labelShort = label.new(bar_index, kijunSen, text = "Trail S.L.", style = label.style_label_upper_left, color = color.red)
+    var labelShort = label.new(bar_index, kijunSen, text = "Trail S.L.", style = label.style_label_upper_left, color = color.green)
     label.set_xy(labelShort, bar_index, kijunSen)
     label.set_tooltip(labelShort, "Stop loss @ " + str.tostring(kijunSen, str.tostring(f_tickFormat())))
 
