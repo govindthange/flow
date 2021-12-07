@@ -6,32 +6,29 @@ indicator("Thange Cloud Playbook", shorttitle="Thange Signals", overlay=true)
 
 // Collect inputs
 
-atrLength = input.int(30, minval=1, title="ATR length")
+atrLength = input.int(30, minval=1, title="ATR Length")
 atrStopMultiplier = input.float(1.0, minval=0.1, title="ATR x ?")
 
-conversionPeriods = input.int(9, minval=1, title="Conversion Line Length")
-basePeriods = input.int(26, minval=1, title="Base Line Length")
-laggingSpan2Periods = input.int(52, minval=1, title="Leading Span B Length")
+conversionPeriods = input.int(9, minval=1, title="Tenkan Sen Length")
+basePeriods = input.int(26, minval=1, title="Kijun Sen Length")
+senkouSpanBPeriod = input.int(52, minval=1, title="Leading Span B Length")
 displacement = input.int(26, minval=1, title="Displacement")
 donchian(len) => math.avg(ta.lowest(len), ta.highest(len))
 
-conversionLine = donchian(conversionPeriods)
-baseLine = donchian(basePeriods)
-leadLine1 = math.avg(conversionLine, baseLine)
-leadLine2 = donchian(laggingSpan2Periods)
+tenkanSen = donchian(conversionPeriods)
+kijunSen = donchian(basePeriods)
+senkouSpanA = math.avg(tenkanSen, kijunSen)
+senkouSpanB = donchian(senkouSpanBPeriod)
 
-// Calculate ATR
+// Calculate entries using ATR
 r = ta.atr(atrLength) * atrStopMultiplier
-
-
-// Calculate entries
-longEntry = baseLine - r
-shortEntry = baseLine + r
+longEntry = kijunSen - r
+shortEntry = kijunSen + r
 
 // Evaluate for bullish & bearish confluence
 
-hasBullishConfluence = leadLine2 > leadLine1 // current Kumo is green
-hasBearishConfluence = leadLine1 > leadLine2 // current Kumo is red
+hasBullishConfluence = senkouSpanB > senkouSpanA // current Kumo is green
+hasBearishConfluence = senkouSpanA > senkouSpanB // current Kumo is red
 
 // Plot LONG or SHORT signals based on confluence
 plotshape(hasBullishConfluence, title= "Long Signal", location=location.belowbar, color=color.green, transp=0, style=shape.triangleup, text="")
@@ -47,13 +44,13 @@ f_tickFormat() =>
 // Draw labels to enter or trail a stop-loss order based on confluence
 
 if (hasBullishConfluence)
-    var labelLong = label.new(bar_index, baseLine,  text = "Trail S.L.", style = label.style_label_lower_left, color = color.green)
-    label.set_xy(labelLong, bar_index, baseLine)
-    label.set_tooltip(labelLong, "Stop loss @ "  + str.tostring(baseLine, str.tostring(f_tickFormat())))
+    var labelLong = label.new(bar_index, kijunSen,  text = "Trail S.L.", style = label.style_label_lower_left, color = color.green)
+    label.set_xy(labelLong, bar_index, kijunSen)
+    label.set_tooltip(labelLong, "Stop loss @ "  + str.tostring(kijunSen, str.tostring(f_tickFormat())))
 else if (hasBearishConfluence)
-    var labelShort = label.new(bar_index, baseLine, text = "Trail S.L.", style = label.style_label_upper_left, color = color.red)
-    label.set_xy(labelShort, bar_index, baseLine)
-    label.set_tooltip(labelShort, "Stop loss @ " + str.tostring(baseLine, str.tostring(f_tickFormat())))
+    var labelShort = label.new(bar_index, kijunSen, text = "Trail S.L.", style = label.style_label_upper_left, color = color.red)
+    label.set_xy(labelShort, bar_index, kijunSen)
+    label.set_tooltip(labelShort, "Stop loss @ " + str.tostring(kijunSen, str.tostring(f_tickFormat())))
 
 // Draw Table
 
