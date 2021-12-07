@@ -42,20 +42,27 @@ hasBearishConfluence = leadLine1 > leadLine2 // current Kumo is red
 plotshape(hasBullishConfluence, title= "Long Signal", location=location.belowbar, color=color.green, transp=0, style=shape.triangleup, text="")
 plotshape(hasBearishConfluence,  title= "Short Signal", location=location.abovebar, color=color.red, transp=0, style=shape.triangledown, text="")
 
+// Create string format template to restrict SL precision to ticks.
+f_tickFormat() =>
+    _s = str.tostring(syminfo.mintick)
+    _s := str.replace_all(_s, "25", "00")
+    _s := str.replace_all(_s, "5",  "0")
+    _s := str.replace_all(_s, "1",  "0")
+
 // Draw labels to enter or trail a stop-loss order based on confluence
 
 if (hasBullishConfluence)
     var labelLong = label.new(bar_index, low,  text = "Trail S.L.", style = label.style_label_up, color = color.green)
     label.set_xy(labelLong, bar_index, low-1000)
-    label.set_tooltip(labelLong, "Stop loss @ "  + str.tostring(longStop))
+    label.set_tooltip(labelLong, "Stop loss @ "  + str.tostring(longStop, str.tostring(f_tickFormat())))
 else if (hasBearishConfluence)
     var labelShort = label.new(bar_index, high, text = "Trail S.L.", color = color.red)
     label.set_xy(labelShort, bar_index, high+1000)
-    label.set_tooltip(labelShort, "Stop loss @ " + str.tostring(shortStop))
+    label.set_tooltip(labelShort, "Stop loss @ " + str.tostring(shortStop, str.tostring(f_tickFormat())))
 
 // Draw Table
 
 var table atrDisplay = table.new(position.bottom_right, 2, 1, bgcolor = color.black, frame_width = 2, frame_color = color.black)
 if (barstate.islast)
-    table.cell(atrDisplay, 0, 0, str.tostring(longStop), text_color = color.green)
-    table.cell(atrDisplay, 1, 0, str.tostring(shortStop), text_color = color.red)
+    table.cell(atrDisplay, 0, 0, str.tostring(longStop, str.tostring(f_tickFormat())), text_color = color.green)
+    table.cell(atrDisplay, 1, 0, str.tostring(shortStop, str.tostring(f_tickFormat())), text_color = color.red)
