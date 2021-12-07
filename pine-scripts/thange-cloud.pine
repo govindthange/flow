@@ -23,13 +23,10 @@ leadLine2 = donchian(laggingSpan2Periods)
 // Calculate ATR
 r = ta.atr(atrLength) * atrStopMultiplier
 
-// Calculate Stop loss
 
-recentLow = ta.lowest(low,9)
-longStop = recentLow - r
-
-recentHigh = ta.highest(high,9)
-shortStop = recentHigh + r
+// Calculate entries
+longEntry = baseLine - r
+shortEntry = baseLine + r
 
 // Evaluate for bullish & bearish confluence
 
@@ -50,17 +47,17 @@ f_tickFormat() =>
 // Draw labels to enter or trail a stop-loss order based on confluence
 
 if (hasBullishConfluence)
-    var labelLong = label.new(bar_index, low,  text = "Trail S.L.", style = label.style_label_up, color = color.green)
-    label.set_xy(labelLong, bar_index, low-1000)
-    label.set_tooltip(labelLong, "Stop loss @ "  + str.tostring(longStop, str.tostring(f_tickFormat())))
+    var labelLong = label.new(bar_index, baseLine,  text = "Trail S.L.", style = label.style_label_lower_left, color = color.green)
+    label.set_xy(labelLong, bar_index, baseLine)
+    label.set_tooltip(labelLong, "Stop loss @ "  + str.tostring(baseLine, str.tostring(f_tickFormat())))
 else if (hasBearishConfluence)
-    var labelShort = label.new(bar_index, high, text = "Trail S.L.", color = color.red)
-    label.set_xy(labelShort, bar_index, high+1000)
-    label.set_tooltip(labelShort, "Stop loss @ " + str.tostring(shortStop, str.tostring(f_tickFormat())))
+    var labelShort = label.new(bar_index, baseLine, text = "Trail S.L.", style = label.style_label_upper_left, color = color.red)
+    label.set_xy(labelShort, bar_index, baseLine)
+    label.set_tooltip(labelShort, "Stop loss @ " + str.tostring(baseLine, str.tostring(f_tickFormat())))
 
 // Draw Table
 
-var table atrDisplay = table.new(position.bottom_right, 2, 1, bgcolor = color.black, frame_width = 2, frame_color = color.black)
+var table atrDisplay = table.new(position.top_center, 2, 1, bgcolor = color.black, frame_width = 2, frame_color = color.black)
 if (barstate.islast)
-    table.cell(atrDisplay, 0, 0, str.tostring(longStop, str.tostring(f_tickFormat())), text_color = color.green)
-    table.cell(atrDisplay, 1, 0, str.tostring(shortStop, str.tostring(f_tickFormat())), text_color = color.red)
+    table.cell(atrDisplay, 0, 0, str.tostring(longEntry, str.tostring(f_tickFormat())), text_color = color.green)
+    table.cell(atrDisplay, 1, 0, str.tostring(shortEntry, str.tostring(f_tickFormat())), text_color = color.red)
