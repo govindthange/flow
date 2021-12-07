@@ -16,3 +16,10 @@ conversionLine = donchian(conversionPeriods)
 baseLine = donchian(basePeriods)
 leadLine1 = math.avg(conversionLine, baseLine)
 leadLine2 = donchian(laggingSpan2Periods)
+
+hasBearishConfluence = leadLine1 > leadLine2
+hasBullishConfluence = leadLine2 > leadLine1
+
+// Plot LONG/SHORT signals
+plotshape(hasBullishConfluence, title= "Long Signal", location=location.belowbar, color=color.green, transp=0, style=shape.triangleup, text="")
+plotshape(hasBearishConfluence,  title= "Short Signal", location=location.abovebar, color=color.red, transp=0, style=shape.triangledown, text="")
