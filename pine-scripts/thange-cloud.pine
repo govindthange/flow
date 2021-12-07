@@ -9,21 +9,22 @@ indicator("Thange Cloud Playbook", shorttitle="Thange Signals", overlay=true)
 atrLength = input.int(30, minval=1, title="ATR Length")
 atrStopMultiplier = input.float(1.0, minval=0.1, title="ATR x ?")
 
-conversionPeriods = input.int(9, minval=1, title="Tenkan Sen Length")
-basePeriods = input.int(26, minval=1, title="Kijun Sen Length")
+tenkanSenPeriod = input.int(9, minval=1, title="Tenkan Sen Length")
+kijunSenPeriod = input.int(26, minval=1, title="Kijun Sen Length")
 senkouSpanBPeriod = input.int(52, minval=1, title="Leading Span B Length")
 displacement = input.int(26, minval=1, title="Displacement")
 donchian(len) => math.avg(ta.lowest(len), ta.highest(len))
 
-tenkanSen = donchian(conversionPeriods)
-kijunSen = donchian(basePeriods)
+tenkanSen = donchian(tenkanSenPeriod)
+kijunSen = donchian(kijunSenPeriod)
 senkouSpanA = math.avg(tenkanSen, kijunSen)
 senkouSpanB = donchian(senkouSpanBPeriod)
 
-// Calculate entries using ATR
+// Calculate stop-loss using ATR
 r = ta.atr(atrLength) * atrStopMultiplier
-longEntry = kijunSen - r
-shortEntry = kijunSen + r
+entryPrice = close
+longEntryStop = kijunSen - r
+shortEntryStop = kijunSen + r
 
 // Assess for high probability setup on the trading timeframe
 
@@ -32,16 +33,25 @@ shortEntry = kijunSen + r
 // 2. Where is Price w.r.t a flat Kumo-Shadow? [far | near]
 
 // 3. Where is price w.r.t Tenkan? [above | below]
+isPriceAboveTenkanSen = close > tenkanSen
+isPriceBelowTenkanSen = close < tenkanSen
 
 // 4. Where is Tenkan w.r.t Kijun? [above | below]
+isTenkanSenAboveKijunSen = tenkanSen > kijunSen
+isTenkanSenBelowKijunSen = tenkanSen < kijunSen
 
 // 5. Where is TK Cross w.r.t Kumo? [above | below | within] <--- This is not a filter. Ignore!
+
+// 6. How is future Kumo? [bullish | bearish | unknown (twist)]
 isFutureKumoGreen = senkouSpanA > senkouSpanB
 isFutureKumoRed = senkouSpanB > senkouSpanA
 
-// 6. How is future Kumo? [bullish | bearish | unknown (twist)]
-
 // 7. Where is Chikou w.r.t Price? [above | below | within]
+float chikouDiff = ta.change(close,displacement+1)
+float chikouSource = close
+chikouPrice = timeframe.period[displacement+1]
+isChikouSpanAbovePrice = chikouDiff > 0
+isChikouSpanBelowPrice = chikouDiff < 0
 
 // 8. Where is Chikou w.r.t Kumo? [above | below | within]
 
@@ -49,13 +59,38 @@ isFutureKumoRed = senkouSpanB > senkouSpanA
 
 // 10. Is Chikou free from congestion ahead? [yes | no]
 
+hasBullishConfluence = isPriceAboveTenkanSen and isTenkanSenAboveKijunSen and isFutureKumoGreen //and isChikouSpanAbovePrice
+hasBearishConfluence = isPriceBelowTenkanSen and isTenkanSenBelowKijunSen and isFutureKumoRed //and isChikouSpanBelowPrice
 
-hasBullishConfluence = isFutureKumoGreen
-hasBearishConfluence = isFutureKumoRed
+bool inLongTrade = false
+bool inShortTrade = false
+
+bool shouldEnterLong = false
+bool shouldEnterShort = false
+
+if (inLongTrade and hasBearishConfluence)
+    inLongTrade = false
+    
+if (inShortTrade and hasBullishConfluence)
+    inShortTrade = false
+
+shouldEnterLong := not inLongTrade and hasBullishConfluence
+if (shouldEnterLong)
+    inLongTrade := true
+
+shouldEnterShort := not inShortTrade and hasBearishConfluence
+if (shouldEnterShort)
+    inShortTrade := true
 
 // Plot LONG or SHORT signals based on confluence
-plotshape(hasBullishConfluence, title= "Long Signal", location=location.belowbar, color=color.green, transp=0, style=shape.triangleup, text="")
-plotshape(hasBearishConfluence,  title= "Short Signal", location=location.abovebar, color=color.red, transp=0, style=shape.triangledown, text="")
+plotshape(shouldEnterLong, title= "Long Signal", location=location.belowbar, color=color.green, transp=0, style=shape.triangleup, text="", size=size.auto)
+if (shouldEnterLong)
+    shouldEnterLong := false // reset flags
+
+plotshape(shouldEnterShort,  title= "Short Signal", location=location.abovebar, color=color.red, transp=0, style=shape.triangledown, text="", size=size.auto)
+if (shouldEnterShort)
+    shouldEnterShort := false // reset flags
+
 
 // Create string format template to restrict SL precision to ticks.
 f_tickFormat() =>
@@ -66,18 +101,33 @@ f_tickFormat() =>
 
 // Draw labels to enter or trail a stop-loss order based on confluence
 
-if (hasBullishConfluence)
+if (inLongTrade)
     var labelLong = label.new(bar_index, kijunSen,  text = "Trail S.L.", style = label.style_label_lower_left, color = color.red)
     label.set_xy(labelLong, bar_index, kijunSen)
     label.set_tooltip(labelLong, "Stop loss @ "  + str.tostring(kijunSen, str.tostring(f_tickFormat())))
-else if (hasBearishConfluence)
+else if (inShortTrade)
     var labelShort = label.new(bar_index, kijunSen, text = "Trail S.L.", style = label.style_label_upper_left, color = color.green)
     label.set_xy(labelShort, bar_index, kijunSen)
     label.set_tooltip(labelShort, "Stop loss @ " + str.tostring(kijunSen, str.tostring(f_tickFormat())))
 
 // Draw Table
 
-var table atrDisplay = table.new(position.top_center, 2, 1, bgcolor = color.black, frame_width = 2, frame_color = color.black)
+var table atrDisplay = table.new(position.top_center, 6, 3, bgcolor = color.black, frame_width = 2, frame_color = color.black)
 if (barstate.islast)
-    table.cell(atrDisplay, 0, 0, str.tostring(longEntry, str.tostring(f_tickFormat())), text_color = color.green)
-    table.cell(atrDisplay, 1, 0, str.tostring(shortEntry, str.tostring(f_tickFormat())), text_color = color.red)
+    table.cell(atrDisplay, 1, 0, "Entry", text_color = color.white)
+    table.cell(atrDisplay, 2, 0, "Stop Loss", text_color = color.white)
+    table.cell(atrDisplay, 3, 0, "ATR", text_color = color.white)
+    table.cell(atrDisplay, 4, 0, "Active?", text_color = color.white)
+    table.cell(atrDisplay, 5, 0, "Enter?", text_color = color.white)
+    table.cell(atrDisplay, 0, 1, "Long", text_color = color.white)
+    table.cell(atrDisplay, 1, 1, str.tostring(entryPrice, str.tostring(f_tickFormat())), text_color = color.green)
+    table.cell(atrDisplay, 2, 1, str.tostring(longEntryStop, str.tostring(f_tickFormat())), text_color = color.red)
+    table.cell(atrDisplay, 3, 1, str.tostring(r, str.tostring(f_tickFormat())), text_color = color.orange)
+    table.cell(atrDisplay, 4, 1, str.tostring(inLongTrade), text_color = color.blue)
+    table.cell(atrDisplay, 5, 1, str.tostring(shouldEnterLong), text_color = color.blue)
+    table.cell(atrDisplay, 0, 2, "Short", text_color = color.white)
+    table.cell(atrDisplay, 1, 2, str.tostring(entryPrice, str.tostring(f_tickFormat())), text_color = color.red)
+    table.cell(atrDisplay, 2, 2, str.tostring(shortEntryStop, str.tostring(f_tickFormat())), text_color = color.green)
+    table.cell(atrDisplay, 3, 2, str.tostring(r, str.tostring(f_tickFormat())), text_color = color.orange)
+    table.cell(atrDisplay, 4, 2, str.tostring(inShortTrade), text_color = color.blue)
+    table.cell(atrDisplay, 5, 2, str.tostring(shouldEnterShort), text_color = color.blue)
