@@ -27,11 +27,9 @@ r = ta.atr(atrLength) * atrStopMultiplier
 
 recentLow = ta.lowest(low,9)
 longStop = recentLow - r
-plot (longStop, title="Long Stop", color=color.green, linewidth=1)
 
 recentHigh = ta.highest(high,9)
 shortStop = recentHigh + r
-plot (shortStop, title="Short Stop", color=color.red, linewidth=1)
 
 // Evaluate for bullish & bearish confluence
 
