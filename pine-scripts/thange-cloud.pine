@@ -6,6 +6,9 @@ indicator("Thange Cloud Playbook", shorttitle="Thange Signals", overlay=true)
 
 // Collect inputs
 
+atrLength = input.int(30, minval=1, title="ATR length")
+atrStopMultiplier = input.float(1.0, minval=0.1, title="ATR x ?")
+
 conversionPeriods = input.int(9, minval=1, title="Conversion Line Length")
 basePeriods = input.int(26, minval=1, title="Base Line Length")
 laggingSpan2Periods = input.int(52, minval=1, title="Leading Span B Length")
@@ -17,9 +20,35 @@ baseLine = donchian(basePeriods)
 leadLine1 = math.avg(conversionLine, baseLine)
 leadLine2 = donchian(laggingSpan2Periods)
 
-hasBearishConfluence = leadLine1 > leadLine2
-hasBullishConfluence = leadLine2 > leadLine1
+// Calculate ATR
+r = ta.atr(atrLength) * atrStopMultiplier
 
-// Plot LONG/SHORT signals
+// Calculate Stop loss
+
+recentLow = ta.lowest(low,9)
+longStop = recentLow - r
+plot (longStop, title="Long Stop", color=color.green, linewidth=1)
+
+recentHigh = ta.highest(high,9)
+shortStop = recentHigh + r
+plot (shortStop, title="Short Stop", color=color.red, linewidth=1)
+
+// Evaluate for bullish & bearish confluence
+
+hasBullishConfluence = leadLine2 > leadLine1 // current Kumo is green
+hasBearishConfluence = leadLine1 > leadLine2 // current Kumo is red
+
+// Plot LONG or SHORT signals based on confluence
 plotshape(hasBullishConfluence, title= "Long Signal", location=location.belowbar, color=color.green, transp=0, style=shape.triangleup, text="")
 plotshape(hasBearishConfluence,  title= "Short Signal", location=location.abovebar, color=color.red, transp=0, style=shape.triangledown, text="")
+
+// Draw labels to enter or trail a stop-loss order based on confluence
+
+if (hasBullishConfluence)
+    var labelLong = label.new(bar_index, low,  text = "Trail S.L.", style = label.style_label_up, color = color.green)
+    label.set_xy(labelLong, bar_index, low-1000)
+    label.set_tooltip(labelLong, "Stop loss @ "  + str.tostring(longStop))
+else if (hasBearishConfluence)
+    var labelShort = label.new(bar_index, high, text = "Trail S.L.", color = color.red)
+    label.set_xy(labelShort, bar_index, high+1000)
+    label.set_tooltip(labelShort, "Stop loss @ " + str.tostring(shortStop))
