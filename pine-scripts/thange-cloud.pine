@@ -52,3 +52,10 @@ else if (hasBearishConfluence)
     var labelShort = label.new(bar_index, high, text = "Trail S.L.", color = color.red)
     label.set_xy(labelShort, bar_index, high+1000)
     label.set_tooltip(labelShort, "Stop loss @ " + str.tostring(shortStop))
+
+// Draw Table
+
+var table atrDisplay = table.new(position.bottom_right, 2, 1, bgcolor = color.black, frame_width = 2, frame_color = color.black)
+if (barstate.islast)
+    table.cell(atrDisplay, 0, 0, str.tostring(longStop), text_color = color.green)
+    table.cell(atrDisplay, 1, 0, str.tostring(shortStop), text_color = color.red)
