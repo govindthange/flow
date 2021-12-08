@@ -96,14 +96,14 @@ if (inLongTrade and isPriceBelowTenkanSen and isTenkanSenBelowKijunSen)
 if (inLongTrade and hasBearishConfluence)
     inLongTrade := false
     
-f_print("[L1] inLongTrade: " + str.tostring(inLongTrade) + ", exit? = " + str.tostring(shouldExitLong) + ", bullishConf? = " + str.tostring(hasBullishConfluence) + "\n")
+//f_print("[L1] inLongTrade: " + str.tostring(inLongTrade) + ", exit? = " + str.tostring(shouldExitLong) + ", bullishConf? = " + str.tostring(hasBullishConfluence) + "\n")
 
 shouldEnterLong := not inLongTrade and hasBullishConfluence
 if shouldEnterLong
     inLongTrade := true
     shouldExitLong := false  
 
-f_print("[L2] inLongTrade: " + str.tostring(inLongTrade) + ", exit? = " + str.tostring(shouldExitLong) + ", shouldEnterLong: " + str.tostring(shouldEnterLong) + "\n\n")
+//f_print("[L2] inLongTrade: " + str.tostring(inLongTrade) + ", exit? = " + str.tostring(shouldExitLong) + ", shouldEnterLong: " + str.tostring(shouldEnterLong) + "\n\n")
 
 // Plot LONG signals based on confluence
 plotshape(shouldEnterLong, title= "Long Signal", location=location.belowbar, color=color.green, transp=0, style=shape.triangleup, text="", size=size.small)
@@ -137,14 +137,14 @@ if (inShortTrade and isPriceAboveTenkanSen and isTenkanSenAboveKijunSen)
 if (inShortTrade and hasBullishConfluence)
     inShortTrade := false
 
-f_print("[S1] inShortTrade: " + str.tostring(inShortTrade) + ", exit? = " + str.tostring(shouldExitShort) + ", bearishConf? = " + str.tostring(hasBearishConfluence) + "\n\n\n")
+//f_print("[S1] inShortTrade: " + str.tostring(inShortTrade) + ", exit? = " + str.tostring(shouldExitShort) + ", bearishConf? = " + str.tostring(hasBearishConfluence) + "\n\n\n")
 
 shouldEnterShort :=  not inShortTrade and hasBearishConfluence
 if shouldEnterShort
     inShortTrade := true
     shouldExitShort := false
 
-f_print("[S2] inShortTrade: " + str.tostring(inShortTrade) + ", exit? = " + str.tostring(shouldExitShort) + ", shouldEnterShort: " + str.tostring(shouldEnterShort) + "\n\n\n\n")
+//f_print("[S2] inShortTrade: " + str.tostring(inShortTrade) + ", exit? = " + str.tostring(shouldExitShort) + ", shouldEnterShort: " + str.tostring(shouldEnterShort) + "\n\n\n\n")
 
 // Plot SHORT signals based on confluence
 plotshape(shouldEnterShort,  title= "Short Signal", location=location.abovebar, color=color.red, transp=0, style=shape.triangledown, text="", size=size.small)
@@ -160,27 +160,51 @@ if inShortTrade
     label.set_xy(labelShort, bar_index, kijunSen)
     label.set_tooltip(labelShort, "Stop loss @ " + str.tostring(kijunSen, str.tostring(f_tickFormat())))
 
-// Draw Table
-
-var table atrDisplay = table.new(position.bottom_left, 7, 3, bgcolor = color.black, frame_width = 2, frame_color = color.black)
+// Display trade information
+var table tradeTable = table.new(position.bottom_left, 7, 3, bgcolor = color.black, frame_width = 2, frame_color = color.black)
 if barstate.islast
-    table.cell(atrDisplay, 1, 0, "Entry", text_color = color.white)
-    table.cell(atrDisplay, 2, 0, "Stop Loss", text_color = color.white)
-    table.cell(atrDisplay, 3, 0, "ATR", text_color = color.white)
-    table.cell(atrDisplay, 4, 0, "Active?", text_color = color.white)
-    table.cell(atrDisplay, 5, 0, "Enter?", text_color = color.white)
-    table.cell(atrDisplay, 6, 0, "Trend", text_color = color.white)
-    table.cell(atrDisplay, 0, 1, "Long", text_color = color.white)
-    table.cell(atrDisplay, 1, 1, str.tostring(entryPrice, str.tostring(f_tickFormat())), text_color = color.green)
-    table.cell(atrDisplay, 2, 1, str.tostring(longEntryStop, str.tostring(f_tickFormat())), text_color = color.red)
-    table.cell(atrDisplay, 3, 1, str.tostring(r, str.tostring(f_tickFormat())), text_color = color.orange)
-    table.cell(atrDisplay, 4, 1, str.tostring(inLongTrade), text_color = color.blue)
-    table.cell(atrDisplay, 5, 1, str.tostring(shouldEnterLong), text_color = color.blue)
-    table.cell(atrDisplay, 6, 1, str.tostring(hasBullishConfluence? "bullish": "-"), text_color = color.blue)
-    table.cell(atrDisplay, 0, 2, "Short", text_color = color.white)
-    table.cell(atrDisplay, 1, 2, str.tostring(entryPrice, str.tostring(f_tickFormat())), text_color = color.red)
-    table.cell(atrDisplay, 2, 2, str.tostring(shortEntryStop, str.tostring(f_tickFormat())), text_color = color.green)
-    table.cell(atrDisplay, 3, 2, str.tostring(r, str.tostring(f_tickFormat())), text_color = color.orange)
-    table.cell(atrDisplay, 4, 2, str.tostring(inShortTrade), text_color = color.blue)
-    table.cell(atrDisplay, 5, 2, str.tostring(shouldEnterShort), text_color = color.blue)
-    table.cell(atrDisplay, 6, 2, str.tostring(hasBearishConfluence? "bearish": "-"), text_color = color.blue)
+    table.cell(tradeTable, 1, 0, "Entry", text_color = color.white)
+    table.cell(tradeTable, 2, 0, "Stop Loss", text_color = color.white)
+    table.cell(tradeTable, 3, 0, "ATR", text_color = color.white)
+    table.cell(tradeTable, 4, 0, "Exit 1", text_color = color.white)
+    table.cell(tradeTable, 5, 0, "Exit 2", text_color = color.white)
+    table.cell(tradeTable, 6, 0, "Exit 3", text_color = color.white)
+    table.cell(tradeTable, 0, 1, "Long", text_color = color.white)
+    table.cell(tradeTable, 1, 1, str.tostring(entryPrice, str.tostring(f_tickFormat())), text_color = color.green)
+    table.cell(tradeTable, 2, 1, str.tostring(longEntryStop, str.tostring(f_tickFormat())), text_color = color.red)
+    table.cell(tradeTable, 3, 1, str.tostring(r, str.tostring(f_tickFormat())), text_color = color.orange)
+    table.cell(tradeTable, 4, 1, "-", text_color = color.blue)
+    table.cell(tradeTable, 5, 1, "-", text_color = color.blue)
+    table.cell(tradeTable, 6, 1, "-", text_color = color.blue)
+    table.cell(tradeTable, 0, 2, "Short", text_color = color.white)
+    table.cell(tradeTable, 1, 2, str.tostring(entryPrice, str.tostring(f_tickFormat())), text_color = color.red)
+    table.cell(tradeTable, 2, 2, str.tostring(shortEntryStop, str.tostring(f_tickFormat())), text_color = color.green)
+    table.cell(tradeTable, 3, 2, str.tostring(r, str.tostring(f_tickFormat())), text_color = color.orange)
+    table.cell(tradeTable, 4, 2, "-", text_color = color.blue)
+    table.cell(tradeTable, 5, 2, "-", text_color = color.blue)
+    table.cell(tradeTable, 6, 2, "-", text_color = color.blue)
+    
+// Display debug information
+showL1DebugInfo = input.bool(false, title="Debug Info (Level 1)")
+var table debugTable = table.new(position.bottom_right, 7, 3, bgcolor = color.silver, frame_width = 2, frame_color = color.gray)
+if (barstate.islast and showL1DebugInfo)
+    table.cell(debugTable, 1, 0, "Is Active?", text_color = color.black)
+    table.cell(debugTable, 2, 0, "Should Scale Out?", text_color = color.black)
+    table.cell(debugTable, 3, 0, "Need Exit?", text_color = color.black)
+    table.cell(debugTable, 4, 0, "Should Enter?", text_color = color.black)
+    table.cell(debugTable, 5, 0, "-", text_color = color.black)
+    table.cell(debugTable, 6, 0, "Sentiment", text_color = color.black)
+    table.cell(debugTable, 0, 1, "Long", text_color = color.black)
+    table.cell(debugTable, 1, 1, str.tostring(inLongTrade), text_color = color.navy)
+    table.cell(debugTable, 2, 1, str.tostring(shouldScaleOut), text_color = color.navy)
+    table.cell(debugTable, 3, 1, str.tostring(shouldExitLong), text_color = color.navy)
+    table.cell(debugTable, 4, 1, str.tostring(shouldEnterLong), text_color = color.navy)
+    table.cell(debugTable, 5, 1, "-", text_color = color.navy)
+    table.cell(debugTable, 6, 1, str.tostring(hasBullishConfluence? "Bullish": "-"), text_color = color.navy)
+    table.cell(debugTable, 0, 2, "Short", text_color = color.black)
+    table.cell(debugTable, 1, 2, str.tostring(inShortTrade), text_color = color.maroon)
+    table.cell(debugTable, 2, 2, str.tostring(shouldScaleOut), text_color = color.maroon)
+    table.cell(debugTable, 3, 2, str.tostring(shouldExitShort), text_color = color.maroon)
+    table.cell(debugTable, 4, 2, str.tostring(shouldEnterShort), text_color = color.maroon)
+    table.cell(debugTable, 5, 2, "-", text_color = color.maroon)
+    table.cell(debugTable, 6, 2, str.tostring(hasBearishConfluence? "Bearish": "-"), text_color = color.maroon)
