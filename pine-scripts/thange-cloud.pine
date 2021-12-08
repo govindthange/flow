@@ -37,6 +37,15 @@ f_print(_text) =>
 
 // 1. Where is price w.r.t Kumo? [above | below | within]
 
+isCurrentKumoGreen = senkouSpanA[displacement-1] > senkouSpanB[displacement-1]
+isCurrentKumoRed = senkouSpanB[displacement-1] > senkouSpanA[displacement-1]
+
+isPriceAboveKumo = isCurrentKumoGreen ? (close > senkouSpanA[displacement-1]) : (isCurrentKumoRed ? (close > senkouSpanB[displacement-1]) : false)
+isPriceBelowKumo = isCurrentKumoGreen ? (close < senkouSpanB[displacement-1]) : (isCurrentKumoRed ? (close < senkouSpanA[displacement-1]) : false)
+
+//f_print("Current Kumo: " + (isCurrentKumoGreen ? "Green": (isCurrentKumoRed ? "Red" : " twist ")) + ", senkouSpanA: " + str.tostring(senkouSpanA[displacement-1]) + ", senkouSpanB: " + str.tostring(senkouSpanB[displacement-1]))
+//f_print("Current Kumo: " + (isCurrentKumoGreen ? "Green": (isCurrentKumoRed ? "Red" : " twist ")) + ", Price is " + (isPriceAboveKumo ? "Above" : (isPriceBelowKumo ? "Below" : "Within")))
+
 // 2. Where is price w.r.t nearby flat Kumo-Shadow? [far | near]
 
 // 3. Where is price w.r.t Tenkan? [above | below]
@@ -57,7 +66,7 @@ isFutureKumoRed = senkouSpanB > senkouSpanA
 isChikouSpanAbovePrice = close > high[displacement-1]
 isChikouSpanBelowPrice = close < low[displacement-1]
 
-f_print(str.tostring(displacement-1) + " bar price" + str.tostring(close[displacement-1]))
+//f_print(str.tostring(displacement-1) + " bar price" + str.tostring(close[displacement-1]))
 
 // 8. Where is Chikou w.r.t Kumo? [above | below | within]
 
@@ -68,8 +77,8 @@ f_print(str.tostring(displacement-1) + " bar price" + str.tostring(close[displac
 
 // Check confluence
 
-hasBullishConfluence = isPriceAboveTenkanSen and isTenkanSenAboveKijunSen and isFutureKumoGreen and isChikouSpanAbovePrice
-hasBearishConfluence = isPriceBelowTenkanSen and isTenkanSenBelowKijunSen and isFutureKumoRed and isChikouSpanBelowPrice
+hasBullishConfluence = isPriceAboveKumo and isPriceAboveTenkanSen and isTenkanSenAboveKijunSen and isFutureKumoGreen and isChikouSpanAbovePrice
+hasBearishConfluence = isPriceBelowKumo and isPriceBelowTenkanSen and isTenkanSenBelowKijunSen and isFutureKumoRed and isChikouSpanBelowPrice
 
 // Asssess exit scenarios
 
