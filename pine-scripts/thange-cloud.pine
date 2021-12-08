@@ -54,11 +54,10 @@ isFutureKumoGreen = senkouSpanA > senkouSpanB
 isFutureKumoRed = senkouSpanB > senkouSpanA
 
 // 7. Where is Chikou w.r.t Price? [above | below | within]
-float chikouDiff = ta.change(close,displacement+1)
-float chikouSource = close
-chikouPrice = timeframe.period[displacement+1]
-isChikouSpanAbovePrice = chikouDiff > 0
-isChikouSpanBelowPrice = chikouDiff < 0
+isChikouSpanAbovePrice = close > high[displacement-1]
+isChikouSpanBelowPrice = close < low[displacement-1]
+
+f_print(str.tostring(displacement-1) + " bar price" + str.tostring(close[displacement-1]))
 
 // 8. Where is Chikou w.r.t Kumo? [above | below | within]
 
@@ -66,8 +65,11 @@ isChikouSpanBelowPrice = chikouDiff < 0
 
 // 10. Is Chikou free from congestion ahead? [yes | no]
 
-hasBullishConfluence = isPriceAboveTenkanSen and isTenkanSenAboveKijunSen and isFutureKumoGreen //and isChikouSpanAbovePrice
-hasBearishConfluence = isPriceBelowTenkanSen and isTenkanSenBelowKijunSen and isFutureKumoRed //and isChikouSpanBelowPrice
+
+// Check confluence
+
+hasBullishConfluence = isPriceAboveTenkanSen and isTenkanSenAboveKijunSen and isFutureKumoGreen and isChikouSpanAbovePrice
+hasBearishConfluence = isPriceBelowTenkanSen and isTenkanSenBelowKijunSen and isFutureKumoRed and isChikouSpanBelowPrice
 
 // Asssess exit scenarios
 
