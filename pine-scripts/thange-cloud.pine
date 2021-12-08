@@ -110,6 +110,18 @@ isChikouSpanFree = isChikouSpanAbovePrice ? (close > highestForChikou) : isChiko
 hasBullishConfluence = isPriceAboveKumo and isPriceAboveTenkanSen and isTenkanSenAboveKijunSen and isFutureKumoGreen and isChikouSpanAbovePrice and isChikouSpanFree
 hasBearishConfluence = isPriceBelowKumo and isPriceBelowTenkanSen and isTenkanSenBelowKijunSen and isFutureKumoRed and isChikouSpanBelowPrice and isChikouSpanFree
 
+ssbProximityToChikou = -1
+lowestSSB = ta.lowest(senkouSpanB[2*displacement - 1 - congestionProximity], congestionProximity)
+highestSSB = ta.highest(senkouSpanB[2*displacement - 1 - congestionProximity], congestionProximity)
+
+if (hasBullishConfluence and isChikouSpanBelowKumo)
+    ssbProximityToChikou = (lowestSSB - close)*100/close
+    //f_print(">> overhead resistance at " + str.tostring(ssbProximityToChikou))
+
+if (hasBearishConfluence and isChikouSpanAboveKumo)
+    ssbProximityToChikou = (close - lowestSSB)*100/close
+    //f_print(">> underlying support at " + str.tostring(ssbProximityToChikou) + "\n")
+
 // Asssess exit scenarios
 
 // 1. Where is price w.r.t Kijun-Sen?
@@ -262,12 +274,12 @@ showConfluenceInfo = input.bool(false, title="Confluence Info")
 var table confluenceTable = table.new(position.bottom_right, 3, 10, bgcolor = color.rgb(0, 0, 0, 30), frame_width = 2, frame_color = color.black)
 if (barstate.islast and showConfluenceInfo)
     table.cell(confluenceTable, 0, 0, "1. Price " + (isPriceAboveKumo ? "above" : (isPriceBelowKumo ? "below" : "consolidating within")) + " kumo.", text_color = (isPriceAboveKumo ? color.green : (isPriceBelowKumo ? color.red : color.white)), text_halign = text.align_left)
-    table.cell(confluenceTable, 0, 1, "2. Is price heading into kumo shadows?", text_color = color.orange, text_halign = text.align_left)
+    table.cell(confluenceTable, 0, 1, "2. Is price heading into kumo shadows?", text_color = color.yellow, text_halign = text.align_left)
     table.cell(confluenceTable, 0, 2, "3. Price " + (isPriceAboveTenkanSen ? "above" : (isPriceBelowTenkanSen ? "below" : "overlapping")) + " tenkan.", text_color = isPriceAboveTenkanSen ? color.green : (isPriceBelowTenkanSen ? color.red : color.white), text_halign = text.align_left)
     table.cell(confluenceTable, 0, 3, "4. Tenkan " + (isTenkanSenAboveKijunSen ? "above" : (isTenkanSenBelowKijunSen ? "below" : "overlapping")) + " kijun.", text_color = (isTenkanSenAboveKijunSen ? color.green : (isTenkanSenBelowKijunSen ? color.red : color.white)), text_halign = text.align_left)
     table.cell(confluenceTable, 0, 4, "5. Last " + (wasLastTkCrossBullish? "bullish " : (wasLastTkCrossBearish? "bearish ": "")) + "TK Cross was " + (wasLastTkCrossAboveKumo ? "above" : (wasLastTkCrossBelowKumo ? "below" : "within")) + " kumo.", text_color = (wasLastTkCrossAboveKumo ? (wasLastTkCrossBullish ? color.green : (wasLastTkCrossBearish ? color.rgb(255, 153, 153) : color.white)) : (wasLastTkCrossBelowKumo ? ( wasLastTkCrossBullish ? color.rgb(182, 209, 186) : (wasLastTkCrossBearish ? color.red : color.white)) : color.gray ) ) , text_halign = text.align_left)
     table.cell(confluenceTable, 0, 5, "6. " + (isFutureKumoGreen ? "Bullish" : (isFutureKumoRed ? "Bearish" : "Twisted")) + " future kumo.", text_color = (isFutureKumoGreen ? color.green : (isFutureKumoRed ? color.red : color.white)), text_halign = text.align_left)
     table.cell(confluenceTable, 0, 6, "7. Chikou " + (isChikouSpanAbovePrice ? "above" : (isChikouSpanBelowPrice ? "below" : "hitting")) + " price.", text_color = (isChikouSpanAbovePrice ? color.green : (isChikouSpanBelowPrice ? color.red : color.white)), text_halign = text.align_left)
     table.cell(confluenceTable, 0, 7, "8. Chikou " + (isChikouSpanAboveKumo ? "above" : (isChikouSpanBelowKumo ? "below" : "within")) + " kumo.", text_color = (isChikouSpanAboveKumo ? color.green : (isChikouSpanBelowKumo ? color.red : color.white)), text_halign = text.align_left)
-    table.cell(confluenceTable, 0, 8, "9. Is chikou approaching SSB?", text_color = color.orange, text_halign = text.align_left)
-    table.cell(confluenceTable, 0, 9, "10. Chikou " + (isChikouSpanFree ? "clear for" : "congested for ") + str.tostring(congestionProximity) + " candles.", text_color = (isChikouSpanFree ? (hasBullishConfluence ? color.green : (hasBearishConfluence ? color.red : color.blue)) : color.white), text_halign = text.align_left)
+    table.cell(confluenceTable, 0, 8, "9. Chikou is " + ( ssbProximityToChikou < 0 ? "not near" : str.tostring(ssbProximityToChikou) + "% close to") + " SSB.", text_color = ( ssbProximityToChikou < 0 and hasBullishConfluence ? color.green : ( ssbProximityToChikou < 0 and hasBearishConfluence ? color.red : color.gray)), text_halign = text.align_left)
+    table.cell(confluenceTable, 0, 9, "10. Chikou " + (isChikouSpanFree ? "clear from congestion" : " heading into " + str.tostring(congestionProximity) + " candles!"), text_color = (isChikouSpanFree ? (hasBullishConfluence ? color.green : (hasBearishConfluence ? color.red : color.blue)) : color.white), text_halign = text.align_left)
