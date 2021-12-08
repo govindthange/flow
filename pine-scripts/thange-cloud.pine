@@ -119,7 +119,7 @@ plotshape(shouldEnterLong, title= "Long Signal", location=location.belowbar, col
 if shouldEnterLong
     shouldEnterLong := false // reset flag
 
-plotshape(shouldExitLong and shouldScaleOut, title= "Exit Long Signal", location=location.abovebar, color=color.green, transp=0, style=shape.xcross, text="", size=size.tiny)
+plotshape(shouldExitLong and shouldScaleOut, title= "Exit Long Signal", location=location.abovebar, color=color.orange, transp=0, style=shape.triangledown, text="", size=size.tiny)
 
 // Draw labels to enter or trail a stop-loss order based on confluence
 
@@ -160,7 +160,7 @@ plotshape(shouldEnterShort,  title= "Short Signal", location=location.abovebar, 
 if shouldEnterShort
     shouldEnterShort := false // reset flag
 
-plotshape(shouldExitShort and shouldScaleOut, title= "Exit Short Signal", location=location.belowbar, color=color.red, transp=0, style=shape.xcross, text="", size=size.tiny)
+plotshape(shouldExitShort and shouldScaleOut, title= "Exit Short Signal", location=location.belowbar, color=color.aqua, transp=0, style=shape.triangleup, text="", size=size.tiny)
 
 // Draw labels to enter or trail a stop-loss order based on confluence
 
