@@ -37,7 +37,7 @@ f_print(_text) =>
 
 // 1. Where is price w.r.t Kumo? [above | below | within]
 
-// 2. Where is Price w.r.t nearby flat Kumo-Shadow? [far | near]
+// 2. Where is price w.r.t nearby flat Kumo-Shadow? [far | near]
 
 // 3. Where is price w.r.t Tenkan? [above | below]
 isPriceAboveTenkanSen = close > tenkanSen
@@ -69,6 +69,13 @@ isChikouSpanBelowPrice = chikouDiff < 0
 hasBullishConfluence = isPriceAboveTenkanSen and isTenkanSenAboveKijunSen and isFutureKumoGreen //and isChikouSpanAbovePrice
 hasBearishConfluence = isPriceBelowTenkanSen and isTenkanSenBelowKijunSen and isFutureKumoRed //and isChikouSpanBelowPrice
 
+// Asssess exit scenarios
+
+// 1. Where is price w.r.t Kijun-Sen?
+
+isPriceAboveKijunSen = high > kijunSen
+isPriceBelowKijunSen = low < kijunSen
+
 shouldScaleOut = false
 
 // Create string format template to restrict SL precision to ticks.
@@ -88,7 +95,7 @@ if not inLongTrade
     shouldExitLong := false
     shouldScaleOut := true
 
-if (inLongTrade and isPriceBelowTenkanSen and isTenkanSenBelowKijunSen)
+if (inLongTrade and isPriceBelowKijunSen)
     shouldExitLong := true
     inLongTrade := false
     shouldScaleOut := true
@@ -129,7 +136,7 @@ if not inShortTrade
     shouldExitShort := false
     shouldScaleOut := true
 
-if (inShortTrade and isPriceAboveTenkanSen and isTenkanSenAboveKijunSen)
+if (inShortTrade and isPriceAboveKijunSen)
     shouldExitShort := true
     inShortTrade := false
     shouldScaleOut := true
