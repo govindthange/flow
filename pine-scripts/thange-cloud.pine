@@ -70,15 +70,29 @@ isChikouSpanBelowPrice = close < low[displacement-1]
 
 // 8. Where is Chikou w.r.t Kumo? [above | below | within]
 
+isChikouKumoGreen = senkouSpanA[2*displacement-1] > senkouSpanB[2*displacement-1]
+isChikouKumoRed = senkouSpanB[2*displacement-1] > senkouSpanA[2*displacement-1]
+
+isChikouSpanAboveKumo = isCurrentKumoGreen ? (close > senkouSpanA[2*displacement-1]) : (isCurrentKumoRed ? (close > senkouSpanB[2*displacement-1]) : false)
+isChikouSpanBelowKumo = isCurrentKumoGreen ? (close < senkouSpanB[2*displacement-1]) : (isCurrentKumoRed ? (close < senkouSpanA[2*displacement-1]) : false)
+//f_print("Chikou Kumo: " + (isChikouKumoGreen ? "Green": (isChikouKumoRed ? "Red" : " twist ")) + ", Chikou is " + (isChikouSpanAboveKumo ? "Above" : (isChikouSpanBelowKumo ? "Below" : "Within")))
+
 // 9. Where is Chikou w.r.t a flat Senkou-Span-B? [above | below]
 
 // 10. Is Chikou free from congestion ahead? [yes | no]
+congestionProximity = input.int(10, minval=1, title="Chikou's required congestion free bar range:")
+congestionTolerance = input.float(0, minval=0.0, title="Congestion Tolerance")
 
+highestForChikou = (1-congestionTolerance/100) * ta.highest(high[displacement-congestionProximity], congestionProximity)
+lowestForChikou = (1-congestionTolerance/100) * ta.lowest(low[displacement-congestionProximity], congestionProximity)
+
+isChikouSpanFree = isChikouSpanAbovePrice ? (close > highestForChikou) : isChikouSpanBelowPrice ? (close < lowestForChikou) : false
+//f_print("isChikouSpanFree: " + str.tostring(isChikouSpanFree) + " in the next " + str.tostring(congestionProximity) + " bars, highest: " + str.tostring(highestForChikou) + ", lowest: " + str.tostring(lowestForChikou) + "\n")
 
 // Check confluence
 
-hasBullishConfluence = isPriceAboveKumo and isPriceAboveTenkanSen and isTenkanSenAboveKijunSen and isFutureKumoGreen and isChikouSpanAbovePrice
-hasBearishConfluence = isPriceBelowKumo and isPriceBelowTenkanSen and isTenkanSenBelowKijunSen and isFutureKumoRed and isChikouSpanBelowPrice
+hasBullishConfluence = isPriceAboveKumo and isPriceAboveTenkanSen and isTenkanSenAboveKijunSen and isFutureKumoGreen and isChikouSpanAbovePrice and not isChikouSpanFree
+hasBearishConfluence = isPriceBelowKumo and isPriceBelowTenkanSen and isTenkanSenBelowKijunSen and isFutureKumoRed and isChikouSpanBelowPrice and not isChikouSpanFree
 
 // Asssess exit scenarios
 
@@ -246,8 +260,8 @@ if (barstate.islast and showConfluenceInfo)
     table.cell(confluenceTable, 0, 6, "Chikou x Price", text_color = color.white, text_halign = text.align_left)
     table.cell(confluenceTable, 1, 6, isChikouSpanAbovePrice ? "Above" : (isChikouSpanBelowPrice ? "Below" : "Overlap"), text_color = color.blue, text_halign = text.align_left)
     table.cell(confluenceTable, 0, 7, "Chikou x Kumo", text_color = color.white, text_halign = text.align_left)
-    table.cell(confluenceTable, 1, 7, "", text_color = color.blue, text_halign = text.align_left)
+    table.cell(confluenceTable, 1, 7, isChikouSpanAboveKumo ? "Above" : (isChikouSpanBelowKumo ? "Below" : "Within"), text_color = color.orange, text_halign = text.align_left)
     table.cell(confluenceTable, 0, 8, "Chikou x SSB", text_color = color.white, text_halign = text.align_left)
-    table.cell(confluenceTable, 1, 8, "", text_color = color.blue, text_halign = text.align_left)
-    table.cell(confluenceTable, 0, 9, "Chikou w/ congestion", text_color = color.white, text_halign = text.align_left)
-    table.cell(confluenceTable, 1, 9, "", text_color = color.blue, text_halign = text.align_left)
+    table.cell(confluenceTable, 1, 8, "", text_color = color.orange, text_halign = text.align_left)
+    table.cell(confluenceTable, 0, 9, "Is chikou free within "+ str.tostring(congestionProximity) + " bars?", text_color = color.white, text_halign = text.align_left)
+    table.cell(confluenceTable, 1, 9, isChikouSpanFree ? "No" : "Yes", text_color = color.red, text_halign = text.align_left)
