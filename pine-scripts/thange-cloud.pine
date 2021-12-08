@@ -179,7 +179,7 @@ if inShortTrade
     label.set_tooltip(labelShort, "Stop loss @ " + str.tostring(kijunSen, str.tostring(f_tickFormat())))
 
 // Display trade information
-var table tradeTable = table.new(position.bottom_left, 7, 3, bgcolor = color.black, frame_width = 2, frame_color = color.black)
+var table tradeTable = table.new(position.top_right, 7, 3, bgcolor = color.black, frame_width = 2, frame_color = color.black)
 if barstate.islast
     table.cell(tradeTable, 1, 0, "Entry", text_color = color.white)
     table.cell(tradeTable, 2, 0, "Stop Loss", text_color = color.white)
@@ -204,7 +204,7 @@ if barstate.islast
     
 // Display debug information
 showL1DebugInfo = input.bool(false, title="Debug Info (Level 1)")
-var table debugTable = table.new(position.bottom_right, 7, 3, bgcolor = color.silver, frame_width = 2, frame_color = color.gray)
+var table debugTable = table.new(position.bottom_left, 7, 3, bgcolor = color.silver, frame_width = 2, frame_color = color.gray)
 if (barstate.islast and showL1DebugInfo)
     table.cell(debugTable, 1, 0, "Is Active?", text_color = color.black)
     table.cell(debugTable, 2, 0, "Should Scale Out?", text_color = color.black)
@@ -226,3 +226,28 @@ if (barstate.islast and showL1DebugInfo)
     table.cell(debugTable, 4, 2, str.tostring(shouldEnterShort), text_color = color.maroon)
     table.cell(debugTable, 5, 2, "-", text_color = color.maroon)
     table.cell(debugTable, 6, 2, str.tostring(hasBearishConfluence? "Bearish": "-"), text_color = color.maroon)
+
+// Display confluence information
+showConfluenceInfo = input.bool(false, title="Confluence Info")
+var table confluenceTable = table.new(position.bottom_right, 2, 10, bgcolor = color.black, frame_width = 2, frame_color = color.black)
+if (barstate.islast and showConfluenceInfo)
+    table.cell(confluenceTable, 0, 0, "Price x Kumo", text_color = color.white, text_halign = text.align_left)
+    table.cell(confluenceTable, 1, 0, isPriceAboveKumo ? "Above" : (isPriceBelowKumo ? "Below" : "Within"), text_color = color.blue, text_halign = text.align_left)
+    table.cell(confluenceTable, 0, 1, "Price x Kumo Shadow", text_color = color.white, text_halign = text.align_left)
+    table.cell(confluenceTable, 1, 1, "?", text_color = color.orange, text_halign = text.align_left)
+    table.cell(confluenceTable, 0, 2, "Price x Tenkan", text_color = color.white, text_halign = text.align_left)
+    table.cell(confluenceTable, 1, 2, isPriceAboveTenkanSen ? "Above" : (isPriceBelowTenkanSen ? "Below" : "Overlap"), text_color = color.blue, text_halign = text.align_left)
+    table.cell(confluenceTable, 0, 3, "Price x Kijun", text_color = color.white, text_halign = text.align_left)
+    table.cell(confluenceTable, 1, 3, isPriceAboveKijunSen ? "Above" : (isPriceBelowKijunSen ? "Below" : "Overlap"), text_color = color.blue, text_halign = text.align_left)
+    table.cell(confluenceTable, 0, 4, "TK Cross x Kumo", text_color = color.white, text_halign = text.align_left)
+    table.cell(confluenceTable, 1, 4, "?", text_color = color.orange, text_halign = text.align_left)
+    table.cell(confluenceTable, 0, 5, "Future Kumo", text_color = color.white, text_halign = text.align_left)
+    table.cell(confluenceTable, 1, 5, isFutureKumoGreen ? "Green" : (isFutureKumoRed ? "Red" : "Twist"), text_color = color.blue, text_halign = text.align_left)
+    table.cell(confluenceTable, 0, 6, "Chikou x Price", text_color = color.white, text_halign = text.align_left)
+    table.cell(confluenceTable, 1, 6, isChikouSpanAbovePrice ? "Above" : (isChikouSpanBelowPrice ? "Below" : "Overlap"), text_color = color.blue, text_halign = text.align_left)
+    table.cell(confluenceTable, 0, 7, "Chikou x Kumo", text_color = color.white, text_halign = text.align_left)
+    table.cell(confluenceTable, 1, 7, "", text_color = color.blue, text_halign = text.align_left)
+    table.cell(confluenceTable, 0, 8, "Chikou x SSB", text_color = color.white, text_halign = text.align_left)
+    table.cell(confluenceTable, 1, 8, "", text_color = color.blue, text_halign = text.align_left)
+    table.cell(confluenceTable, 0, 9, "Chikou w/ congestion", text_color = color.white, text_halign = text.align_left)
+    table.cell(confluenceTable, 1, 9, "", text_color = color.blue, text_halign = text.align_left)
