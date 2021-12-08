@@ -57,10 +57,20 @@ isTenkanSenAboveKijunSen = tenkanSen > kijunSen
 isTenkanSenBelowKijunSen = tenkanSen < kijunSen
 
 // 5. Where is TK Cross w.r.t Kumo? [above | below | within] <--- This is not a filter. Ignore!
+var wasLastTkCrossBullish = false
+var wasLastTkCrossBearish = false
 var wasLastTkCrossAboveKumo = false
 var wasLastTkCrossBelowKumo = false
 
-if ((tenkanSen[1] <= kijunSen[1] and tenkanSen > kijunSen) or (tenkanSen[1] >= kijunSen[1] and tenkanSen < kijunSen))
+if (tenkanSen[1] <= kijunSen[1] and tenkanSen > kijunSen)
+    wasLastTkCrossBullish := true
+    wasLastTkCrossBearish := false
+
+if (tenkanSen[1] >= kijunSen[1] and tenkanSen < kijunSen)
+    wasLastTkCrossBullish := false
+    wasLastTkCrossBearish := true
+
+if (wasLastTkCrossBullish or wasLastTkCrossBearish)
     wasLastTkCrossAboveKumo := isCurrentKumoGreen ? (kijunSen > senkouSpanA[displacement-1]) : (isCurrentKumoRed ? (kijunSen > senkouSpanB[displacement-1]) : false)
     wasLastTkCrossBelowKumo := isCurrentKumoGreen ? (kijunSen < senkouSpanB[displacement-1]) : (isCurrentKumoRed ? (kijunSen < senkouSpanA[displacement-1]) : false)
 
@@ -199,7 +209,7 @@ if inShortTrade
     label.set_tooltip(labelShort, "Stop loss @ " + str.tostring(kijunSen, str.tostring(f_tickFormat())))
 
 // Display trade information
-var table tradeTable = table.new(position.top_right, 7, 3, bgcolor = color.black, frame_width = 2, frame_color = color.black)
+var table tradeTable = table.new(position.top_right, 7, 3, bgcolor = color.rgb(0, 0, 0, 30), frame_width = 2, frame_color = color.black)
 if barstate.islast
     table.cell(tradeTable, 1, 0, "Entry", text_color = color.white)
     table.cell(tradeTable, 2, 0, "Stop Loss", text_color = color.white)
@@ -245,19 +255,19 @@ if (barstate.islast and showL1DebugInfo)
     table.cell(debugTable, 3, 2, str.tostring(shouldExitShort), text_color = color.maroon)
     table.cell(debugTable, 4, 2, str.tostring(shouldEnterShort), text_color = color.maroon)
     table.cell(debugTable, 5, 2, "-", text_color = color.maroon)
-    table.cell(debugTable, 6, 2, str.tostring(hasBearishConfluence? "Bearish": "-"), text_color = color.maroon)
+    table.cell(debugTable, 6, 2, str.tostring(hasBearishConfluence? "Bearish": "-"), text_color = color.rgb(255, 153, 153))
 
 // Display confluence information
 showConfluenceInfo = input.bool(false, title="Confluence Info")
 var table confluenceTable = table.new(position.bottom_right, 3, 10, bgcolor = color.rgb(0, 0, 0, 30), frame_width = 2, frame_color = color.black)
 if (barstate.islast and showConfluenceInfo)
-    table.cell(confluenceTable, 0, 0, "1. Price " + (isPriceAboveKumo ? "above" : (isPriceBelowKumo ? "below" : "within")) + " kumo.", text_color = (isPriceAboveKumo ? color.green : (isPriceBelowKumo ? color.red : color.white)), text_halign = text.align_left)
+    table.cell(confluenceTable, 0, 0, "1. Price " + (isPriceAboveKumo ? "above" : (isPriceBelowKumo ? "below" : "consolidating within")) + " kumo.", text_color = (isPriceAboveKumo ? color.green : (isPriceBelowKumo ? color.red : color.white)), text_halign = text.align_left)
     table.cell(confluenceTable, 0, 1, "2. Is price heading into kumo shadows?", text_color = color.orange, text_halign = text.align_left)
     table.cell(confluenceTable, 0, 2, "3. Price " + (isPriceAboveTenkanSen ? "above" : (isPriceBelowTenkanSen ? "below" : "overlapping")) + " tenkan.", text_color = isPriceAboveTenkanSen ? color.green : (isPriceBelowTenkanSen ? color.red : color.white), text_halign = text.align_left)
     table.cell(confluenceTable, 0, 3, "4. Tenkan " + (isTenkanSenAboveKijunSen ? "above" : (isTenkanSenBelowKijunSen ? "below" : "overlapping")) + " kijun.", text_color = (isTenkanSenAboveKijunSen ? color.green : (isTenkanSenBelowKijunSen ? color.red : color.white)), text_halign = text.align_left)
-    table.cell(confluenceTable, 0, 4, "5. Last TK Cross " + (wasLastTkCrossAboveKumo ? "above" : (wasLastTkCrossBelowKumo ? "below" : "within")) + " kumo.", text_color = (wasLastTkCrossAboveKumo ? color.green : (wasLastTkCrossBelowKumo ? color.red : color.gray ) ) , text_halign = text.align_left)
+    table.cell(confluenceTable, 0, 4, "5. Last " + (wasLastTkCrossBullish? "bullish " : (wasLastTkCrossBearish? "bearish ": "")) + "TK Cross was " + (wasLastTkCrossAboveKumo ? "above" : (wasLastTkCrossBelowKumo ? "below" : "within")) + " kumo.", text_color = (wasLastTkCrossAboveKumo ? (wasLastTkCrossBullish ? color.green : (wasLastTkCrossBearish ? color.rgb(255, 153, 153) : color.white)) : (wasLastTkCrossBelowKumo ? ( wasLastTkCrossBullish ? color.rgb(182, 209, 186) : (wasLastTkCrossBearish ? color.red : color.white)) : color.gray ) ) , text_halign = text.align_left)
     table.cell(confluenceTable, 0, 5, "6. " + (isFutureKumoGreen ? "Bullish" : (isFutureKumoRed ? "Bearish" : "Twisted")) + " future kumo.", text_color = (isFutureKumoGreen ? color.green : (isFutureKumoRed ? color.red : color.white)), text_halign = text.align_left)
     table.cell(confluenceTable, 0, 6, "7. Chikou " + (isChikouSpanAbovePrice ? "above" : (isChikouSpanBelowPrice ? "below" : "hitting")) + " price.", text_color = (isChikouSpanAbovePrice ? color.green : (isChikouSpanBelowPrice ? color.red : color.white)), text_halign = text.align_left)
     table.cell(confluenceTable, 0, 7, "8. Chikou " + (isChikouSpanAboveKumo ? "above" : (isChikouSpanBelowKumo ? "below" : "within")) + " kumo.", text_color = (isChikouSpanAboveKumo ? color.green : (isChikouSpanBelowKumo ? color.red : color.white)), text_halign = text.align_left)
     table.cell(confluenceTable, 0, 8, "9. Is chikou approaching SSB?", text_color = color.orange, text_halign = text.align_left)
-    table.cell(confluenceTable, 0, 9, "10. Chikou " + (isChikouSpanFree ? "clear for" : "congested for ") + str.tostring(congestionProximity) + " candles.", text_color = (isChikouSpanFree ? color.blue : color.white), text_halign = text.align_left)
+    table.cell(confluenceTable, 0, 9, "10. Chikou " + (isChikouSpanFree ? "clear for" : "congested for ") + str.tostring(congestionProximity) + " candles.", text_color = (isChikouSpanFree ? (hasBullishConfluence ? color.green : (hasBearishConfluence ? color.red : color.blue)) : color.white), text_halign = text.align_left)
