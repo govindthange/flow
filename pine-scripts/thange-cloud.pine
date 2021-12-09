@@ -162,10 +162,11 @@ var didSellOnLimitOrder = false
 
 var longEntryPrice = 0.0
 var longStopLoss = 0.0
-var tenkaSellPrice1 = 0.0
-var tenkaSellPrice2 = 0.0
-var tenkaSellPrice3 = 0.0
-var tenkaSellPrice4 = 0.0
+var tenkanSellPrice1 = 0.0
+var tenkanSellPrice2 = 0.0
+var tenkanSellPrice3 = 0.0
+var tenkanSellPrice4 = 0.0
+var tenkanSellPrice5 = 0.0
 var kijunSellPrice = 0.0
 var sellLimitOrder = 0.0
 
@@ -177,10 +178,11 @@ if not inLongTrade
     didSellOnLimitOrder := false
     longEntryPrice := 0.0
     longStopLoss := 0.0
-    tenkaSellPrice1 := 0.0
-    tenkaSellPrice2 := 0.0
-    tenkaSellPrice3 := 0.0
-    tenkaSellPrice4 := 0.0
+    tenkanSellPrice1 := 0.0
+    tenkanSellPrice2 := 0.0
+    tenkanSellPrice3 := 0.0
+    tenkanSellPrice4 := 0.0
+    tenkanSellPrice5 := 0.0
     kijunSellPrice := 0.0
     sellLimitOrder := 0.0
 
@@ -204,14 +206,16 @@ if canPrepareForLong
 
 if (inLongTrade and not shouldSellOnKijun and close < tenkanSen and close[1] >= tenkanSen[1])
     shouldSellOnTenkan := true
-    if (tenkaSellPrice1 == 0.0)
-        tenkaSellPrice1 := close
-    else if (tenkaSellPrice2 == 0.0)
-        tenkaSellPrice2 := close
-    else if (tenkaSellPrice3 == 0.0)
-        tenkaSellPrice3 := close
-    else if (tenkaSellPrice4 == 0.0)
-        tenkaSellPrice4 := close
+    if (tenkanSellPrice1 == 0.0)
+        tenkanSellPrice1 := close
+    else if (tenkanSellPrice2 == 0.0)
+        tenkanSellPrice2 := close
+    else if (tenkanSellPrice3 == 0.0)
+        tenkanSellPrice3 := close
+    else if (tenkanSellPrice4 == 0.0)
+        tenkanSellPrice4 := close
+    else if (tenkanSellPrice5 == 0.0)
+        tenkanSellPrice5 := close
 else
     shouldSellOnTenkan := false
     
@@ -258,6 +262,7 @@ var tenkanBuyPrice1 = 0.0
 var tenkanBuyPrice2 = 0.0
 var tenkanBuyPrice3 = 0.0
 var tenkanBuyPrice4 = 0.0
+var tenkanBuyPrice5 = 0.0
 var kijunBuyPrice = 0.0
 var buyLimitOrder = 0.0
 
@@ -272,6 +277,7 @@ if not inShortTrade
     tenkanBuyPrice2 := 0.0
     tenkanBuyPrice3 := 0.0
     tenkanBuyPrice4 := 0.0
+    tenkanBuyPrice5 := 0.0
     kijunBuyPrice := 0.0
     buyLimitOrder := 0.0
 
@@ -302,7 +308,9 @@ if (inShortTrade and not shouldBuyOnKijun and close > tenkanSen and close[1] <= 
     else if (tenkanBuyPrice3 == 0.0)
         tenkanBuyPrice3 := close
     else if (tenkanBuyPrice4 == 0.0)
-        tenkanBuyPrice3 := close
+        tenkanBuyPrice4 := close
+    else if (tenkanBuyPrice5 == 0.0)
+        tenkanBuyPrice5 := close
 else
     shouldBuyOnTenkan := false
     
@@ -337,27 +345,29 @@ if (inShortTrade and isPriceAboveKijunSen)
 
 // Display trade information
 showTradePlan = input.bool(false, title="Trade Plan")
-var table tradeTable = table.new(position.top_right, 10, 3, bgcolor = color.rgb(0, 0, 0, 30), frame_width = 2, frame_color = color.black)
+var table tradeTable = table.new(position.top_right, 11, 3, bgcolor = color.rgb(0, 0, 0, 30), frame_width = 2, frame_color = color.black)
 if (barstate.islast and showTradePlan)
     table.cell(tradeTable, 1, 0, "Entry", text_color = color.white)
-    table.cell(tradeTable, 2, 0, "Stop Loss", text_color = color.white)
-    table.cell(tradeTable, 3, 0, "Tenkan Exit 1", text_color = color.white)
-    table.cell(tradeTable, 4, 0, "Tenkan Exit 2", text_color = color.white)
-    table.cell(tradeTable, 5, 0, "Tenkan Exit 3", text_color = color.white)
-    table.cell(tradeTable, 6, 0, "Tenkan Exit 4", text_color = color.white)
-    table.cell(tradeTable, 7, 0, "Kijun Exit", text_color = color.white)
-    table.cell(tradeTable, 8, 0, "Fixed Exit", text_color = color.white)
-    table.cell(tradeTable, 9, 0, "ATR", text_color = color.white)
+    table.cell(tradeTable, 2, 0, "S.L.", text_color = color.white)
+    table.cell(tradeTable, 3, 0, "T. Exit 1", text_color = color.white)
+    table.cell(tradeTable, 4, 0, "T. Exit 2", text_color = color.white)
+    table.cell(tradeTable, 5, 0, "T. Exit 3", text_color = color.white)
+    table.cell(tradeTable, 6, 0, "T. Exit 4", text_color = color.white)
+    table.cell(tradeTable, 7, 0, "T. Exit 5", text_color = color.white)
+    table.cell(tradeTable, 8, 0, "K. Exit", text_color = color.white)
+    table.cell(tradeTable, 9, 0, "Limit Order", text_color = color.white)
+    table.cell(tradeTable, 10, 0, "ATR", text_color = color.white)
     table.cell(tradeTable, 0, 1, "Long", text_color = color.white)
     table.cell(tradeTable, 1, 1, str.tostring(longEntryPrice, str.tostring(f_tickFormat())), text_color = color.green)
     table.cell(tradeTable, 2, 1, str.tostring(longStopLoss, str.tostring(f_tickFormat())), text_color = color.red)
-    table.cell(tradeTable, 3, 1, str.tostring(tenkaSellPrice1, str.tostring(f_tickFormat())), text_color = color.aqua)
-    table.cell(tradeTable, 4, 1, str.tostring(tenkaSellPrice2, str.tostring(f_tickFormat())), text_color = color.aqua)
-    table.cell(tradeTable, 5, 1, str.tostring(tenkaSellPrice3, str.tostring(f_tickFormat())), text_color = color.aqua)
-    table.cell(tradeTable, 6, 1, str.tostring(tenkaSellPrice4, str.tostring(f_tickFormat())), text_color = color.aqua)
-    table.cell(tradeTable, 7, 1, str.tostring(kijunSellPrice, str.tostring(f_tickFormat())), text_color = color.aqua)
-    table.cell(tradeTable, 8, 1, (didSellOnLimitOrder ? str.tostring(sellLimitOrder, str.tostring(f_tickFormat())) : "0.0"), text_color = color.aqua)
-    table.cell(tradeTable, 9, 1, str.tostring(r, str.tostring(f_tickFormat())), text_color = color.gray)
+    table.cell(tradeTable, 3, 1, str.tostring(tenkanSellPrice1, str.tostring(f_tickFormat())), text_color = color.aqua)
+    table.cell(tradeTable, 4, 1, str.tostring(tenkanSellPrice2, str.tostring(f_tickFormat())), text_color = color.aqua)
+    table.cell(tradeTable, 5, 1, str.tostring(tenkanSellPrice3, str.tostring(f_tickFormat())), text_color = color.aqua)
+    table.cell(tradeTable, 6, 1, str.tostring(tenkanSellPrice4, str.tostring(f_tickFormat())), text_color = color.aqua)
+    table.cell(tradeTable, 7, 1, str.tostring(tenkanSellPrice5, str.tostring(f_tickFormat())), text_color = color.aqua)
+    table.cell(tradeTable, 8, 1, str.tostring(kijunSellPrice, str.tostring(f_tickFormat())), text_color = color.aqua)
+    table.cell(tradeTable, 9, 1, (didSellOnLimitOrder ? str.tostring(sellLimitOrder, str.tostring(f_tickFormat())) : "0.0"), text_color = color.aqua)
+    table.cell(tradeTable, 10, 1, str.tostring(r, str.tostring(f_tickFormat())), text_color = color.gray)
     table.cell(tradeTable, 0, 2, "Short", text_color = color.white)
     table.cell(tradeTable, 1, 2, str.tostring(shortEntryPrice, str.tostring(f_tickFormat())), text_color = color.red)
     table.cell(tradeTable, 2, 2, str.tostring(shortStopLoss, str.tostring(f_tickFormat())), text_color = color.green)
@@ -365,9 +375,10 @@ if (barstate.islast and showTradePlan)
     table.cell(tradeTable, 4, 2, str.tostring(tenkanBuyPrice2, str.tostring(f_tickFormat())), text_color = color.orange)
     table.cell(tradeTable, 5, 2, str.tostring(tenkanBuyPrice3, str.tostring(f_tickFormat())), text_color = color.orange)
     table.cell(tradeTable, 6, 2, str.tostring(tenkanBuyPrice4, str.tostring(f_tickFormat())), text_color = color.orange)
-    table.cell(tradeTable, 7, 2, str.tostring(kijunBuyPrice, str.tostring(f_tickFormat())), text_color = color.orange)
-    table.cell(tradeTable, 8, 2, (didBuyOnLimitOrder ? str.tostring(buyLimitOrder, str.tostring(f_tickFormat())) : "0.0"), text_color = color.orange)
-    table.cell(tradeTable, 9, 2, str.tostring(r, str.tostring(f_tickFormat())), text_color = color.gray)
+    table.cell(tradeTable, 7, 2, str.tostring(tenkanBuyPrice5, str.tostring(f_tickFormat())), text_color = color.orange)
+    table.cell(tradeTable, 8, 2, str.tostring(kijunBuyPrice, str.tostring(f_tickFormat())), text_color = color.orange)
+    table.cell(tradeTable, 9, 2, (didBuyOnLimitOrder ? str.tostring(buyLimitOrder, str.tostring(f_tickFormat())) : "0.0"), text_color = color.orange)
+    table.cell(tradeTable, 10, 2, str.tostring(r, str.tostring(f_tickFormat())), text_color = color.gray)
     
 // Display debug information
 showL1DebugInfo = input.bool(false, title="Debug Info (Level 1)")
