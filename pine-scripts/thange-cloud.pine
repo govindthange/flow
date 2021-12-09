@@ -154,17 +154,40 @@ f_tickFormat() =>
 
 // Manage long position
 
-
 var shouldEnterLong = false
 var shouldExitLong = false
+var shouldDoTenkanLongExit = false
+var shouldDofixedLongExit = false
+var didfixedLongExitPrice = false
+
+var longEntryPrice = 0.0
+var longStopLoss = 0.0
+var tenkanLongExitPrice1 = 0.0
+var tenkanLongExitPrice2 = 0.0
+var tenkanLongExitPrice3 = 0.0
+var tenkanLongExitPrice4 = 0.0
+var kijunLongExitPrice = 0.0
+var fixedLongExitPrice = 0.0
 
 if not inLongTrade
     shouldExitLong := false
     shouldScaleOut := true
+    shouldDoTenkanLongExit := false
+    shouldDofixedLongExit := false
+    didfixedLongExitPrice := false
+    longEntryPrice := 0.0
+    longStopLoss := 0.0
+    tenkanLongExitPrice1 := 0.0
+    tenkanLongExitPrice2 := 0.0
+    tenkanLongExitPrice3 := 0.0
+    tenkanLongExitPrice4 := 0.0
+    kijunLongExitPrice := 0.0
+    fixedLongExitPrice := 0.0
 
 if (inLongTrade and isPriceBelowKijunSen)
     shouldExitLong := true
     shouldScaleOut := true
+    kijunLongExitPrice := kijunSen
 
 if (inLongTrade and hasBearishConfluence)
     inLongTrade := false
@@ -174,17 +197,42 @@ if (inLongTrade and hasBearishConfluence)
 shouldEnterLong := not inLongTrade and hasBullishConfluence
 if shouldEnterLong
     inLongTrade := true
-    shouldExitLong := false  
+    shouldExitLong := false
+    longEntryPrice := close
+    longStopLoss := longEntryStop
+    fixedLongExitPrice := longEntryPrice + (longEntryPrice - longEntryStop)
+
+if (inLongTrade and not shouldExitLong and close < tenkanSen and close[1] >= tenkanSen[1])
+    shouldDoTenkanLongExit := true
+    if (tenkanLongExitPrice1 == 0.0)
+        tenkanLongExitPrice1 := close
+    else if (tenkanLongExitPrice2 == 0.0)
+        tenkanLongExitPrice2 := close
+    else if (tenkanLongExitPrice3 == 0.0)
+        tenkanLongExitPrice3 := close
+    else if (tenkanLongExitPrice4 == 0.0)
+        tenkanLongExitPrice4 := close
+else
+    shouldDoTenkanLongExit := false
+    
+if (inLongTrade and not didfixedLongExitPrice and close >= fixedLongExitPrice)
+    shouldDofixedLongExit := true
 
 //f_print("[L2] inLongTrade: " + str.tostring(inLongTrade) + ", exit? = " + str.tostring(shouldExitLong) + ", shouldEnterLong: " + str.tostring(shouldEnterLong) + "\n\n")
 
 // Plot LONG signals based on confluence
-plotshape(shouldEnterLong, title= "Long Signal", location=location.belowbar, color=color.green, transp=0, style=shape.triangleup, text="", size=size.small)
+plotshape(shouldEnterLong, title= "Long Entry", location=location.belowbar, color=color.green, transp=0, style=shape.triangleup, text="", size=size.small)
 if shouldEnterLong
     shouldEnterLong := false // reset flag
 
-plotshape(inLongTrade and not shouldExitLong and close < tenkanSen and close[1] >= tenkanSen[1], title= "Scale Out Long Signal", location=location.abovebar, color=color.green, transp=0, style=shape.diamond, text="", size=size.tiny)
-plotshape(shouldExitLong and shouldScaleOut, title= "Exit Long Signal", location=location.abovebar, color=color.green, transp=0, style=shape.xcross, text="", size=size.small)
+plotshape(shouldDoTenkanLongExit, title= "Tenkan Long Exit", location=location.abovebar, color=color.aqua, transp=0, style=shape.diamond, text="", size=size.tiny)
+
+plotshape(shouldExitLong and shouldScaleOut, title= "Kijun Long Exit", location=location.abovebar, color=color.green, transp=0, style=shape.xcross, text="", size=size.small)
+
+plotshape(shouldDofixedLongExit, title= "Fixed Long Exit", location=location.abovebar, color=color.aqua, transp=0, style=shape.square, text="", size=size.tiny)
+if shouldDofixedLongExit
+    didfixedLongExitPrice := true
+    shouldDofixedLongExit := false
 
 // Draw labels to enter or trail a stop-loss order based on confluence
 
@@ -193,7 +241,6 @@ if inLongTrade
     label.set_xy(labelLong, bar_index+1, kijunSen)
     label.set_tooltip(labelLong, "Stop loss @ "  + str.tostring(kijunSen, str.tostring(f_tickFormat())))
 
-
 if (inLongTrade and isPriceBelowKijunSen)
     inLongTrade := false
 
@@ -201,14 +248,37 @@ if (inLongTrade and isPriceBelowKijunSen)
 
 var shouldEnterShort = false
 var shouldExitShort = false
+var shouldDoTenkanShortExit = false
+var shouldDofixedShortExit = false
+var didfixedShortExitPrice = false
+
+var shortEntryPrice = 0.0
+var shortStopLoss = 0.0
+var tenkanShortExitPrice1 = 0.0
+var tenkanShortExitPrice2 = 0.0
+var tenkanShortExitPrice3 = 0.0
+var tenkanShortExitPrice4 = 0.0
+var kijunShortExitPrice = 0.0
+var fixedShortExitPrice = 0.0
 
 if not inShortTrade
     shouldExitShort := false
     shouldScaleOut := true
+    shouldDofixedShortExit := false
+    didfixedShortExitPrice := false
+    shortEntryPrice := 0.0
+    shortStopLoss := 0.0
+    tenkanShortExitPrice1 := 0.0
+    tenkanShortExitPrice2 := 0.0
+    tenkanShortExitPrice3 := 0.0
+    tenkanShortExitPrice4 := 0.0
+    kijunShortExitPrice := 0.0
+    fixedShortExitPrice := 0.0
 
 if (inShortTrade and isPriceAboveKijunSen)
     shouldExitShort := true
     shouldScaleOut := true
+    kijunShortExitPrice := kijunSen
 
 if (inShortTrade and hasBullishConfluence)
     inShortTrade := false
@@ -219,16 +289,41 @@ shouldEnterShort :=  not inShortTrade and hasBearishConfluence
 if shouldEnterShort
     inShortTrade := true
     shouldExitShort := false
+    shortEntryPrice := close
+    shortStopLoss := shortEntryStop
+    fixedShortExitPrice := shortEntryPrice - (shortEntryStop - shortEntryPrice)
+
+if (inShortTrade and not shouldExitShort and close > tenkanSen and close[1] <= tenkanSen[1])
+    shouldDoTenkanShortExit := true
+    if (tenkanShortExitPrice1 == 0.0)
+        tenkanShortExitPrice1 := close
+    else if (tenkanShortExitPrice2 == 0.0)
+        tenkanShortExitPrice2 := close
+    else if (tenkanShortExitPrice3 == 0.0)
+        tenkanShortExitPrice3 := close
+    else if (tenkanShortExitPrice4 == 0.0)
+        tenkanShortExitPrice3 := close
+else
+    shouldDoTenkanShortExit := false
+    
+if (inShortTrade and not didfixedShortExitPrice and close <= fixedShortExitPrice)
+    shouldDofixedShortExit := true
 
 //f_print("[S2] inShortTrade: " + str.tostring(inShortTrade) + ", exit? = " + str.tostring(shouldExitShort) + ", shouldEnterShort: " + str.tostring(shouldEnterShort) + ", isPriceAboveKijunsen? = " + str.tostring(isPriceAboveKijunSen) + "\n\n\n\n")
 
 // Plot SHORT signals based on confluence
-plotshape(shouldEnterShort,  title= "Short Signal", location=location.abovebar, color=color.red, transp=0, style=shape.triangledown, text="", size=size.small)
+plotshape(shouldEnterShort,  title= "Short Entry", location=location.abovebar, color=color.red, transp=0, style=shape.triangledown, text="", size=size.small)
 if shouldEnterShort
     shouldEnterShort := false // reset flag
 
-plotshape(inShortTrade and not shouldExitShort and close > tenkanSen and close[1] <= tenkanSen[1], title= "Scale Out Short Signal", location=location.belowbar, color=color.red, transp=0, style=shape.diamond, text="", size=size.tiny)
-plotshape(shouldExitShort and shouldScaleOut, title= "Exit Short Signal", location=location.belowbar, color=color.red, transp=0, style=shape.xcross, text="", size=size.small)
+plotshape(shouldDoTenkanShortExit, title= "Tenkan Short Exit", location=location.belowbar, color=color.orange, transp=0, style=shape.diamond, text="", size=size.tiny)
+
+plotshape(shouldExitShort and shouldScaleOut, title= "Kijun Short Exit", location=location.belowbar, color=color.red, transp=0, style=shape.xcross, text="", size=size.small)
+
+plotshape(shouldDofixedShortExit, title= "Fixed Short Exit", location=location.belowbar, color=color.orange, transp=0, style=shape.square, text="", size=size.tiny)
+if shouldDofixedShortExit
+    didfixedShortExitPrice := true
+    shouldDofixedShortExit := false
 
 // Draw labels to enter or trail a stop-loss order based on confluence
 
@@ -241,28 +336,38 @@ if (inShortTrade and isPriceAboveKijunSen)
     inShortTrade := false
 
 // Display trade information
-var table tradeTable = table.new(position.top_right, 7, 3, bgcolor = color.rgb(0, 0, 0, 30), frame_width = 2, frame_color = color.black)
-if barstate.islast
+showTradePlan = input.bool(false, title="Trade Plan")
+var table tradeTable = table.new(position.top_right, 10, 3, bgcolor = color.rgb(0, 0, 0, 30), frame_width = 2, frame_color = color.black)
+if (barstate.islast and showTradePlan)
     table.cell(tradeTable, 1, 0, "Entry", text_color = color.white)
     table.cell(tradeTable, 2, 0, "Stop Loss", text_color = color.white)
-    table.cell(tradeTable, 3, 0, "ATR", text_color = color.white)
-    table.cell(tradeTable, 4, 0, "Exit 1", text_color = color.white)
-    table.cell(tradeTable, 5, 0, "Exit 2", text_color = color.white)
-    table.cell(tradeTable, 6, 0, "Exit 3", text_color = color.white)
+    table.cell(tradeTable, 3, 0, "Tenkan Exit 1", text_color = color.white)
+    table.cell(tradeTable, 4, 0, "Tenkan Exit 2", text_color = color.white)
+    table.cell(tradeTable, 5, 0, "Tenkan Exit 3", text_color = color.white)
+    table.cell(tradeTable, 6, 0, "Tenkan Exit 4", text_color = color.white)
+    table.cell(tradeTable, 7, 0, "Kijun Exit", text_color = color.white)
+    table.cell(tradeTable, 8, 0, "Fixed Exit", text_color = color.white)
+    table.cell(tradeTable, 9, 0, "ATR", text_color = color.white)
     table.cell(tradeTable, 0, 1, "Long", text_color = color.white)
-    table.cell(tradeTable, 1, 1, str.tostring(entryPrice, str.tostring(f_tickFormat())), text_color = color.green)
-    table.cell(tradeTable, 2, 1, str.tostring(longEntryStop, str.tostring(f_tickFormat())), text_color = color.red)
-    table.cell(tradeTable, 3, 1, str.tostring(r, str.tostring(f_tickFormat())), text_color = color.orange)
-    table.cell(tradeTable, 4, 1, "-", text_color = color.blue)
-    table.cell(tradeTable, 5, 1, "-", text_color = color.blue)
-    table.cell(tradeTable, 6, 1, "-", text_color = color.blue)
+    table.cell(tradeTable, 1, 1, str.tostring(longEntryPrice, str.tostring(f_tickFormat())), text_color = color.green)
+    table.cell(tradeTable, 2, 1, str.tostring(longStopLoss, str.tostring(f_tickFormat())), text_color = color.red)
+    table.cell(tradeTable, 3, 1, str.tostring(tenkanLongExitPrice1, str.tostring(f_tickFormat())), text_color = color.aqua)
+    table.cell(tradeTable, 4, 1, str.tostring(tenkanLongExitPrice2, str.tostring(f_tickFormat())), text_color = color.aqua)
+    table.cell(tradeTable, 5, 1, str.tostring(tenkanLongExitPrice3, str.tostring(f_tickFormat())), text_color = color.aqua)
+    table.cell(tradeTable, 6, 1, str.tostring(tenkanLongExitPrice4, str.tostring(f_tickFormat())), text_color = color.aqua)
+    table.cell(tradeTable, 7, 1, str.tostring(kijunLongExitPrice, str.tostring(f_tickFormat())), text_color = color.aqua)
+    table.cell(tradeTable, 8, 1, (didfixedLongExitPrice ? str.tostring(fixedLongExitPrice, str.tostring(f_tickFormat())) : "0.0"), text_color = color.aqua)
+    table.cell(tradeTable, 9, 1, str.tostring(r, str.tostring(f_tickFormat())), text_color = color.gray)
     table.cell(tradeTable, 0, 2, "Short", text_color = color.white)
-    table.cell(tradeTable, 1, 2, str.tostring(entryPrice, str.tostring(f_tickFormat())), text_color = color.red)
-    table.cell(tradeTable, 2, 2, str.tostring(shortEntryStop, str.tostring(f_tickFormat())), text_color = color.green)
-    table.cell(tradeTable, 3, 2, str.tostring(r, str.tostring(f_tickFormat())), text_color = color.orange)
-    table.cell(tradeTable, 4, 2, "-", text_color = color.blue)
-    table.cell(tradeTable, 5, 2, "-", text_color = color.blue)
-    table.cell(tradeTable, 6, 2, "-", text_color = color.blue)
+    table.cell(tradeTable, 1, 2, str.tostring(shortEntryPrice, str.tostring(f_tickFormat())), text_color = color.red)
+    table.cell(tradeTable, 2, 2, str.tostring(shortStopLoss, str.tostring(f_tickFormat())), text_color = color.green)
+    table.cell(tradeTable, 3, 2, str.tostring(tenkanShortExitPrice1, str.tostring(f_tickFormat())), text_color = color.orange)
+    table.cell(tradeTable, 4, 2, str.tostring(tenkanShortExitPrice2, str.tostring(f_tickFormat())), text_color = color.orange)
+    table.cell(tradeTable, 5, 2, str.tostring(tenkanShortExitPrice3, str.tostring(f_tickFormat())), text_color = color.orange)
+    table.cell(tradeTable, 6, 2, str.tostring(tenkanShortExitPrice4, str.tostring(f_tickFormat())), text_color = color.orange)
+    table.cell(tradeTable, 7, 2, str.tostring(kijunShortExitPrice, str.tostring(f_tickFormat())), text_color = color.orange)
+    table.cell(tradeTable, 8, 2, (didfixedShortExitPrice ? str.tostring(fixedShortExitPrice, str.tostring(f_tickFormat())) : "0.0"), text_color = color.orange)
+    table.cell(tradeTable, 9, 2, str.tostring(r, str.tostring(f_tickFormat())), text_color = color.gray)
     
 // Display debug information
 showL1DebugInfo = input.bool(false, title="Debug Info (Level 1)")
