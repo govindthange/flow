@@ -126,8 +126,22 @@ if (hasBearishConfluence and isChikouSpanAboveKumo)
 
 // 1. Where is price w.r.t Kijun-Sen?
 
-isPriceAboveKijunSen = high > kijunSen
-isPriceBelowKijunSen = low < kijunSen
+var inLongTrade = false
+var inShortTrade = false
+
+isPriceAboveKijunSen = false
+isPriceBelowKijunSen = false
+if inLongTrade 
+    isPriceBelowKijunSen := low < kijunSen
+    isPriceAboveKijunSen := low > kijunSen
+else if inShortTrade
+    isPriceBelowKijunSen := high < kijunSen
+    isPriceAboveKijunSen := high > kijunSen
+else
+    isPriceAboveKijunSen := close > kijunSen
+    isPriceBelowKijunSen := close < kijunSen
+
+//f_print("isPriceAboveKijunSen? = " + str.tostring(isPriceAboveKijunSen) + ", isPriceBelowKijunSen? = " + str.tostring(isPriceBelowKijunSen) + ", kijunSen: " + str.tostring(kijunSen) + ", high: " + str.tostring(high) + ", low: " + str.tostring(low) + " check? " +  str.tostring(low < kijunSen))
 
 shouldScaleOut = false
 
@@ -140,7 +154,7 @@ f_tickFormat() =>
 
 // Manage long position
 
-var inLongTrade = false
+
 var shouldEnterLong = false
 var shouldExitLong = false
 
@@ -150,7 +164,6 @@ if not inLongTrade
 
 if (inLongTrade and isPriceBelowKijunSen)
     shouldExitLong := true
-    inLongTrade := false
     shouldScaleOut := true
 
 if (inLongTrade and hasBearishConfluence)
@@ -179,9 +192,12 @@ if inLongTrade
     label.set_xy(labelLong, bar_index, kijunSen)
     label.set_tooltip(labelLong, "Stop loss @ "  + str.tostring(kijunSen, str.tostring(f_tickFormat())))
 
+
+if (inLongTrade and isPriceBelowKijunSen)
+    inLongTrade := false
+
 // Manage short position
 
-var inShortTrade = false
 var shouldEnterShort = false
 var shouldExitShort = false
 
@@ -191,20 +207,19 @@ if not inShortTrade
 
 if (inShortTrade and isPriceAboveKijunSen)
     shouldExitShort := true
-    inShortTrade := false
     shouldScaleOut := true
 
 if (inShortTrade and hasBullishConfluence)
     inShortTrade := false
 
-//f_print("[S1] inShortTrade: " + str.tostring(inShortTrade) + ", exit? = " + str.tostring(shouldExitShort) + ", bearishConf? = " + str.tostring(hasBearishConfluence) + "\n\n\n")
+//f_print("[S1] inShortTrade: " + str.tostring(inShortTrade) + ", exit? = " + str.tostring(shouldExitShort) + ", bearishConf? = " + str.tostring(hasBearishConfluence) + ", isPriceAboveKijunsen? = " + str.tostring(isPriceAboveKijunSen) + "\n\n\n")
 
 shouldEnterShort :=  not inShortTrade and hasBearishConfluence
 if shouldEnterShort
     inShortTrade := true
     shouldExitShort := false
 
-//f_print("[S2] inShortTrade: " + str.tostring(inShortTrade) + ", exit? = " + str.tostring(shouldExitShort) + ", shouldEnterShort: " + str.tostring(shouldEnterShort) + "\n\n\n\n")
+//f_print("[S2] inShortTrade: " + str.tostring(inShortTrade) + ", exit? = " + str.tostring(shouldExitShort) + ", shouldEnterShort: " + str.tostring(shouldEnterShort) + ", isPriceAboveKijunsen? = " + str.tostring(isPriceAboveKijunSen) + "\n\n\n\n")
 
 // Plot SHORT signals based on confluence
 plotshape(shouldEnterShort,  title= "Short Signal", location=location.abovebar, color=color.red, transp=0, style=shape.triangledown, text="", size=size.small)
@@ -219,6 +234,9 @@ if inShortTrade
     var labelShort = label.new(bar_index, kijunSen, text = "Trail S.L.", style = label.style_label_upper_left, color = color.red)
     label.set_xy(labelShort, bar_index, kijunSen)
     label.set_tooltip(labelShort, "Stop loss @ " + str.tostring(kijunSen, str.tostring(f_tickFormat())))
+
+if (inShortTrade and isPriceAboveKijunSen)
+    inShortTrade := false
 
 // Display trade information
 var table tradeTable = table.new(position.top_right, 7, 3, bgcolor = color.rgb(0, 0, 0, 30), frame_width = 2, frame_color = color.black)
@@ -277,9 +295,9 @@ if (barstate.islast and showConfluenceInfo)
     table.cell(confluenceTable, 0, 1, "2. Is price heading into kumo shadows?", text_color = color.yellow, text_halign = text.align_left)
     table.cell(confluenceTable, 0, 2, "3. Price " + (isPriceAboveTenkanSen ? "above" : (isPriceBelowTenkanSen ? "below" : "overlapping")) + " tenkan.", text_color = isPriceAboveTenkanSen ? color.green : (isPriceBelowTenkanSen ? color.red : color.white), text_halign = text.align_left)
     table.cell(confluenceTable, 0, 3, "4. Tenkan " + (isTenkanSenAboveKijunSen ? "above" : (isTenkanSenBelowKijunSen ? "below" : "overlapping")) + " kijun.", text_color = (isTenkanSenAboveKijunSen ? color.green : (isTenkanSenBelowKijunSen ? color.red : color.white)), text_halign = text.align_left)
-table.cell(confluenceTable, 0, 4, "5. " + (wasLastTkCrossBullish? "Bullish " : (wasLastTkCrossBearish? "Bearish ": "")) + "TK Cross " + (wasLastTkCrossAboveKumo ? "above" : (wasLastTkCrossBelowKumo ? "below" : "within")) + " kumo.", text_color = (wasLastTkCrossAboveKumo ? (wasLastTkCrossBullish ? color.green : (wasLastTkCrossBearish ? color.rgb(255, 153, 153) : color.white)) : (wasLastTkCrossBelowKumo ? ( wasLastTkCrossBullish ? color.rgb(182, 209, 186) : (wasLastTkCrossBearish ? color.red : color.white)) : color.gray ) ) , text_halign = text.align_left)
+    table.cell(confluenceTable, 0, 4, "5. " + (wasLastTkCrossBullish? "Bullish " : (wasLastTkCrossBearish? "Bearish ": "")) + "TK Cross " + (wasLastTkCrossAboveKumo ? "above" : (wasLastTkCrossBelowKumo ? "below" : "within")) + " kumo.", text_color = (wasLastTkCrossAboveKumo ? (wasLastTkCrossBullish ? color.green : (wasLastTkCrossBearish ? color.rgb(255, 153, 153) : color.white)) : (wasLastTkCrossBelowKumo ? ( wasLastTkCrossBullish ? color.rgb(182, 209, 186) : (wasLastTkCrossBearish ? color.red : color.white)) : color.gray ) ) , text_halign = text.align_left)
     table.cell(confluenceTable, 0, 5, "6. " + (isFutureKumoGreen ? "Bullish" : (isFutureKumoRed ? "Bearish" : "Twisted")) + " future kumo.", text_color = (isFutureKumoGreen ? color.green : (isFutureKumoRed ? color.red : color.white)), text_halign = text.align_left)
     table.cell(confluenceTable, 0, 6, "7. Chikou " + (isChikouSpanAbovePrice ? "above" : (isChikouSpanBelowPrice ? "below" : "hitting")) + " price.", text_color = (isChikouSpanAbovePrice ? color.green : (isChikouSpanBelowPrice ? color.red : color.white)), text_halign = text.align_left)
-    table.cell(confluenceTable, 0, 7, "8. Chikou " + (isChikouSpanAboveKumo ? "above" : (isChikouSpanBelowKumo ? "below" : "within")) + " kumo.", text_color = (isChikouSpanAboveKumo ? color.green : (isChikouSpanBelowKumo ? color.red : color.white)), text_halign = text.align_left)
-    table.cell(confluenceTable, 0, 8, "9. SSB " + (ssbProximityToChikou < 0 ? " may not block Chikou." : " might block Chikou at " + str.tostring(ssbProximityToChikou) + "%"), text_color = ( ssbProximityToChikou < 0 and hasBullishConfluence ? color.green : ( ssbProximityToChikou < 0 and hasBearishConfluence ? color.red : color.gray)), text_halign = text.align_left)
+    table.cell(confluenceTable, 0, 7, "8. Chikou " + (isChikouSpanAboveKumo ? "above" : (isChikouSpanBelowKumo ? "below" : "within")) + " kumo.", text_color = (isChikouSpanAboveKumo ? color.rgb(182, 209, 186) : (isChikouSpanBelowKumo ? color.rgb(255, 153, 153) : color.gray)), text_halign = text.align_left)
+    table.cell(confluenceTable, 0, 8, "9. SSB " + (ssbProximityToChikou < 0 ? " may not block Chikou" : " might block Chikou at " + str.tostring(ssbProximityToChikou) + "%") + " for " + (isChikouSpanAboveKumo ? "long" : "short"  )+ " trade.", text_color = ( ssbProximityToChikou < 0 and hasBullishConfluence ? color.green : ( ssbProximityToChikou < 0 and hasBearishConfluence ? color.red : color.gray)), text_halign = text.align_left)
     table.cell(confluenceTable, 0, 9, "10. Chikou " + (isChikouSpanFree ? "clear from congestion." : " heading into " + str.tostring(congestionProximity) + " candles!"), text_color = (isChikouSpanFree ? (hasBullishConfluence ? color.green : (hasBearishConfluence ? color.red : color.gray)) : color.white), text_halign = text.align_left)
