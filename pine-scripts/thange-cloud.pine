@@ -183,13 +183,14 @@ plotshape(shouldEnterLong, title= "Long Signal", location=location.belowbar, col
 if shouldEnterLong
     shouldEnterLong := false // reset flag
 
-plotshape(shouldExitLong and shouldScaleOut, title= "Exit Long Signal", location=location.abovebar, color=color.orange, transp=0, style=shape.triangledown, text="", size=size.tiny)
+plotshape(inLongTrade and not shouldExitLong and close < tenkanSen and close[1] >= tenkanSen[1], title= "Scale Out Long Signal", location=location.abovebar, color=color.green, transp=0, style=shape.diamond, text="", size=size.tiny)
+plotshape(shouldExitLong and shouldScaleOut, title= "Exit Long Signal", location=location.abovebar, color=color.green, transp=0, style=shape.xcross, text="", size=size.small)
 
 // Draw labels to enter or trail a stop-loss order based on confluence
 
 if inLongTrade
     var labelLong = label.new(bar_index, kijunSen,  text = "Trail S.L.", style = label.style_label_lower_left, color = color.green)
-    label.set_xy(labelLong, bar_index, kijunSen)
+    label.set_xy(labelLong, bar_index+1, kijunSen)
     label.set_tooltip(labelLong, "Stop loss @ "  + str.tostring(kijunSen, str.tostring(f_tickFormat())))
 
 
@@ -226,13 +227,14 @@ plotshape(shouldEnterShort,  title= "Short Signal", location=location.abovebar, 
 if shouldEnterShort
     shouldEnterShort := false // reset flag
 
-plotshape(shouldExitShort and shouldScaleOut, title= "Exit Short Signal", location=location.belowbar, color=color.aqua, transp=0, style=shape.triangleup, text="", size=size.tiny)
+plotshape(inShortTrade and not shouldExitShort and close > tenkanSen and close[1] <= tenkanSen[1], title= "Scale Out Short Signal", location=location.belowbar, color=color.red, transp=0, style=shape.diamond, text="", size=size.tiny)
+plotshape(shouldExitShort and shouldScaleOut, title= "Exit Short Signal", location=location.belowbar, color=color.red, transp=0, style=shape.xcross, text="", size=size.small)
 
 // Draw labels to enter or trail a stop-loss order based on confluence
 
 if inShortTrade
     var labelShort = label.new(bar_index, kijunSen, text = "Trail S.L.", style = label.style_label_upper_left, color = color.red)
-    label.set_xy(labelShort, bar_index, kijunSen)
+    label.set_xy(labelShort, bar_index+1, kijunSen)
     label.set_tooltip(labelShort, "Stop loss @ " + str.tostring(kijunSen, str.tostring(f_tickFormat())))
 
 if (inShortTrade and isPriceAboveKijunSen)
