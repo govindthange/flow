@@ -8,17 +8,17 @@ indicator("Thange Cloud Playbook", shorttitle="Thange Signals", overlay=true)
 YES = 1.0
 NO = 0.0
 
+
 // Initialize an empty array to store trading parameters
-context = array.new_float(2)
+var context = array.new_float(15)
 
-f_set(_key, _val) =>
-    array.set(context, _key, _val)
+f_set(_key, _val) => array.set(context, _key, _val)
 
-f_get(_key) =>
-    array.get(context, _key)
+f_get(_key) => array.get(context, _key)
 
-f_true(_key) =>
-    f_get(_key) == YES
+f_getString(_key) => str.tostring(array.get(context, _key))
+
+f_true(_key) => f_get(_key) == YES
 
 f_print(_text) =>
     // Create label on the first bar.
@@ -133,12 +133,14 @@ isChikouSpanFree = isChikouSpanAbovePrice ? (close > highestForChikou) : isChiko
 
 
 // Declare constants to access global variables
-IDX_SL_ACTIVE = 0
-IDX_SL_ACTIVATION_PRICE = 1
+IDX_PriceLevelToBeginTrailingStopLoss = 0
+IDX_ShouldExitOnStopLoss = 1
+IDX_UseKijunAsStopLoss = 2
 
 f_reset() =>
-    f_set(IDX_SL_ACTIVE, 0)
-    f_set(IDX_SL_ACTIVATION_PRICE, 0)
+    f_set(IDX_PriceLevelToBeginTrailingStopLoss, -1)
+    f_set(IDX_ShouldExitOnStopLoss, NO)
+    f_set(IDX_UseKijunAsStopLoss, NO)
     
 // Check confluence
 
@@ -207,6 +209,7 @@ if not inLongTrade
     shouldSellOnTenkan := false
     shouldSellOnLimitOrder := false
     didSellOnLimitOrder := false
+
     longEntryPrice := 0.0
     longStopLoss := 0.0
     tenkanSellPrice1 := 0.0
@@ -217,7 +220,13 @@ if not inLongTrade
     kijunSellPrice := 0.0
     sellLimitOrder := 0.0
 
-if (inLongTrade and isPriceBelowKijunSen)
+if (inLongTrade and high > f_get(IDX_PriceLevelToBeginTrailingStopLoss))
+    f_set(IDX_UseKijunAsStopLoss, YES)
+
+if (inLongTrade and low <= longStopLoss)
+    f_set(IDX_ShouldExitOnStopLoss, YES)
+
+if (inLongTrade and isPriceBelowKijunSen and f_true(IDX_UseKijunAsStopLoss))
     shouldSellOnKijun := true
     shouldScaleOut := true
     kijunSellPrice := kijunSen
@@ -234,11 +243,10 @@ if canPrepareForLong
     longEntryPrice := close
     longStopLoss := longEntryStop
     sellLimitOrder := longEntryPrice + (longEntryPrice - longEntryStop) * riskToRewardRatio
-    array.set(context, IDX_SL_ACTIVATION_PRICE, longEntryPrice + (longEntryPrice - longEntryStop) * stopLossActivationFactor)
-    line.new(bar_index, f_get(IDX_SL_ACTIVATION_PRICE), bar_index+10, f_get(IDX_SL_ACTIVATION_PRICE), width=1, color=color.gray, style=line.style_dotted)
+    array.set(context, IDX_PriceLevelToBeginTrailingStopLoss, longEntryPrice + (longEntryPrice - longEntryStop) * stopLossActivationFactor)
+    line.new(bar_index, f_get(IDX_PriceLevelToBeginTrailingStopLoss), bar_index+10, f_get(IDX_PriceLevelToBeginTrailingStopLoss), width=1, color=color.gray, style=line.style_dotted)
     line.new(bar_index+ta.highestbars(high, tenkanSenPeriod), ta.highest(high, tenkanSenPeriod), bar_index+3, ta.highest(high, tenkanSenPeriod), width=1, color=color.green, style=line.style_dotted)
     line.new(bar_index, longStopLoss, bar_index+3, longStopLoss, width=1, color=color.green, style=line.style_dotted)
-    
 
 if (inLongTrade and not shouldSellOnKijun and close < tenkanSen and close[1] >= tenkanSen[1])
     shouldSellOnTenkan := true
@@ -267,7 +275,9 @@ if canPrepareForLong
 
 plotshape(shouldSellOnTenkan, title= "Tenkan Long Exit", location=location.abovebar, color=color.aqua, transp=0, style=shape.diamond, text="", size=size.tiny)
 
-plotshape(shouldSellOnKijun and shouldScaleOut, title= "Kijun Long Exit", location=location.abovebar, color=color.green, transp=0, style=shape.xcross, text="", size=size.small)
+plotshape(shouldSellOnKijun, title= "Kijun Long Exit", location=location.abovebar, color=color.green, transp=0, style=shape.xcross, text="", size=size.small)
+
+plotshape(inLongTrade and f_true(IDX_ShouldExitOnStopLoss), title= "Stop Loss Long Exit", location=location.belowbar, color=color.rgb(182, 209, 186), transp=0, style=shape.xcross, text="", size=size.small)
 
 plotshape(shouldSellOnLimitOrder, title= "Fixed Long Exit", location=location.abovebar, color=color.aqua, transp=0, style=shape.square, text="", size=size.tiny)
 if shouldSellOnLimitOrder
@@ -281,7 +291,7 @@ if inLongTrade
     label.set_xy(labelLong, bar_index+1, kijunSen)
     label.set_tooltip(labelLong, "Stop loss @ "  + str.tostring(kijunSen, str.tostring(f_tickFormat())))
 
-if (inLongTrade and isPriceBelowKijunSen)
+if (inLongTrade and (shouldSellOnKijun or f_true(IDX_ShouldExitOnStopLoss)))
     inLongTrade := false
     f_reset()
 
@@ -321,7 +331,15 @@ if not inShortTrade
     kijunBuyPrice := 0.0
     buyLimitOrder := 0.0
 
-if (inShortTrade and isPriceAboveKijunSen)
+if (inShortTrade and low < f_get(IDX_PriceLevelToBeginTrailingStopLoss))
+    f_set(IDX_UseKijunAsStopLoss, YES)
+
+if (inShortTrade and high >= shortStopLoss)
+    f_set(IDX_ShouldExitOnStopLoss, YES)
+
+//f_print("low: " + str.tostring(low) + ", shortSL: " + str.tostring(shortStopLoss) +", finalSL: " + f_getString(IDX_PriceLevelToBeginTrailingStopLoss) + ", useKijonAsSL: " + f_getString(IDX_UseKijunAsStopLoss)+ ", shouldExitOnSL: " + f_getString(IDX_ShouldExitOnStopLoss))
+
+if (inShortTrade and isPriceAboveKijunSen and f_true(IDX_UseKijunAsStopLoss))
     shouldBuyOnKijun := true
     shouldScaleOut := true
     kijunBuyPrice := kijunSen
@@ -338,10 +356,11 @@ if canPrepareForShort
     shortEntryPrice := close
     shortStopLoss := shortEntryStop
     buyLimitOrder := shortEntryPrice - (shortEntryStop - shortEntryPrice) * riskToRewardRatio
-    array.set(context, IDX_SL_ACTIVATION_PRICE, shortEntryPrice + (shortEntryPrice - shortStopLoss) * stopLossActivationFactor)
-    line.new(bar_index, f_get(IDX_SL_ACTIVATION_PRICE), bar_index+10, f_get(IDX_SL_ACTIVATION_PRICE), width=1, color=color.gray, style=line.style_dotted)
+    array.set(context, IDX_PriceLevelToBeginTrailingStopLoss, shortEntryPrice + (shortEntryPrice - shortStopLoss) * stopLossActivationFactor)
+    line.new(bar_index, f_get(IDX_PriceLevelToBeginTrailingStopLoss), bar_index+10, f_get(IDX_PriceLevelToBeginTrailingStopLoss), width=1, color=color.gray, style=line.style_dotted)
     //line.new(bar_index+ta.lowestbars(low, tenkanSenPeriod)-2, ta.lowest(low, tenkanSenPeriod), bar_index+3, ta.lowest(low, tenkanSenPeriod), width=1, color=color.red, style=line.style_dotted)
     line.new(bar_index, shortStopLoss, bar_index+3, shortStopLoss, width=1, color=color.red, style=line.style_dotted)
+    f_print(" = finalSL: " + f_getString(IDX_PriceLevelToBeginTrailingStopLoss) + "\n")
 
 if (inShortTrade and not shouldBuyOnKijun and close > tenkanSen and close[1] <= tenkanSen[1])
     shouldBuyOnTenkan := true
@@ -370,28 +389,30 @@ if canPrepareForShort
 
 plotshape(shouldBuyOnTenkan, title= "Tenkan Short Exit", location=location.belowbar, color=color.orange, transp=0, style=shape.diamond, text="", size=size.tiny)
 
-plotshape(shouldBuyOnKijun and shouldScaleOut, title= "Kijun Short Exit", location=location.belowbar, color=color.red, transp=0, style=shape.xcross, text="", size=size.small)
+plotshape(shouldBuyOnKijun, title= "Kijun Short Exit", location=location.belowbar, color=color.red, transp=0, style=shape.xcross, text="", size=size.small)
+
+plotshape(inShortTrade and f_true(IDX_ShouldExitOnStopLoss), title= "Stop Loss Short Exit", location=location.abovebar, color=color.rgb(255, 153, 153), transp=0, style=shape.xcross, text="", size=size.small)
 
 plotshape(shouldBuyOnLimitOrder, title= "Fixed Short Exit", location=location.belowbar, color=color.orange, transp=0, style=shape.square, text="", size=size.tiny)
+
 if shouldBuyOnLimitOrder
     didBuyOnLimitOrder := true
     shouldBuyOnLimitOrder := false
 
-
-//#############################################################
-//##     Information Display Panels                          ##
-//#############################################################
-
 // Draw labels to enter or trail a stop-loss order based on confluence
-
 if inShortTrade
     var labelShort = label.new(bar_index, kijunSen, text = "Trail S.L.", style = label.style_label_upper_left, color = color.red)
     label.set_xy(labelShort, bar_index+1, kijunSen)
     label.set_tooltip(labelShort, "Stop loss @ " + str.tostring(kijunSen, str.tostring(f_tickFormat())))
 
-if (inShortTrade and isPriceAboveKijunSen)
+if (inShortTrade and (shouldBuyOnKijun or f_true(IDX_ShouldExitOnStopLoss)))
     inShortTrade := false
     f_reset()
+
+
+//#############################################################
+//##     Information Display Panels                          ##
+//#############################################################
 
 // Display trade information
 showTradePlan = input.bool(false, title="Trade Plan")
