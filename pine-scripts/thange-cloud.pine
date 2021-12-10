@@ -245,7 +245,7 @@ if canPrepareForLong
     sellLimitOrder := longEntryPrice + (longEntryPrice - longEntryStop) * riskToRewardRatio
     array.set(context, IDX_PriceLevelToBeginTrailingStopLoss, longEntryPrice + (longEntryPrice - longEntryStop) * stopLossActivationFactor)
     line.new(bar_index, f_get(IDX_PriceLevelToBeginTrailingStopLoss), bar_index+10, f_get(IDX_PriceLevelToBeginTrailingStopLoss), width=1, color=color.gray, style=line.style_dotted)
-    line.new(bar_index+ta.highestbars(high, tenkanSenPeriod), ta.highest(high, tenkanSenPeriod), bar_index+3, ta.highest(high, tenkanSenPeriod), width=1, color=color.green, style=line.style_dotted)
+    //line.new(bar_index+ta.highestbars(high, tenkanSenPeriod), ta.highest(high, tenkanSenPeriod), bar_index+3, ta.highest(high, tenkanSenPeriod), width=1, color=color.green, style=line.style_dotted)
     line.new(bar_index, longStopLoss, bar_index+3, longStopLoss, width=1, color=color.green, style=line.style_dotted)
 
 if (inLongTrade and not shouldSellOnKijun and close < tenkanSen and close[1] >= tenkanSen[1])
@@ -360,7 +360,6 @@ if canPrepareForShort
     line.new(bar_index, f_get(IDX_PriceLevelToBeginTrailingStopLoss), bar_index+10, f_get(IDX_PriceLevelToBeginTrailingStopLoss), width=1, color=color.gray, style=line.style_dotted)
     //line.new(bar_index+ta.lowestbars(low, tenkanSenPeriod)-2, ta.lowest(low, tenkanSenPeriod), bar_index+3, ta.lowest(low, tenkanSenPeriod), width=1, color=color.red, style=line.style_dotted)
     line.new(bar_index, shortStopLoss, bar_index+3, shortStopLoss, width=1, color=color.red, style=line.style_dotted)
-    f_print(" = finalSL: " + f_getString(IDX_PriceLevelToBeginTrailingStopLoss) + "\n")
 
 if (inShortTrade and not shouldBuyOnKijun and close > tenkanSen and close[1] <= tenkanSen[1])
     shouldBuyOnTenkan := true
@@ -410,13 +409,87 @@ if (inShortTrade and (shouldBuyOnKijun or f_true(IDX_ShouldExitOnStopLoss)))
     f_reset()
 
 
+
+//#############################################################
+//##     Profit & Loss                                       ##
+//#############################################################
+
+float accountSize = input.float(1000, title="Account Size")
+float maxRisk = input.float(25, title="Max risk per position") / 100
+float exitPercent = input.float(25, title="Scale out percent") / 100
+float maxRiskPerPosition = accountSize * maxRisk
+float qty = 0.0, tradeSize = 0.0, pnl = 0.0, remainingUnitsAllocation = 0.0, remainingPercentAllocation = 1.0
+
+// Temporary variables for debugging
+float t1 = 0.0, t2 = 0.0, t3 = 0.0, t4 = 0.0, t5 = 0.0, k = 0.0, lo = 0.0, dt1 = 0.0, dt2 = 0.0, dt3 = 0.0, dt4 = 0.0, dt5 = 0.0, dk = 0.0, dlo = 0.0
+if not inLongTrade
+    t1 := 0, t2 := 0, t3 := 0, t4 := 0, t5 := 0, k := 0, lo := 0, dt1 := 0, dt2 := 0, dt3 := 0, dt4 := 0, dt5 := 0, dk := 0, dlo := 0
+
+if inLongTrade
+    qty := maxRiskPerPosition / (longEntryPrice - longStopLoss)
+    tradeSize := qty * longEntryPrice
+    remainingUnitsAllocation = qty
+    
+    if sellLimitOrder > 0 and remainingPercentAllocation > 0
+        dlo := (sellLimitOrder - longEntryPrice) 
+        lo := dlo * exitPercent * qty
+        pnl := pnl + lo
+        remainingUnitsAllocation := remainingUnitsAllocation - (qty * exitPercent)
+        remainingPercentAllocation := remainingPercentAllocation - exitPercent
+    if tenkanSellPrice1 > 0 and remainingPercentAllocation > 0
+        dt1 := (tenkanSellPrice1 - longEntryPrice)
+        t1 := dt1 * exitPercent * qty
+        pnl := pnl + t1
+        remainingUnitsAllocation = remainingUnitsAllocation - (qty * exitPercent)
+        remainingPercentAllocation := remainingPercentAllocation - exitPercent
+    if tenkanSellPrice2 > 0 and remainingPercentAllocation > 0
+        dt2 := (tenkanSellPrice2 - longEntryPrice)
+        t2 := dt2 * exitPercent * qty
+        f_print("diff: " + str.tostring(tenkanSellPrice2 - longEntryPrice) + ", per: " + str.tostring(exitPercent) + ", qty: " + str.tostring(qty))
+        pnl := pnl + t2
+        remainingUnitsAllocation := remainingUnitsAllocation - (qty * exitPercent)
+        remainingPercentAllocation := remainingPercentAllocation - exitPercent
+    if tenkanSellPrice3 > 0 and remainingPercentAllocation > 0
+        dt3 := (tenkanSellPrice3 - longEntryPrice)
+        t3 := dt3 * exitPercent * qty
+        pnl := pnl + t3
+        remainingUnitsAllocation := remainingUnitsAllocation - (qty * exitPercent)
+        remainingPercentAllocation := remainingPercentAllocation - exitPercent
+    if tenkanSellPrice4 > 0 and remainingPercentAllocation > 0
+        dt4 := (tenkanSellPrice4 - longEntryPrice)
+        t4 := dt4 * exitPercent * qty
+        pnl := pnl + t4
+        remainingUnitsAllocation := remainingUnitsAllocation - (qty * exitPercent)
+        remainingPercentAllocation := remainingPercentAllocation - exitPercent
+    if tenkanSellPrice5 > 0 and remainingPercentAllocation > 0
+        dt5 := (tenkanSellPrice5 - longEntryPrice)
+        t5 := dt5 * exitPercent * qty
+        pnl := pnl + t5
+        remainingUnitsAllocation := remainingUnitsAllocation - (qty * exitPercent)
+        remainingPercentAllocation := remainingPercentAllocation - exitPercent
+    if kijunSellPrice > 0 and remainingPercentAllocation > 0
+        if kijunSellPrice < longStopLoss
+            k := (longStopLoss - longEntryPrice) * remainingUnitsAllocation
+            pnl := pnl + k
+        else
+            pnl := pnl + (kijunSellPrice - longEntryPrice) * remainingUnitsAllocation
+    
+
 //#############################################################
 //##     Information Display Panels                          ##
 //#############################################################
 
+// Display confluence information
+showPnl = input.bool(false, title="Profit & Loss")
+var table pnlTable = table.new(position.bottom_center, 2, 1, bgcolor = color.rgb(0, 0, 0, 30), frame_color = color.black)
+if (barstate.islast and showPnl)
+    table.cell(pnlTable, 0, 0, "$ " + (str.tostring(pnl)), text_color = color.silver, text_halign = text.align_center)
+    table.cell(pnlTable, 1, 0, "xxx %", text_color = color.white, text_halign = text.align_center)
+
+
 // Display trade information
 showTradePlan = input.bool(false, title="Trade Plan")
-var table tradeTable = table.new(position.top_right, 11, 3, bgcolor = color.rgb(0, 0, 0, 30), frame_width = 2, frame_color = color.black)
+var table tradeTable = table.new(position.top_right, 12, 5, bgcolor = color.rgb(0, 0, 0, 30), frame_width = 2, frame_color = color.black)
 if (barstate.islast and showTradePlan)
     table.cell(tradeTable, 1, 0, "Entry", text_color = color.white)
     table.cell(tradeTable, 2, 0, "S.L.", text_color = color.white)
@@ -427,7 +500,8 @@ if (barstate.islast and showTradePlan)
     table.cell(tradeTable, 7, 0, "T. Exit 5", text_color = color.white)
     table.cell(tradeTable, 8, 0, "K. Exit", text_color = color.white)
     table.cell(tradeTable, 9, 0, "Limit Order", text_color = color.white)
-    table.cell(tradeTable, 10, 0, "ATR", text_color = color.white)
+    table.cell(tradeTable, 10, 0, "Qty", text_color = color.white)
+    table.cell(tradeTable, 11, 0, "ATR", text_color = color.white)
     table.cell(tradeTable, 0, 1, "Long", text_color = color.white)
     table.cell(tradeTable, 1, 1, str.tostring(longEntryPrice, str.tostring(f_tickFormat())), text_color = color.green)
     table.cell(tradeTable, 2, 1, str.tostring(longStopLoss, str.tostring(f_tickFormat())), text_color = color.red)
@@ -438,7 +512,8 @@ if (barstate.islast and showTradePlan)
     table.cell(tradeTable, 7, 1, str.tostring(tenkanSellPrice5, str.tostring(f_tickFormat())), text_color = color.aqua)
     table.cell(tradeTable, 8, 1, str.tostring(kijunSellPrice, str.tostring(f_tickFormat())), text_color = color.aqua)
     table.cell(tradeTable, 9, 1, (didSellOnLimitOrder ? str.tostring(sellLimitOrder, str.tostring(f_tickFormat())) : "0.0"), text_color = color.aqua)
-    table.cell(tradeTable, 10, 1, str.tostring(r, str.tostring(f_tickFormat())), text_color = color.gray)
+    table.cell(tradeTable, 10, 1, str.tostring(qty), text_color = color.gray)
+    table.cell(tradeTable, 11, 1, str.tostring(r, str.tostring(f_tickFormat())), text_color = color.gray)
     table.cell(tradeTable, 0, 2, "Short", text_color = color.white)
     table.cell(tradeTable, 1, 2, str.tostring(shortEntryPrice, str.tostring(f_tickFormat())), text_color = color.red)
     table.cell(tradeTable, 2, 2, str.tostring(shortStopLoss, str.tostring(f_tickFormat())), text_color = color.green)
@@ -449,8 +524,31 @@ if (barstate.islast and showTradePlan)
     table.cell(tradeTable, 7, 2, str.tostring(tenkanBuyPrice5, str.tostring(f_tickFormat())), text_color = color.orange)
     table.cell(tradeTable, 8, 2, str.tostring(kijunBuyPrice, str.tostring(f_tickFormat())), text_color = color.orange)
     table.cell(tradeTable, 9, 2, (didBuyOnLimitOrder ? str.tostring(buyLimitOrder, str.tostring(f_tickFormat())) : "0.0"), text_color = color.orange)
-    table.cell(tradeTable, 10, 2, str.tostring(r, str.tostring(f_tickFormat())), text_color = color.gray)
-    
+    table.cell(tradeTable, 10, 2, str.tostring(qty), text_color = color.gray)
+    table.cell(tradeTable, 11, 2, str.tostring(r, str.tostring(f_tickFormat())), text_color = color.gray)
+    table.cell(tradeTable, 0, 3, "P&L", text_color = color.white)
+    table.cell(tradeTable, 1, 3, str.tostring(pnl, str.tostring(f_tickFormat())), text_color = color.white)
+    table.cell(tradeTable, 2, 3, "⟸", text_color = color.white)
+    table.cell(tradeTable, 3, 3, str.tostring(t1, str.tostring(f_tickFormat())), text_color = color.blue)
+    table.cell(tradeTable, 4, 3, str.tostring(t2, str.tostring(f_tickFormat())), text_color = color.blue)
+    table.cell(tradeTable, 5, 3, str.tostring(t3, str.tostring(f_tickFormat())), text_color = color.blue)
+    table.cell(tradeTable, 6, 3, str.tostring(t4, str.tostring(f_tickFormat())), text_color = color.blue)
+    table.cell(tradeTable, 7, 3, str.tostring(t5, str.tostring(f_tickFormat())), text_color = color.blue)
+    table.cell(tradeTable, 8, 3, str.tostring(k, str.tostring(f_tickFormat())), text_color = color.blue)
+    table.cell(tradeTable, 9, 3, str.tostring(lo, str.tostring(f_tickFormat())), text_color = color.blue)
+    table.cell(tradeTable, 10, 3, str.tostring(remainingUnitsAllocation, str.tostring(f_tickFormat())), text_color = color.gray)
+    table.cell(tradeTable, 2, 4, "+/-", text_color = color.white)
+    table.cell(tradeTable, 3, 4, str.tostring(dt1, str.tostring(f_tickFormat())), text_color = color.gray)
+    table.cell(tradeTable, 4, 4, str.tostring(dt2, str.tostring(f_tickFormat())), text_color = color.gray)
+    table.cell(tradeTable, 5, 4, str.tostring(dt3, str.tostring(f_tickFormat())), text_color = color.gray)
+    table.cell(tradeTable, 6, 4, str.tostring(dt4, str.tostring(f_tickFormat())), text_color = color.gray)
+    table.cell(tradeTable, 7, 4, str.tostring(dt5, str.tostring(f_tickFormat())), text_color = color.gray)
+    table.cell(tradeTable, 8, 4, str.tostring(dk, str.tostring(f_tickFormat())), text_color = color.gray)
+    table.cell(tradeTable, 9, 4, str.tostring(dlo, str.tostring(f_tickFormat())), text_color = color.gray)
+    table.cell(tradeTable, 10, 4, "$" + str.tostring(tradeSize, str.tostring(f_tickFormat())), text_color = color.blue)
+    table.cell(tradeTable, 11, 4, str.tostring(exitPercent*100) + "%", text_color = color.gray)
+
+
 // Display debug information
 showL1DebugInfo = input.bool(false, title="Debug Info (Level 1)")
 var table debugTable = table.new(position.bottom_left, 7, 3, bgcolor = color.silver, frame_width = 2, frame_color = color.gray)
@@ -475,6 +573,7 @@ if (barstate.islast and showL1DebugInfo)
     table.cell(debugTable, 4, 2, str.tostring(canPrepareForShort), text_color = color.maroon)
     table.cell(debugTable, 5, 2, "-", text_color = color.maroon)
     table.cell(debugTable, 6, 2, str.tostring(hasBearishConfluence? "Bearish": "-"), text_color = color.rgb(255, 153, 153))
+    
 
 // Display confluence information
 showConfluenceInfo = input.bool(false, title="Confluence Info")
