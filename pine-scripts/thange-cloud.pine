@@ -483,8 +483,8 @@ if inLongTrade
 showPnl = input.bool(false, title="Profit & Loss")
 var table pnlTable = table.new(position.bottom_center, 2, 1, bgcolor = color.rgb(0, 0, 0, 30), frame_color = color.black)
 if (barstate.islast and showPnl)
-    table.cell(pnlTable, 0, 0, "$ " + (str.tostring(pnl)), text_color = color.silver, text_halign = text.align_center)
-    table.cell(pnlTable, 1, 0, "xxx %", text_color = color.white, text_halign = text.align_center)
+    table.cell(pnlTable, 0, 0, "$" + str.tostring(pnl, str.tostring(f_tickFormat())), text_color = color.silver, text_halign = text.align_center)
+    table.cell(pnlTable, 1, 0, (tradeSize > 0 ? str.tostring(100*pnl/tradeSize, str.tostring(f_tickFormat())) + "%" : ""), text_color = color.white, text_halign = text.align_center)
 
 
 // Display trade information
