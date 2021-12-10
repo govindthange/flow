@@ -205,6 +205,9 @@ if canPrepareForLong
     longEntryPrice := close
     longStopLoss := longEntryStop
     sellLimitOrder := longEntryPrice + (longEntryPrice - longEntryStop)
+    line.new(bar_index+ta.highestbars(high, tenkanSenPeriod), ta.highest(high, tenkanSenPeriod), bar_index+3, ta.highest(high, tenkanSenPeriod), width=1, color=color.green, style=line.style_dotted)
+    line.new(bar_index, longStopLoss, bar_index+3, longStopLoss, width=1, color=color.green, style=line.style_dotted)
+    
 
 if (inLongTrade and not shouldSellOnKijun and close < tenkanSen and close[1] >= tenkanSen[1])
     shouldSellOnTenkan := true
@@ -303,6 +306,8 @@ if canPrepareForShort
     shortEntryPrice := close
     shortStopLoss := shortEntryStop
     buyLimitOrder := shortEntryPrice - (shortEntryStop - shortEntryPrice)
+    //line.new(bar_index+ta.lowestbars(low, tenkanSenPeriod)-2, ta.lowest(low, tenkanSenPeriod), bar_index+3, ta.lowest(low, tenkanSenPeriod), width=1, color=color.red, style=line.style_dotted)
+    line.new(bar_index, shortStopLoss, bar_index+3, shortStopLoss, width=1, color=color.red, style=line.style_dotted)
 
 if (inShortTrade and not shouldBuyOnKijun and close > tenkanSen and close[1] <= tenkanSen[1])
     shouldBuyOnTenkan := true
