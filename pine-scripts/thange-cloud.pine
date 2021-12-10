@@ -430,7 +430,7 @@ if inLongTrade
     tradeSize := qty * longEntryPrice
     remainingUnitsAllocation = qty
     
-    if sellLimitOrder > 0 and remainingPercentAllocation > 0
+    if sellLimitOrder > 0 and didSellOnLimitOrder and remainingPercentAllocation > 0
         dlo := (sellLimitOrder - longEntryPrice) 
         lo := dlo * exitPercent * qty
         pnl := pnl + lo
