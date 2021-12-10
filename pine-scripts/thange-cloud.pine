@@ -445,7 +445,6 @@ if inLongTrade
     if tenkanSellPrice2 > 0 and remainingPercentAllocation > 0
         dt2 := (tenkanSellPrice2 - longEntryPrice)
         t2 := dt2 * exitPercent * qty
-        f_print("diff: " + str.tostring(tenkanSellPrice2 - longEntryPrice) + ", per: " + str.tostring(exitPercent) + ", qty: " + str.tostring(qty))
         pnl := pnl + t2
         remainingUnitsAllocation := remainingUnitsAllocation - (qty * exitPercent)
         remainingPercentAllocation := remainingPercentAllocation - exitPercent
