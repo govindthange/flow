@@ -4,6 +4,20 @@
 //@version=5
 indicator("Thange Cloud Playbook", shorttitle="Thange Signals", overlay=true)
 
+f_print(_text) =>
+    // Create label on the first bar.
+    var _label = label.new(bar_index, na, _text, xloc.bar_index, yloc.price, color(na), label.style_none, color.white, size.small, text.align_left)
+    // On next bars, update the label's x and y position, and the text it displays.
+    label.set_xy(_label, bar_index, ta.highest(10)[1])
+    label.set_text(_label, _text)
+
+// Create string format template to restrict SL precision to ticks.
+f_tickFormat() =>
+    _s = str.tostring(syminfo.mintick)
+    _s := str.replace_all(_s, "25", "00")
+    _s := str.replace_all(_s, "5",  "0")
+    _s := str.replace_all(_s, "1",  "0")
+
 // Collect inputs
 
 atrLength = input.int(30, minval=1, title="ATR Length")
@@ -25,13 +39,6 @@ r = ta.atr(atrLength) * atrStopMultiplier
 entryPrice = close
 longEntryStop = kijunSen - r
 shortEntryStop = kijunSen + r
-
-f_print(_text) =>
-    // Create label on the first bar.
-    var _label = label.new(bar_index, na, _text, xloc.bar_index, yloc.price, color(na), label.style_none, color.white, size.small, text.align_left)
-    // On next bars, update the label's x and y position, and the text it displays.
-    label.set_xy(_label, bar_index, ta.highest(10)[1])
-    label.set_text(_label, _text)
 
 // Assess for high probability setup on the trading timeframe
 
@@ -131,13 +138,13 @@ var inShortTrade = false
 
 isPriceAboveKijunSen = false
 isPriceBelowKijunSen = false
-if inLongTrade 
+if inLongTrade // for exiting in a long position 
     isPriceBelowKijunSen := low < kijunSen
     isPriceAboveKijunSen := low > kijunSen
-else if inShortTrade
+else if inShortTrade // for exiting in a short position
     isPriceBelowKijunSen := high < kijunSen
     isPriceAboveKijunSen := high > kijunSen
-else
+else // for confluence to enter position
     isPriceAboveKijunSen := close > kijunSen
     isPriceBelowKijunSen := close < kijunSen
 
@@ -145,14 +152,9 @@ else
 
 shouldScaleOut = false
 
-// Create string format template to restrict SL precision to ticks.
-f_tickFormat() =>
-    _s = str.tostring(syminfo.mintick)
-    _s := str.replace_all(_s, "25", "00")
-    _s := str.replace_all(_s, "5",  "0")
-    _s := str.replace_all(_s, "1",  "0")
-
-// Manage long position
+//#############################################################
+//##     Manage LONG Position                                ##
+//#############################################################
 
 var canPrepareForLong = false
 var shouldSellOnTenkan = false
@@ -248,7 +250,10 @@ if inLongTrade
 if (inLongTrade and isPriceBelowKijunSen)
     inLongTrade := false
 
-// Manage short position
+
+//#############################################################
+//##     Manage SHORT Position                               ##
+//#############################################################
 
 var canPrepareForShort = false
 var shouldBuyOnTenkan = false
@@ -332,6 +337,11 @@ plotshape(shouldBuyOnLimitOrder, title= "Fixed Short Exit", location=location.be
 if shouldBuyOnLimitOrder
     didBuyOnLimitOrder := true
     shouldBuyOnLimitOrder := false
+    
+//#############################################################
+//##     Informatoin Display Panels                          ##
+//#############################################################
+
 
 // Draw labels to enter or trail a stop-loss order based on confluence
 
