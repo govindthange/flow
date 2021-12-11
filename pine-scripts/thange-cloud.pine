@@ -441,7 +441,7 @@ float qty = 0.0, tradeSize = 0.0, pnl = 0.0, remainingUnitsAllocation = 0.0, rem
 
 // Temporary variables for debugging
 float t1 = 0.0, t2 = 0.0, t3 = 0.0, t4 = 0.0, t5 = 0.0, k = 0.0, lo = 0.0, dt1 = 0.0, dt2 = 0.0, dt3 = 0.0, dt4 = 0.0, dt5 = 0.0, dk = 0.0, dlo = 0.0
-if not inLongTrade
+if not inLongTrade and not inShortTrade
     t1 := 0, t2 := 0, t3 := 0, t4 := 0, t5 := 0, k := 0, lo := 0, dt1 := 0, dt2 := 0, dt3 := 0, dt4 := 0, dt5 := 0, dk := 0, dlo := 0
 
 if inLongTrade
@@ -491,7 +491,54 @@ if inLongTrade
             pnl := pnl + k
         else
             pnl := pnl + (kijunSellPrice - longEntryPrice) * remainingUnitsAllocation
+
+if inShortTrade
+    qty := maxRiskPerPosition / (shortStopLoss - shortEntryPrice)
+    tradeSize := qty * shortEntryPrice
+    remainingUnitsAllocation := qty
     
+    if buyLimitOrder > 0 and didBuyOnLimitOrder and remainingPercentAllocation > 0
+        dlo := (shortEntryPrice - buyLimitOrder) 
+        lo := dlo * exitPercent * qty
+        pnl := pnl + lo
+        remainingUnitsAllocation := remainingUnitsAllocation - (qty * exitPercent)
+        remainingPercentAllocation := remainingPercentAllocation - exitPercent
+    if tenkanBuyPrice1 > 0 and remainingPercentAllocation > 0
+        dt1 := (shortEntryPrice - tenkanBuyPrice1)
+        t1 := dt1 * exitPercent * qty
+        pnl := pnl + t1
+        remainingUnitsAllocation := remainingUnitsAllocation - (qty * exitPercent)
+        remainingPercentAllocation := remainingPercentAllocation - exitPercent
+    if tenkanBuyPrice2 > 0 and remainingPercentAllocation > 0
+        dt2 := (shortEntryPrice - tenkanBuyPrice2)
+        t2 := dt2 * exitPercent * qty
+        pnl := pnl + t2
+        remainingUnitsAllocation := remainingUnitsAllocation - (qty * exitPercent)
+        remainingPercentAllocation := remainingPercentAllocation - exitPercent
+    if tenkanBuyPrice3 > 0 and remainingPercentAllocation > 0
+        dt3 := (shortEntryPrice - tenkanBuyPrice3)
+        t3 := dt3 * exitPercent * qty
+        pnl := pnl + t3
+        remainingUnitsAllocation := remainingUnitsAllocation - (qty * exitPercent)
+        remainingPercentAllocation := remainingPercentAllocation - exitPercent
+    if tenkanBuyPrice4 > 0 and remainingPercentAllocation > 0
+        dt4 := (shortEntryPrice - tenkanBuyPrice4)
+        t4 := dt4 * exitPercent * qty
+        pnl := pnl + t4
+        remainingUnitsAllocation := remainingUnitsAllocation - (qty * exitPercent)
+        remainingPercentAllocation := remainingPercentAllocation - exitPercent
+    if tenkanBuyPrice5 > 0 and remainingPercentAllocation > 0
+        dt5 := (shortEntryPrice - tenkanBuyPrice5)
+        t5 := dt5 * exitPercent * qty
+        pnl := pnl + t5
+        remainingUnitsAllocation := remainingUnitsAllocation - (qty * exitPercent)
+        remainingPercentAllocation := remainingPercentAllocation - exitPercent
+    if kijunBuyPrice > 0 and remainingPercentAllocation > 0
+        if kijunBuyPrice > shortStopLoss
+            k := (shortEntryPrice - shortStopLoss) * remainingUnitsAllocation
+            pnl := pnl + k
+        else
+            pnl := pnl + (shortEntryPrice - kijunBuyPrice) * remainingUnitsAllocation    
 
 //##################################################################
 //##################################################################
