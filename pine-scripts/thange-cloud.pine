@@ -180,7 +180,7 @@ else // for confluence to enter position
 
 //f_print("isPriceAboveKijunSen? = " + str.tostring(isPriceAboveKijunSen) + ", isPriceBelowKijunSen? = " + str.tostring(isPriceBelowKijunSen) + ", kijunSen: " + str.tostring(kijunSen) + ", high: " + str.tostring(high) + ", low: " + str.tostring(low) + " check? " +  str.tostring(low < kijunSen))
 
-shouldScaleOut = false
+//shouldScaleOut = false
 
 
 //#############################################################
@@ -205,7 +205,7 @@ var sellLimitOrder = 0.0
 
 if not inLongTrade
     shouldSellOnKijun := false
-    shouldScaleOut := true
+    //shouldScaleOut := true
     shouldSellOnTenkan := false
     shouldSellOnLimitOrder := false
     didSellOnLimitOrder := false
@@ -228,7 +228,7 @@ if (inLongTrade and low <= longStopLoss)
 
 if (inLongTrade and isPriceBelowKijunSen and f_true(IDX_UseKijunAsStopLoss))
     shouldSellOnKijun := true
-    shouldScaleOut := true
+    //shouldScaleOut := true
     kijunSellPrice := kijunSen
 
 if (inLongTrade and hasBearishConfluence)
@@ -286,11 +286,6 @@ if shouldSellOnLimitOrder
 
 // Draw labels to enter or trail a stop-loss order based on confluence
 
-if inLongTrade
-    var labelLong = label.new(bar_index, kijunSen,  text = "Trail S.L.", style = label.style_label_lower_left, color = color.green)
-    label.set_xy(labelLong, bar_index+1, kijunSen)
-    label.set_tooltip(labelLong, "Stop loss @ "  + str.tostring(kijunSen, str.tostring(f_tickFormat())))
-
 if (inLongTrade and (shouldSellOnKijun or f_true(IDX_ShouldExitOnStopLoss)))
     inLongTrade := false
     f_reset()
@@ -318,7 +313,7 @@ var buyLimitOrder = 0.0
 
 if not inShortTrade
     shouldBuyOnKijun := false
-    shouldScaleOut := true
+    //shouldScaleOut := true
     shouldBuyOnLimitOrder := false
     didBuyOnLimitOrder := false
     shortEntryPrice := 0.0
@@ -341,7 +336,7 @@ if (inShortTrade and high >= shortStopLoss)
 
 if (inShortTrade and isPriceAboveKijunSen and f_true(IDX_UseKijunAsStopLoss))
     shouldBuyOnKijun := true
-    shouldScaleOut := true
+    //shouldScaleOut := true
     kijunBuyPrice := kijunSen
 
 if (inShortTrade and hasBullishConfluence)
@@ -397,12 +392,6 @@ plotshape(shouldBuyOnLimitOrder, title= "Fixed Short Exit", location=location.be
 if shouldBuyOnLimitOrder
     didBuyOnLimitOrder := true
     shouldBuyOnLimitOrder := false
-
-// Draw labels to enter or trail a stop-loss order based on confluence
-if inShortTrade
-    var labelShort = label.new(bar_index, kijunSen, text = "Trail S.L.", style = label.style_label_upper_left, color = color.red)
-    label.set_xy(labelShort, bar_index+1, kijunSen)
-    label.set_tooltip(labelShort, "Stop loss @ " + str.tostring(kijunSen, str.tostring(f_tickFormat())))
 
 if (inShortTrade and (shouldBuyOnKijun or f_true(IDX_ShouldExitOnStopLoss)))
     inShortTrade := false
@@ -560,14 +549,14 @@ if (barstate.islast and showL1DebugInfo)
     table.cell(debugTable, 6, 0, "Sentiment", text_color = color.black)
     table.cell(debugTable, 0, 1, "Long", text_color = color.black)
     table.cell(debugTable, 1, 1, str.tostring(inLongTrade), text_color = color.navy)
-    table.cell(debugTable, 2, 1, str.tostring(shouldScaleOut), text_color = color.navy)
+    //table.cell(debugTable, 2, 1, str.tostring(shouldScaleOut), text_color = color.navy)
     table.cell(debugTable, 3, 1, str.tostring(shouldSellOnKijun), text_color = color.navy)
     table.cell(debugTable, 4, 1, str.tostring(canPrepareForLong), text_color = color.navy)
     table.cell(debugTable, 5, 1, "-", text_color = color.navy)
     table.cell(debugTable, 6, 1, str.tostring(hasBullishConfluence? "Bullish": "-"), text_color = color.navy)
     table.cell(debugTable, 0, 2, "Short", text_color = color.black)
     table.cell(debugTable, 1, 2, str.tostring(inShortTrade), text_color = color.maroon)
-    table.cell(debugTable, 2, 2, str.tostring(shouldScaleOut), text_color = color.maroon)
+    //table.cell(debugTable, 2, 2, str.tostring(shouldScaleOut), text_color = color.maroon)
     table.cell(debugTable, 3, 2, str.tostring(shouldBuyOnKijun), text_color = color.maroon)
     table.cell(debugTable, 4, 2, str.tostring(canPrepareForShort), text_color = color.maroon)
     table.cell(debugTable, 5, 2, "-", text_color = color.maroon)
