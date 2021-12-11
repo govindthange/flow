@@ -42,6 +42,14 @@ stopLossActivationFactor = input.float (0.25, title="S.L. Activation in terms of
 atrLength = input.int(30, minval=1, title="ATR Length")
 atrStopMultiplier = input.float(1.0, minval=0.1, title="ATR x ?")
 
+//###############################################
+//###############################################
+//####                                       ####
+//####    Ichimoku Cloud - The Core Logic    ####
+//####                                       ####
+//###############################################
+//#####33########################################
+
 tenkanSenPeriod = input.int(9, minval=1, title="Tenkan Sen Length")
 kijunSenPeriod = input.int(26, minval=1, title="Kijun Sen Length")
 senkouSpanBPeriod = input.int(52, minval=1, title="Leading Span B Length")
@@ -59,76 +67,84 @@ entryPrice = close
 longEntryStop = kijunSen - r
 shortEntryStop = kijunSen + r
 
-// Assess for high probability setup on the trading timeframe
 
-// 1. Where is price w.r.t Kumo? [above | below | within]
+//##########################################################################
+//##########################################################################
+//####                                                                  ####
+//####    Assess for high probability setup on the trading timeframe    ####
+//####                                                                  ####
+//##########################################################################
+//##########################################################################
 
-isCurrentKumoGreen = senkouSpanA[displacement-1] > senkouSpanB[displacement-1]
-isCurrentKumoRed = senkouSpanB[displacement-1] > senkouSpanA[displacement-1]
+// How is current kumo?
+float temp = senkouSpanA[displacement-1] - senkouSpanB[displacement-1]
+string kumoView = temp > 0 ? "bullish" : (temp < 0 ? "bearish" : "neutral")
 
-isPriceAboveKumo = isCurrentKumoGreen ? (close > senkouSpanA[displacement-1]) : (isCurrentKumoRed ? (close > senkouSpanB[displacement-1]) : false)
-isPriceBelowKumo = isCurrentKumoGreen ? (close < senkouSpanB[displacement-1]) : (isCurrentKumoRed ? (close < senkouSpanA[displacement-1]) : false)
+// How is future kumo?
+temp := senkouSpanA - senkouSpanB
+string leadingKumoView = temp > 0 ? "bullish" : (temp < 0 ? "bearish" : "neutral")
 
-//f_print("Current Kumo: " + (isCurrentKumoGreen ? "Green": (isCurrentKumoRed ? "Red" : " twist ")) + ", senkouSpanA: " + str.tostring(senkouSpanA[displacement-1]) + ", senkouSpanB: " + str.tostring(senkouSpanB[displacement-1]))
-//f_print("Current Kumo: " + (isCurrentKumoGreen ? "Green": (isCurrentKumoRed ? "Red" : " twist ")) + ", Price is " + (isPriceAboveKumo ? "Above" : (isPriceBelowKumo ? "Below" : "Within")))
+// Where is price w.r.t kumo?
+string priceWrtKumo = "within"
+if (kumoView == "bullish" and close > senkouSpanA[displacement-1])
+     or (kumoView == "bearish" and close > senkouSpanB[displacement-1])
+    priceWrtKumo := "above"
+else if (kumoView == "bullish" and close < senkouSpanB[displacement-1])
+     or (kumoView == "bearish" and close < senkouSpanA[displacement-1])
+    priceWrtKumo := "below"
 
-// 2. Where is price w.r.t nearby flat Kumo-Shadow? [far | near]
+// Where is price w.r.t tenkan?
+string priceWrtTenkan = close > tenkanSen ? "above" : (close < tenkanSen ? "below" : "at")
 
-// 3. Where is price w.r.t Tenkan? [above | below]
-isPriceAboveTenkanSen = close > tenkanSen
-isPriceBelowTenkanSen = close < tenkanSen
+// Where tenkan w.r.t kijun?
+string tenkanWrtKijun = tenkanSen > kijunSen ? "above" : ( tenkanSen < kijunSen ? "below" : "at")
 
-// 4. Where is Tenkan w.r.t Kijun? [above | below]
-isTenkanSenAboveKijunSen = tenkanSen > kijunSen
-isTenkanSenBelowKijunSen = tenkanSen < kijunSen
-
-// 5. Where is TK Cross w.r.t Kumo? [above | below | within] <--- This is not a filter. Ignore!
-var wasLastTkCrossBullish = false
-var wasLastTkCrossBearish = false
-var wasLastTkCrossAboveKumo = false
-var wasLastTkCrossBelowKumo = false
-
+// Where is TK cross w.r.t kumo? <--- This is not a filter. Ignore!
+string recentTkCross = "neutral"
 if (tenkanSen[1] <= kijunSen[1] and tenkanSen > kijunSen)
-    wasLastTkCrossBullish := true
-    wasLastTkCrossBearish := false
+    recentTkCross := "bullish"
+else if (tenkanSen[1] >= kijunSen[1] and tenkanSen < kijunSen)
+    recentTkCross := "bearish"
 
-if (tenkanSen[1] >= kijunSen[1] and tenkanSen < kijunSen)
-    wasLastTkCrossBullish := false
-    wasLastTkCrossBearish := true
+string tkCrossWrtKumo = "within"
+if (kumoView == "bullish" and kijunSen > senkouSpanA[displacement-1])
+     or (kumoView == "bearish" and kijunSen > senkouSpanB[displacement-1])
+    tkCrossWrtKumo := "above"
+else if (kumoView == "bullish" and kijunSen < senkouSpanB[displacement-1])
+     or (kumoView == "bearish" and kijunSen < senkouSpanA[displacement-1])
+    tkCrossWrtKumo := "below"
 
-if (wasLastTkCrossBullish or wasLastTkCrossBearish)
-    wasLastTkCrossAboveKumo := isCurrentKumoGreen ? (kijunSen > senkouSpanA[displacement-1]) : (isCurrentKumoRed ? (kijunSen > senkouSpanB[displacement-1]) : false)
-    wasLastTkCrossBelowKumo := isCurrentKumoGreen ? (kijunSen < senkouSpanB[displacement-1]) : (isCurrentKumoRed ? (kijunSen < senkouSpanA[displacement-1]) : false)
-
-// 6. How is future Kumo? [bullish | bearish | unknown (twist)]
-isFutureKumoGreen = senkouSpanA > senkouSpanB
-isFutureKumoRed = senkouSpanB > senkouSpanA
-
-// 7. Where is Chikou w.r.t Price? [above | below | within]
-isChikouSpanAbovePrice = close > high[displacement-1]
-isChikouSpanBelowPrice = close < low[displacement-1]
+// Where is chikou w.r.t price?
+string chikouWrtPrice = "at"
+if (close > high[displacement-1])
+    chikouWrtPrice := "above"
+else if (close < low[displacement-1])
+    chikouWrtPrice := "below"
 
 //f_print(str.tostring(displacement-1) + " bar price" + str.tostring(close[displacement-1]))
 
-// 8. Where is Chikou w.r.t Kumo? [above | below | within]
+// Where is chikou w.r.t kumo?
+temp := senkouSpanA[2*displacement-1] - senkouSpanB[2*displacement-1]
+string laggingKumoView = temp > 0 ? "bullish" : (temp < 0 ? "bearish" : "neutral")
 
-isChikouKumoGreen = senkouSpanA[2*displacement-1] > senkouSpanB[2*displacement-1]
-isChikouKumoRed = senkouSpanB[2*displacement-1] > senkouSpanA[2*displacement-1]
+string chikouWrtKumo = "within"
+if (laggingKumoView == "bullish" and close > senkouSpanA[2*displacement-1])
+     or (kumoView == "bearish" and close > senkouSpanB[2*displacement-1])
+    chikouWrtKumo := "above"
+else if (laggingKumoView == "bullish" and close < senkouSpanB[2*displacement-1])
+     or (laggingKumoView == "bearish" and close < senkouSpanA[2*displacement-1])
+    chikouWrtKumo := "below"
 
-isChikouSpanAboveKumo = isChikouKumoGreen ? (close > senkouSpanA[2*displacement-1]) : (isChikouKumoRed ? (close > senkouSpanB[2*displacement-1]) : false)
-isChikouSpanBelowKumo = isChikouKumoGreen ? (close < senkouSpanB[2*displacement-1]) : (isChikouKumoRed ? (close < senkouSpanA[2*displacement-1]) : false)
-//f_print("Chikou Kumo: " + (isChikouKumoGreen ? "Green": (isChikouKumoRed ? "Red" : " twist ")) + ", Chikou is " + (isChikouSpanAboveKumo ? "Above" : (isChikouSpanBelowKumo ? "Below" : "Within")))
+// Where is chikou w.r.t a flat Senkou-Span-B ahead?
 
-// 9. Where is Chikou w.r.t a flat Senkou-Span-B? [above | below]
-
-// 10. Is Chikou free from congestion ahead? [yes | no]
-congestionProximity = input.int(10, minval=1, title="Chikou's required congestion free bar range:")
+// Is chikou free from congestion ahead? Is it heading into price?
+congestionProximity = input.int(10, minval=1, title="How many bars far should chikou be?")
 congestionTolerance = input.float(0, minval=0.0, title="Congestion Tolerance")
 
 highestForChikou = (1-congestionTolerance/100) * ta.highest(high[displacement-congestionProximity], congestionProximity)
 lowestForChikou = (1-congestionTolerance/100) * ta.lowest(low[displacement-congestionProximity], congestionProximity)
 
-isChikouSpanFree = isChikouSpanAbovePrice ? (close > highestForChikou) : isChikouSpanBelowPrice ? (close < lowestForChikou) : false
+isChikouSpanFree = chikouWrtPrice == "above" ? (close > highestForChikou) : chikouWrtPrice == "below" ? (close < lowestForChikou) : false
 //f_print("isChikouSpanFree: " + str.tostring(isChikouSpanFree) + " in the next " + str.tostring(congestionProximity) + " bars, highest: " + str.tostring(highestForChikou) + ", lowest: " + str.tostring(lowestForChikou) + "\n")
 
 
@@ -142,50 +158,57 @@ f_reset() =>
     f_set(IDX_ShouldExitOnStopLoss, NO)
     f_set(IDX_UseKijunAsStopLoss, NO)
     
-// Check confluence
+// Establish market view through confluence
+string marketView = "conslidating"
+if priceWrtKumo == "above"
+     and priceWrtTenkan == "above"
+     and tenkanWrtKijun == "above"
+     and leadingKumoView == "bullish"
+     and chikouWrtPrice == "above"
+     and isChikouSpanFree
+    marketView := "bullish"
+else if priceWrtKumo == "below"
+     and priceWrtTenkan == "below"
+     and tenkanWrtKijun == "below"
+     and leadingKumoView == "bearish"
+     and chikouWrtPrice == "below"
+     and isChikouSpanFree
+    marketView := "bearish"
 
-hasBullishConfluence = isPriceAboveKumo and isPriceAboveTenkanSen and isTenkanSenAboveKijunSen and isFutureKumoGreen and isChikouSpanAbovePrice and isChikouSpanFree
-hasBearishConfluence = isPriceBelowKumo and isPriceBelowTenkanSen and isTenkanSenBelowKijunSen and isFutureKumoRed and isChikouSpanBelowPrice and isChikouSpanFree
-
-ssbProximityToChikou = -1
 lowestSSB = ta.lowest(senkouSpanB[2*displacement - 1 - congestionProximity], congestionProximity)
 highestSSB = ta.highest(senkouSpanB[2*displacement - 1 - congestionProximity], congestionProximity)
 
-if (hasBullishConfluence and isChikouSpanBelowKumo)
-    ssbProximityToChikou = (lowestSSB - close)*100/close
+float ssbProximityToChikou = -1.0
+if (marketView == "bullish" and chikouWrtKumo == "below")
+    ssbProximityToChikou := (lowestSSB - close)*100/close
     //f_print(">> overhead resistance at " + str.tostring(ssbProximityToChikou))
-
-if (hasBearishConfluence and isChikouSpanAboveKumo)
-    ssbProximityToChikou = (close - lowestSSB)*100/close
+else if (marketView == "bearish" and chikouWrtKumo == "above")
+    ssbProximityToChikou := (close - lowestSSB)*100/close
     //f_print(">> underlying support at " + str.tostring(ssbProximityToChikou) + "\n")
 
 // Asssess exit scenarios
 
-// 1. Where is price w.r.t Kijun-Sen?
-
 var inLongTrade = false
 var inShortTrade = false
 
-isPriceAboveKijunSen = false
-isPriceBelowKijunSen = false
-if inLongTrade // for exiting in a long position 
-    isPriceBelowKijunSen := low < kijunSen
-    isPriceAboveKijunSen := low > kijunSen
+// Where is price w.r.t kijun?
+string priceWrtKijun = "unknown"
+if inLongTrade // for exiting in a long position
+    priceWrtKijun := low < kijunSen ? "below" : (low > kijunSen ? "above" : "at")
 else if inShortTrade // for exiting in a short position
-    isPriceBelowKijunSen := high < kijunSen
-    isPriceAboveKijunSen := high > kijunSen
+    priceWrtKijun := high < kijunSen ? "below" : (high > kijunSen ? "above" : "at")
 else // for confluence to enter position
-    isPriceAboveKijunSen := close > kijunSen
-    isPriceBelowKijunSen := close < kijunSen
+    priceWrtKijun := close < kijunSen ? "below" : (close > kijunSen ? "above" : "at")
 
-//f_print("isPriceAboveKijunSen? = " + str.tostring(isPriceAboveKijunSen) + ", isPriceBelowKijunSen? = " + str.tostring(isPriceBelowKijunSen) + ", kijunSen: " + str.tostring(kijunSen) + ", high: " + str.tostring(high) + ", low: " + str.tostring(low) + " check? " +  str.tostring(low < kijunSen))
+//f_print("low: " + str.tostring(low) + ", kijun: " + str.tostring(kijunSen) + ", = " + priceWrtKijun)
 
-//shouldScaleOut = false
-
-
-//#############################################################
-//##     Manage LONG Position                                ##
-//#############################################################
+//###############################################################
+//###############################################################
+//####                                                       ####
+//####              Manage LONG Position                     ####
+//####                                                       ####
+//###############################################################
+//###############################################################
 
 var canPrepareForLong = false
 var shouldSellOnTenkan = false
@@ -226,17 +249,17 @@ if (inLongTrade and high > f_get(IDX_PriceLevelToBeginTrailingStopLoss))
 if (inLongTrade and low <= longStopLoss)
     f_set(IDX_ShouldExitOnStopLoss, YES)
 
-if (inLongTrade and isPriceBelowKijunSen and f_true(IDX_UseKijunAsStopLoss))
+if (inLongTrade and priceWrtKijun == "below" and f_true(IDX_UseKijunAsStopLoss))
     shouldSellOnKijun := true
     //shouldScaleOut := true
     kijunSellPrice := kijunSen
 
-if (inLongTrade and hasBearishConfluence)
+if (inLongTrade and marketView == "bearish")
     inLongTrade := false
     
 //f_print("[L1] inLongTrade: " + str.tostring(inLongTrade) + ", exit? = " + str.tostring(shouldSellOnKijun) + ", bullishConf? = " + str.tostring(hasBullishConfluence) + "\n")
 
-canPrepareForLong := not inLongTrade and hasBullishConfluence
+canPrepareForLong := not inLongTrade and marketView == "bullish"
 if canPrepareForLong
     inLongTrade := true
     shouldSellOnKijun := false
@@ -291,9 +314,13 @@ if (inLongTrade and (shouldSellOnKijun or f_true(IDX_ShouldExitOnStopLoss)))
     f_reset()
 
 
-//#############################################################
-//##     Manage SHORT Position                               ##
-//#############################################################
+//###############################################################
+//###############################################################
+//####                                                       ####
+//####              Manage SHORT Position                    ####
+//####                                                       ####
+//###############################################################
+//###############################################################
 
 var canPrepareForShort = false
 var shouldBuyOnTenkan = false
@@ -334,17 +361,17 @@ if (inShortTrade and high >= shortStopLoss)
 
 //f_print("low: " + str.tostring(low) + ", shortSL: " + str.tostring(shortStopLoss) +", finalSL: " + f_getString(IDX_PriceLevelToBeginTrailingStopLoss) + ", useKijonAsSL: " + f_getString(IDX_UseKijunAsStopLoss)+ ", shouldExitOnSL: " + f_getString(IDX_ShouldExitOnStopLoss))
 
-if (inShortTrade and isPriceAboveKijunSen and f_true(IDX_UseKijunAsStopLoss))
+if (inShortTrade and priceWrtKijun == "above" and f_true(IDX_UseKijunAsStopLoss))
     shouldBuyOnKijun := true
     //shouldScaleOut := true
     kijunBuyPrice := kijunSen
 
-if (inShortTrade and hasBullishConfluence)
+if (inShortTrade and marketView == "bullish")
     inShortTrade := false
 
 //f_print("[S1] inShortTrade: " + str.tostring(inShortTrade) + ", exit? = " + str.tostring(shouldBuyOnKijun) + ", bearishConf? = " + str.tostring(hasBearishConfluence) + ", isPriceAboveKijunsen? = " + str.tostring(isPriceAboveKijunSen) + "\n\n\n")
 
-canPrepareForShort :=  not inShortTrade and hasBearishConfluence
+canPrepareForShort :=  not inShortTrade and marketView == "bearish"
 if canPrepareForShort
     inShortTrade := true
     shouldBuyOnKijun := false
@@ -398,10 +425,13 @@ if (inShortTrade and (shouldBuyOnKijun or f_true(IDX_ShouldExitOnStopLoss)))
     f_reset()
 
 
-
-//#############################################################
-//##     Profit & Loss                                       ##
-//#############################################################
+//###############################################################
+//###############################################################
+//####                                                       ####
+//####                     Profit & Loss                     ####
+//####                                                       ####
+//###############################################################
+//###############################################################
 
 float accountSize = input.float(1000, title="Account Size")
 float maxRisk = input.float(25, title="Max risk per position") / 100
@@ -417,7 +447,7 @@ if not inLongTrade
 if inLongTrade
     qty := maxRiskPerPosition / (longEntryPrice - longStopLoss)
     tradeSize := qty * longEntryPrice
-    remainingUnitsAllocation = qty
+    remainingUnitsAllocation := qty
     
     if sellLimitOrder > 0 and didSellOnLimitOrder and remainingPercentAllocation > 0
         dlo := (sellLimitOrder - longEntryPrice) 
@@ -429,7 +459,7 @@ if inLongTrade
         dt1 := (tenkanSellPrice1 - longEntryPrice)
         t1 := dt1 * exitPercent * qty
         pnl := pnl + t1
-        remainingUnitsAllocation = remainingUnitsAllocation - (qty * exitPercent)
+        remainingUnitsAllocation := remainingUnitsAllocation - (qty * exitPercent)
         remainingPercentAllocation := remainingPercentAllocation - exitPercent
     if tenkanSellPrice2 > 0 and remainingPercentAllocation > 0
         dt2 := (tenkanSellPrice2 - longEntryPrice)
@@ -463,9 +493,13 @@ if inLongTrade
             pnl := pnl + (kijunSellPrice - longEntryPrice) * remainingUnitsAllocation
     
 
-//#############################################################
-//##     Information Display Panels                          ##
-//#############################################################
+//##################################################################
+//##################################################################
+//####                                                          ####
+//####                Information Display Panels                ####
+//####                                                          ####
+//##################################################################
+//##################################################################
 
 // Display confluence information
 showPnl = input.bool(false, title="Profit & Loss")
@@ -553,27 +587,35 @@ if (barstate.islast and showL1DebugInfo)
     table.cell(debugTable, 3, 1, str.tostring(shouldSellOnKijun), text_color = color.navy)
     table.cell(debugTable, 4, 1, str.tostring(canPrepareForLong), text_color = color.navy)
     table.cell(debugTable, 5, 1, "-", text_color = color.navy)
-    table.cell(debugTable, 6, 1, str.tostring(hasBullishConfluence? "Bullish": "-"), text_color = color.navy)
+    table.cell(debugTable, 6, 1, marketView, text_color = color.navy)
     table.cell(debugTable, 0, 2, "Short", text_color = color.black)
     table.cell(debugTable, 1, 2, str.tostring(inShortTrade), text_color = color.maroon)
     //table.cell(debugTable, 2, 2, str.tostring(shouldScaleOut), text_color = color.maroon)
     table.cell(debugTable, 3, 2, str.tostring(shouldBuyOnKijun), text_color = color.maroon)
     table.cell(debugTable, 4, 2, str.tostring(canPrepareForShort), text_color = color.maroon)
     table.cell(debugTable, 5, 2, "-", text_color = color.maroon)
-    table.cell(debugTable, 6, 2, str.tostring(hasBearishConfluence? "Bearish": "-"), text_color = color.rgb(255, 153, 153))
+    table.cell(debugTable, 6, 2, marketView, text_color = color.rgb(255, 153, 153))
     
 
 // Display confluence information
 showConfluenceInfo = input.bool(false, title="Confluence Info")
-var table confluenceTable = table.new(position.bottom_right, 3, 10, bgcolor = color.rgb(0, 0, 0, 30), frame_width = 2, frame_color = color.black)
+var table confluenceTable = table.new(position.bottom_right, 3, 18, bgcolor = color.rgb(0, 0, 0, 30), frame_width = 2, frame_color = color.black)
 if (barstate.islast and showConfluenceInfo)
-    table.cell(confluenceTable, 0, 0, "1. Price " + (isPriceAboveKumo ? "above" : (isPriceBelowKumo ? "below" : "consolidating within")) + " kumo.", text_color = (isPriceAboveKumo ? color.green : (isPriceBelowKumo ? color.red : color.white)), text_halign = text.align_left)
-    table.cell(confluenceTable, 0, 1, "2. Is price heading into kumo shadows?", text_color = color.yellow, text_halign = text.align_left)
-    table.cell(confluenceTable, 0, 2, "3. Price " + (isPriceAboveTenkanSen ? "above" : (isPriceBelowTenkanSen ? "below" : "overlapping")) + " tenkan.", text_color = isPriceAboveTenkanSen ? color.green : (isPriceBelowTenkanSen ? color.red : color.white), text_halign = text.align_left)
-    table.cell(confluenceTable, 0, 3, "4. Tenkan " + (isTenkanSenAboveKijunSen ? "above" : (isTenkanSenBelowKijunSen ? "below" : "overlapping")) + " kijun.", text_color = (isTenkanSenAboveKijunSen ? color.green : (isTenkanSenBelowKijunSen ? color.red : color.white)), text_halign = text.align_left)
-    table.cell(confluenceTable, 0, 4, "5. " + (wasLastTkCrossBullish? "Bullish " : (wasLastTkCrossBearish? "Bearish ": "")) + "TK Cross " + (wasLastTkCrossAboveKumo ? "above" : (wasLastTkCrossBelowKumo ? "below" : "within")) + " kumo.", text_color = (wasLastTkCrossAboveKumo ? (wasLastTkCrossBullish ? color.green : (wasLastTkCrossBearish ? color.rgb(255, 153, 153) : color.white)) : (wasLastTkCrossBelowKumo ? ( wasLastTkCrossBullish ? color.rgb(182, 209, 186) : (wasLastTkCrossBearish ? color.red : color.white)) : color.gray ) ) , text_halign = text.align_left)
-    table.cell(confluenceTable, 0, 5, "6. " + (isFutureKumoGreen ? "Bullish" : (isFutureKumoRed ? "Bearish" : "Twisted")) + " future kumo.", text_color = (isFutureKumoGreen ? color.green : (isFutureKumoRed ? color.red : color.white)), text_halign = text.align_left)
-    table.cell(confluenceTable, 0, 6, "7. Chikou " + (isChikouSpanAbovePrice ? "above" : (isChikouSpanBelowPrice ? "below" : "hitting")) + " price.", text_color = (isChikouSpanAbovePrice ? color.green : (isChikouSpanBelowPrice ? color.red : color.white)), text_halign = text.align_left)
-    table.cell(confluenceTable, 0, 7, "8. Chikou " + (isChikouSpanAboveKumo ? "above" : (isChikouSpanBelowKumo ? "below" : "within")) + " kumo.", text_color = (isChikouSpanAboveKumo ? color.rgb(182, 209, 186) : (isChikouSpanBelowKumo ? color.rgb(255, 153, 153) : color.gray)), text_halign = text.align_left)
-    table.cell(confluenceTable, 0, 8, "9. SSB " + (ssbProximityToChikou < 0 ? " may not block Chikou" : " might block Chikou at " + str.tostring(ssbProximityToChikou) + "%") + " for " + (isChikouSpanAboveKumo ? "long" : "short"  )+ " trade.", text_color = ( ssbProximityToChikou < 0 and hasBullishConfluence ? color.green : ( ssbProximityToChikou < 0 and hasBearishConfluence ? color.red : color.gray)), text_halign = text.align_left)
-    table.cell(confluenceTable, 0, 9, "10. Chikou " + (isChikouSpanFree ? "clear from congestion." : " heading into " + str.tostring(congestionProximity) + " candles!"), text_color = (isChikouSpanFree ? (hasBullishConfluence ? color.green : (hasBearishConfluence ? color.red : color.gray)) : color.white), text_halign = text.align_left)
+    table.cell(confluenceTable, 0, 0, "1. Future kumo is " + leadingKumoView + ".", text_color = (leadingKumoView == "bullish" ? color.green : (leadingKumoView == "bearish" ? color.red : color.white)), text_halign = text.align_left)
+    table.cell(confluenceTable, 0, 1, "2. Price is " + priceWrtKumo + " kumo.", text_color = (priceWrtKumo == "above" ? color.green : (priceWrtKumo == "below" ? color.red : color.white)), text_halign = text.align_left)
+    table.cell(confluenceTable, 0, 2, "3. Price is " + priceWrtTenkan + " tenkan.", text_color = priceWrtTenkan == "above" ? color.green : (priceWrtTenkan == "below" ? color.red : color.white), text_halign = text.align_left)
+    table.cell(confluenceTable, 0, 3, "4. Tenkan is " + tenkanWrtKijun + " kijun.", text_color = (tenkanWrtKijun == "above" ? color.green : (tenkanWrtKijun == "below" ? color.red : color.white)), text_halign = text.align_left)
+    table.cell(confluenceTable, 0, 4, "5. Recent TK cross is " + recentTkCross + " and " + tkCrossWrtKumo + " kumo.", text_color = (tkCrossWrtKumo == "above" ? (recentTkCross == "bullish" ? color.green : (recentTkCross == "bearish" ? color.rgb(255, 153, 153) : color.white)) : (tkCrossWrtKumo == "below" ? (recentTkCross == "bullish" ? color.rgb(182, 209, 186) : (recentTkCross == "bearish" ? color.red : color.white)) : color.gray)), text_halign = text.align_left)
+    table.cell(confluenceTable, 0, 5, "6. Chikou is " + chikouWrtPrice + " price.", text_color = (chikouWrtPrice == "above" ? color.green : (chikouWrtPrice == "below" ? color.red : color.white)), text_halign = text.align_left)
+    table.cell(confluenceTable, 0, 6, "7. Chikou is " + chikouWrtKumo + " kumo.", text_color = (chikouWrtKumo == "above" ? color.rgb(182, 209, 186) : (chikouWrtKumo == "below" ? color.rgb(255, 153, 153) : color.gray)), text_halign = text.align_left)
+    table.cell(confluenceTable, 0, 7, "8. SSB " + (ssbProximityToChikou < 0 ? " may not block Chikou" : " might block Chikou at " + str.tostring(ssbProximityToChikou) + "%") + " for " + (chikouWrtKumo == "above" ? "long" : "short"  )+ " trade.", text_color = ( ssbProximityToChikou < 0 and marketView == "bullish" ? color.green : ( ssbProximityToChikou < 0 and marketView == "bearish" ? color.red : color.gray)), text_halign = text.align_left)
+    table.cell(confluenceTable, 0, 8, "9. Chikou " + (isChikouSpanFree ? "clear from congestion." : " heading into " + str.tostring(congestionProximity) + " candles!"), text_color = (isChikouSpanFree ? (marketView == "bullish" ? color.green : (marketView == "bearish" ? color.red : color.gray)) : color.white), text_halign = text.align_left)
+    table.cell(confluenceTable, 0, 9, "- Is current kumo thick?", text_color = color.yellow, text_halign = text.align_left)
+    table.cell(confluenceTable, 0, 10, "- Is current kumo in flux?", text_color = color.yellow, text_halign = text.align_left)
+    table.cell(confluenceTable, 0, 11, "- Is Senkou-Span-B flat & long?", text_color = color.yellow, text_halign = text.align_left)
+    table.cell(confluenceTable, 0, 12, "- Is future kumo trending?", text_color = color.yellow, text_halign = text.align_left)
+    table.cell(confluenceTable, 0, 13, "- Is kijun flat & long?", text_color = color.yellow, text_halign = text.align_left)
+    table.cell(confluenceTable, 0, 14, "- Is 26 period high/low too far from the price?", text_color = color.yellow, text_halign = text.align_left)
+    table.cell(confluenceTable, 0, 15, "- Does last 26 candle indicate kijun will trend?", text_color = color.yellow, text_halign = text.align_left)
+    table.cell(confluenceTable, 0, 16, "- Are kumo shadows in the close proximity?", text_color = color.yellow, text_halign = text.align_left)
+    table.cell(confluenceTable, 0, 17, "* Enter upon 9-period high/low breakout.", text_color = color.aqua, text_halign = text.align_left)
