@@ -100,19 +100,30 @@ string priceWrtTenkan = close > tenkanSen ? "above" : (close < tenkanSen ? "belo
 string tenkanWrtKijun = tenkanSen > kijunSen ? "above" : ( tenkanSen < kijunSen ? "below" : "at")
 
 // Where is TK cross w.r.t kumo? <--- This is not a filter. Ignore!
-string recentTkCross = "neutral"
+var string recentTkCross = "unknown"
+
+bool didNewTkCrossOccur = false
 if (tenkanSen[1] <= kijunSen[1] and tenkanSen > kijunSen)
     recentTkCross := "bullish"
+    didNewTkCrossOccur := true
 else if (tenkanSen[1] >= kijunSen[1] and tenkanSen < kijunSen)
     recentTkCross := "bearish"
+    didNewTkCrossOccur := true
 
-string tkCrossWrtKumo = "within"
-if (kumoView == "bullish" and kijunSen > senkouSpanA[displacement-1])
+var string tkCrossWrtKumo = "within"
+if (didNewTkCrossOccur
+     and kumoView == "bullish"
+     and kijunSen > senkouSpanA[displacement-1])
      or (kumoView == "bearish" and kijunSen > senkouSpanB[displacement-1])
     tkCrossWrtKumo := "above"
-else if (kumoView == "bullish" and kijunSen < senkouSpanB[displacement-1])
-     or (kumoView == "bearish" and kijunSen < senkouSpanA[displacement-1])
+else if (didNewTkCrossOccur
+     and ((kumoView == "bullish" and kijunSen < senkouSpanB[displacement-1])
+     or (kumoView == "bearish" and kijunSen < senkouSpanA[displacement-1])))
     tkCrossWrtKumo := "below"
+
+//f_print("ten1: " + str.tostring(tenkanSen[1]) + ", kin1: " + str.tostring(kijunSen[1]) + ", t>k " + str.tostring(tenkanSen > kijunSen) + ", recentTkCross: " + recentTkCross + "\n\n")
+//f_print("ten: " + str.tostring(tenkanSen) + ", kin: " + str.tostring(kijunSen) + ", t<k " + str.tostring(tenkanSen < kijunSen) + ", recentTkCross: " + recentTkCross + "\n")
+//f_print("senkouSpanA[displacement-1]: " + str.tostring(senkouSpanA[displacement-1]) + ", senkouSpanB[displacement-1]: " + str.tostring(senkouSpanB[displacement-1]) + ", > " + str.tostring(kumoView))
 
 // Where is chikou w.r.t price?
 string chikouWrtPrice = "at"
@@ -577,7 +588,7 @@ if horizontalTradePlan
         table.cell(tradeTable, 5, 0, "Exit 3", text_color = color.white)
         table.cell(tradeTable, 6, 0, "Exit 4", text_color = color.white)
         table.cell(tradeTable, 7, 0, "Exit 5", text_color = color.white)
-        table.cell(tradeTable, 8, 0, "T.SL", text_color = color.white)
+        table.cell(tradeTable, 8, 0, "T. SL", text_color = color.white)
         table.cell(tradeTable, 9, 0, "TP", text_color = color.white)
         table.cell(tradeTable, 10, 0, "Qty/Cap", text_color = color.white)
         table.cell(tradeTable, 11, 0, "ATR", text_color = color.white)
@@ -624,7 +635,7 @@ else
         table.cell(tradeTable, 0, 5, "Exit 3", text_color = color.white)
         table.cell(tradeTable, 0, 6, "Exit 4", text_color = color.white)
         table.cell(tradeTable, 0, 7, "Exit 5", text_color = color.white)
-        table.cell(tradeTable, 0, 8, "T.SL", text_color = color.white)
+        table.cell(tradeTable, 0, 8, "T. SL", text_color = color.white)
         table.cell(tradeTable, 0, 9, "TP", text_color = color.white)
         table.cell(tradeTable, 0, 10, "Qty/Cap", text_color = color.white)
         table.cell(tradeTable, 0, 11, "ATR", text_color = color.white)
@@ -695,7 +706,7 @@ if (barstate.islast and showConfluenceInfo)
     table.cell(confluenceTable, 0, 1, "2. Price is " + priceWrtKumo + " kumo.", text_color = (priceWrtKumo == "above" ? color.green : (priceWrtKumo == "below" ? color.red : color.white)), text_halign = text.align_left)
     table.cell(confluenceTable, 0, 2, "3. Price is " + priceWrtTenkan + " tenkan.", text_color = priceWrtTenkan == "above" ? color.green : (priceWrtTenkan == "below" ? color.red : color.white), text_halign = text.align_left)
     table.cell(confluenceTable, 0, 3, "4. Tenkan is " + tenkanWrtKijun + " kijun.", text_color = (tenkanWrtKijun == "above" ? color.green : (tenkanWrtKijun == "below" ? color.red : color.white)), text_halign = text.align_left)
-    table.cell(confluenceTable, 0, 4, "5. Recent TK cross is " + recentTkCross + " and " + tkCrossWrtKumo + " kumo.", text_color = (tkCrossWrtKumo == "above" ? (recentTkCross == "bullish" ? color.green : (recentTkCross == "bearish" ? color.rgb(255, 153, 153) : color.white)) : (tkCrossWrtKumo == "below" ? (recentTkCross == "bullish" ? color.rgb(182, 209, 186) : (recentTkCross == "bearish" ? color.red : color.white)) : color.gray)), text_halign = text.align_left)
+    table.cell(confluenceTable, 0, 4, "5. TK cross was " + recentTkCross + " and " + tkCrossWrtKumo + " kumo.", text_color = (tkCrossWrtKumo == "above" ? (recentTkCross == "bullish" ? color.green : (recentTkCross == "bearish" ? color.rgb(255, 153, 153) : color.white)) : (tkCrossWrtKumo == "below" ? (recentTkCross == "bullish" ? color.rgb(182, 209, 186) : (recentTkCross == "bearish" ? color.red : color.white)) : color.gray)), text_halign = text.align_left)
     table.cell(confluenceTable, 0, 5, "6. Chikou is " + chikouWrtPrice + " price.", text_color = (chikouWrtPrice == "above" ? color.green : (chikouWrtPrice == "below" ? color.red : color.white)), text_halign = text.align_left)
     table.cell(confluenceTable, 0, 6, "7. Chikou is " + chikouWrtKumo + " kumo.", text_color = (chikouWrtKumo == "above" ? color.rgb(182, 209, 186) : (chikouWrtKumo == "below" ? color.rgb(255, 153, 153) : color.gray)), text_halign = text.align_left)
     table.cell(confluenceTable, 0, 7, "8. SSB " + (ssbProximityToChikou < 0 ? " may not block Chikou" : " might block Chikou at " + str.tostring(ssbProximityToChikou) + "%") + " for " + (chikouWrtKumo == "above" ? "long" : "short"  )+ " trade.", text_color = ( ssbProximityToChikou < 0 and marketView == "bullish" ? color.green : ( ssbProximityToChikou < 0 and marketView == "bearish" ? color.red : color.gray)), text_halign = text.align_left)
