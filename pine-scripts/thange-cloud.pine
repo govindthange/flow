@@ -36,6 +36,20 @@ f_tickFormat() =>
 
 // Collect inputs
 
+fromDateInput = input.time(timestamp("15 Oct 2021 05:30 +0300"), title="Backtest From Date")
+toDateInput = input.time(timestamp("24 Nov 2021 05:30 +0300"), title="Backtest To Date")
+
+bool withinTestRange = (time >= fromDateInput and time <= toDateInput)
+var fromDateDrawn = false
+if time >= fromDateInput and not fromDateDrawn
+    line.new(bar_index, close, bar_index, close * 1.01, extend = extend.both, color = color.gray, style = line.style_solid, width = 10)
+    fromDateDrawn := true
+
+var toDateDrawn = false
+if time >= toDateInput and not toDateDrawn
+    line.new(bar_index, close, bar_index, close * 1.01, extend = extend.both, color = color.gray, style = line.style_solid, width = 10)
+    toDateDrawn := true
+
 riskToRewardRatio = input.int(1, minval=1, title="Risk:Reward")
 ratioWrtRiskToBeginTrailingSL = input.float (1, minval=0, title="Nurture Phase (Ratio w.r.t risk before trailing SL)")
 tkCrossExitEnabled = input.bool(true, title="Enable TK Cross Exits")
@@ -527,9 +541,10 @@ if (inShortTrade and (shouldBuyOnKijun or f_true(IDX_ShouldExitOnStopLoss) or sh
 //###############################################################
 //###############################################################
 
-var int totalCandles = 0
 
-totalCandles := totalCandles + 1
+var int totalCandles = 0
+if withinTestRange
+    totalCandles := totalCandles + 1
 
 float accountSize = input.float(1000, title="Account Size")
 float maxRisk = input.float(25, title="Max risk per position") / 100
@@ -760,7 +775,8 @@ if inShortTrade or didShortPositionClose
         s := (shortEntryPrice - shortStopLoss) * remainingUnitsAllocation
         pnl := pnl + s
 
-if didLongPositionClose or didShortPositionClose
+if withinTestRange
+     and (didLongPositionClose or didShortPositionClose)
     totalTrades := totalTrades + 1
     
     totalPnl := totalPnl + pnl
