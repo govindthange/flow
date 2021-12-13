@@ -2,7 +2,7 @@
 // @ govindthange
 
 //@version=5
-indicator("Thange Cloud Playbook", shorttitle="Thange Signals", overlay=true)
+indicator("Thange Pennywhistles Playbook", shorttitle="Thange Signals", overlay=true)
 
 // Standard constants
 YES = 1.0
