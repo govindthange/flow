@@ -42,12 +42,12 @@ toDateInput = input.time(timestamp("24 Nov 2021 05:30 +0300"), title="Backtest T
 bool withinTestRange = (time >= fromDateInput and time <= toDateInput)
 var fromDateDrawn = false
 if time >= fromDateInput and not fromDateDrawn
-    line.new(bar_index, close, bar_index, close * 1.01, extend = extend.both, color = color.gray, style = line.style_solid, width = 10)
+    line.new(bar_index, open, bar_index, open * 1.01, extend = extend.both, color = color.blue, style = line.style_solid, width = 2)
     fromDateDrawn := true
 
 var toDateDrawn = false
 if time >= toDateInput and not toDateDrawn
-    line.new(bar_index, close, bar_index, close * 1.01, extend = extend.both, color = color.gray, style = line.style_solid, width = 10)
+    line.new(ar_index, open, bar_index, open * 1.01, extend = extend.both, color = color.maroon, style = line.style_solid, width = 2)
     toDateDrawn := true
 
 riskToRewardRatio = input.int(1, minval=1, title="Risk:Reward")
@@ -528,7 +528,7 @@ else
 if (inShortTrade and not didBuyOnLimitOrder and low <= buyLimitOrder)
     shouldBuyOnLimitOrder := true
 
-f_print("[S2] inShortTrade: " + str.tostring(inShortTrade) + ", didBuyOnLimitOrder? = " + str.tostring(didBuyOnLimitOrder) + ", low: " + str.tostring(low) + ", buyLimitOrder: = " + str.tostring(buyLimitOrder) + ", shouldBuyOnLimitOrder: = " + str.tostring(shouldBuyOnLimitOrder) + "\n\n\n\n")
+//f_print("[S2] inShortTrade: " + str.tostring(inShortTrade) + ", didBuyOnLimitOrder? = " + str.tostring(didBuyOnLimitOrder) + ", low: " + str.tostring(low) + ", buyLimitOrder: = " + str.tostring(buyLimitOrder) + ", shouldBuyOnLimitOrder: = " + str.tostring(shouldBuyOnLimitOrder) + "\n\n\n\n")
 
 //f_print("[S2] inShortTrade: " + str.tostring(inShortTrade) + ", exit? = " + str.tostring(shouldBuyOnKijun) + ", canPrepareForShort: " + str.tostring(canPrepareForShort) + ", isPriceAboveKijunsen? = " + str.tostring(isPriceAboveKijunSen) + "\n\n\n\n")
 
