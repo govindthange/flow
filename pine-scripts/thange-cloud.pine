@@ -379,6 +379,8 @@ if shouldSellOnLimitOrder
 
 // Draw labels to enter or trail a stop-loss order based on confluence
 
+//f_print(str.format("{0}, inLongTrade: {1}, withinRange: {2}", (shouldSellOnKijun or f_true(IDX_ShouldExitOnStopLoss)), inLongTrade, withinTestRange))
+
 if (inLongTrade and (shouldSellOnKijun or f_true(IDX_ShouldExitOnStopLoss)))
     inLongTrade := false
     f_reset()
@@ -564,6 +566,7 @@ var float maxProfit = 0.0
 var float maxLoss = 0.0
 
 float ep = 0.0, sl = 0.0, tp1 = 0.0, tp2 = 0.0, tp3 = 0.0, tp4 = 0.0, tp5 = 0.0, tp6 = 0.0, tp7 = 0.0, tp8 = 0.0, tp9 = 0.0, tp10 = 0.0, lim = 0.0, kp = 0.0, tkcp = 0.0
+float realtime = 0.0
 
 // Temporary variables for debugging
 float t1 = 0.0, t2 = 0.0, t3 = 0.0, t4 = 0.0, t5 = 0.0, t6 =0.0, t7 = 0.0, t8 = 0.0, t9 = 0.0, t10 = 0.0, k = 0.0, tkc = 0.0, s = 0.0, lo = 0.0, dt1 = 0.0, dt2 = 0.0, dt3 = 0.0, dt4 = 0.0, dt5 = 0.0, dt6 = 0.0, dt7 = 0.0, dt8 = 0.0, dt9 = 0.0, dt10 = 0.0, dk = 0.0, dlo = 0.0
@@ -672,6 +675,8 @@ if inLongTrade or didLongPositionClose
     else if shouldSellOnStopLoss == true and remainingPercentAllocation > 0
         s := (longStopLoss - longEntryPrice) * remainingUnitsAllocation
         pnl := pnl + s
+    else
+        realtime := (close - longEntryPrice) * remainingUnitsAllocation
 
 if inShortTrade or didShortPositionClose
     ep := shortEntryPrice
@@ -774,6 +779,8 @@ if inShortTrade or didShortPositionClose
     else if shouldBuyOnStopLoss == true and remainingPercentAllocation > 0
         s := (shortEntryPrice - shortStopLoss) * remainingUnitsAllocation
         pnl := pnl + s
+    else
+        realtime := (shortEntryPrice - close) * remainingUnitsAllocation
 
 if withinTestRange
      and (didLongPositionClose or didShortPositionClose)
@@ -883,8 +890,8 @@ if horizontalTradePlan
         table.cell(tradeTable, 11, 2, str.tostring(t10, str.tostring(f_tickFormat())), text_color = (t10 > 0 ? color.rgb(182, 209, 186) : color.rgb(182, 153, 153)))
         table.cell(tradeTable, 12, 2, str.tostring(k, str.tostring(f_tickFormat())), text_color = (k > 0 ? color.rgb(182, 209, 186) : color.rgb(182, 153, 153)))
         table.cell(tradeTable, 13, 2, str.tostring(lo, str.tostring(f_tickFormat())), text_color = (lo > 0 ? color.rgb(182, 209, 186) : color.rgb(182, 153, 153)))
-        table.cell(tradeTable, 14, 2, str.format("{0, number, currency}", pnl), text_color = (pnl > 0 ? color.green : color.red))
-        table.cell(tradeTable, 15, 2, str.format("{0, number, percent}", pnl/tradeSize), text_color = (pnl > 0 ? color.green : color.red))
+        table.cell(tradeTable, 14, 2, str.format("{0, number, currency}", pnl+realtime), text_color = (pnl+realtime > 0 ? color.green : color.red))
+        table.cell(tradeTable, 15, 2, str.format("{0, number, percent}", (pnl+realtime)/tradeSize), text_color = (pnl+realtime > 0 ? color.green : color.red))
 else
     var table tradeTable = table.new(position.bottom_right, 4, 17, bgcolor = color.rgb(0, 0, 0, 30), frame_width = 2, frame_color = color.black)
     if (barstate.islast and showTradePlan)
@@ -933,8 +940,8 @@ else
         table.cell(tradeTable, 2, 11, str.tostring(t10, str.tostring(f_tickFormat())), text_color = (t10 > 0 ? color.rgb(182, 209, 186) : color.rgb(182, 153, 153)))
         table.cell(tradeTable, 2, 12, str.tostring(k, str.tostring(f_tickFormat())), text_color = (k > 0 ? color.rgb(182, 209, 186) : color.rgb(182, 153, 153)))
         table.cell(tradeTable, 2, 13, str.tostring(lo, str.tostring(f_tickFormat())), text_color = (lo > 0 ? color.rgb(182, 209, 186) : color.rgb(182, 153, 153)))
-        table.cell(tradeTable, 2, 14, str.format("{0, number, currency}", pnl), text_color = (pnl > 0 ? color.green : color.red))
-        table.cell(tradeTable, 2, 15, str.format("{0, number, percent}", pnl/tradeSize), text_color = (pnl > 0 ? color.green : color.red))
+        table.cell(tradeTable, 2, 14, str.format("{0, number, currency}", pnl+realtime), text_color = (pnl+realtime > 0 ? color.green : color.red))
+        table.cell(tradeTable, 2, 15, str.format("{0, number, percent}", (pnl+realtime)/tradeSize), text_color = (pnl+realtime > 0 ? color.green : color.red))
 
 // Display debug information
 showL1DebugInfo = input.bool(false, title="Debug Info (Level 1)")
