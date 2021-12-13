@@ -875,7 +875,7 @@ if (barstate.islast and showPnl)
     
 // Display trade information
 showTradePlan = input.bool(false, title="Trade Plan")
-horizontalTradePlan = input.bool(false, title="Show Trade Plan Horizontally")
+horizontalTradePlan = input.bool(true, title="Show Trade Plan Horizontally")
 
 if horizontalTradePlan
     var table tradeTable = table.new(position.bottom_right, 17, 4, bgcolor = color.rgb(0, 0, 0, 30), frame_width = 2, frame_color = color.black)
