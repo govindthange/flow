@@ -369,7 +369,7 @@ if (inLongTrade and not shouldSellOnKijun and close < tenkanSen and close[1] >= 
 else
     shouldSellOnTenkan := false
     
-if (inLongTrade and not didSellOnLimitOrder and close >= sellLimitOrder)
+if (inLongTrade and not didSellOnLimitOrder and high >= sellLimitOrder)
     shouldSellOnLimitOrder := true
 
 //f_print("[L2] inLongTrade: " + str.tostring(inLongTrade) + ", exit? = " + str.tostring(shouldSellOnKijun) + ", canPrepareForLong: " + str.tostring(canPrepareForLong) + "\n\n")
@@ -525,8 +525,10 @@ if (inShortTrade and not shouldBuyOnKijun and close > tenkanSen and close[1] <= 
 else
     shouldBuyOnTenkan := false
     
-if (inShortTrade and not didBuyOnLimitOrder and close <= buyLimitOrder)
+if (inShortTrade and not didBuyOnLimitOrder and low <= buyLimitOrder)
     shouldBuyOnLimitOrder := true
+
+f_print("[S2] inShortTrade: " + str.tostring(inShortTrade) + ", didBuyOnLimitOrder? = " + str.tostring(didBuyOnLimitOrder) + ", low: " + str.tostring(low) + ", buyLimitOrder: = " + str.tostring(buyLimitOrder) + ", shouldBuyOnLimitOrder: = " + str.tostring(shouldBuyOnLimitOrder) + "\n\n\n\n")
 
 //f_print("[S2] inShortTrade: " + str.tostring(inShortTrade) + ", exit? = " + str.tostring(shouldBuyOnKijun) + ", canPrepareForShort: " + str.tostring(canPrepareForShort) + ", isPriceAboveKijunsen? = " + str.tostring(isPriceAboveKijunSen) + "\n\n\n\n")
 
@@ -906,7 +908,7 @@ if horizontalTradePlan
         table.cell(tradeTable, 10, 1, str.tostring(tp9, str.tostring(f_tickFormat())), text_color = color.gray)
         table.cell(tradeTable, 11, 1, str.tostring(tp10, str.tostring(f_tickFormat())), text_color = color.gray)
         table.cell(tradeTable, 12, 1, str.tostring(kp, str.tostring(f_tickFormat())), text_color = color.gray)
-        table.cell(tradeTable, 13, 1, (didSellOnLimitOrder ? str.tostring(lim, str.tostring(f_tickFormat())) : "0.0"), text_color = color.gray)
+        table.cell(tradeTable, 13, 1, str.tostring(inLongTrade ? sellLimitOrder : buyLimitOrder, str.tostring(f_tickFormat())), text_color = color.gray)
         table.cell(tradeTable, 14, 1, str.format("{0, number, currency}", sl), text_color = color.orange)
         table.cell(tradeTable, 15, 1, str.format("{0, number, #0.0000}", qty), text_color = color.gray)
         table.cell(tradeTable, 0, 2, "+/-", text_color = color.white)
@@ -956,7 +958,7 @@ else
         table.cell(tradeTable, 1, 10, str.tostring(tp9, str.tostring(f_tickFormat())), text_color = color.gray)
         table.cell(tradeTable, 1, 11, str.tostring(tp10, str.tostring(f_tickFormat())), text_color = color.gray)
         table.cell(tradeTable, 1, 12, str.tostring(kp, str.tostring(f_tickFormat())), text_color = color.gray)
-        table.cell(tradeTable, 1, 13, (didSellOnLimitOrder ? str.tostring(sellLimitOrder, str.tostring(f_tickFormat())) : "0.0"), text_color = color.gray)
+        table.cell(tradeTable, 1, 13, str.tostring(inLongTrade ? sellLimitOrder : buyLimitOrder, str.tostring(f_tickFormat())), text_color = color.gray)
         table.cell(tradeTable, 1, 14, str.format("{0, number, currency}", sl), text_color = color.orange)
         table.cell(tradeTable, 1, 15, str.format("{0, number, #0.0000}", qty), text_color = color.gray)
         table.cell(tradeTable, 2, 0, "+/-", text_color = color.white)
