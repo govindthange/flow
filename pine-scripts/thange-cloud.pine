@@ -47,7 +47,7 @@ if time >= fromDateInput and not fromDateDrawn
 
 var toDateDrawn = false
 if time >= toDateInput and not toDateDrawn
-    line.new(ar_index, open, bar_index, open * 1.01, extend = extend.both, color = color.maroon, style = line.style_solid, width = 2)
+    line.new(bar_index, open, bar_index, open * 1.01, extend = extend.both, color = color.maroon, style = line.style_solid, width = 2)
     toDateDrawn := true
 
 riskToRewardRatio = input.int(1, minval=1, title="Risk:Reward")
