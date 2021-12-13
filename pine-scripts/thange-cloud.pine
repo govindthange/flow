@@ -379,12 +379,13 @@ if shouldSellOnLimitOrder
 
 // Draw labels to enter or trail a stop-loss order based on confluence
 
-//f_print(str.format("{0}, inLongTrade: {1}, withinRange: {2}", (shouldSellOnKijun or f_true(IDX_ShouldExitOnStopLoss)), inLongTrade, withinTestRange))
+f_print(str.format("{0}, inLongTrade: {1}, withinRange: {2}", (shouldSellOnKijun or f_true(IDX_ShouldExitOnStopLoss)), inLongTrade, withinTestRange))
 
-if (inLongTrade and (shouldSellOnKijun or f_true(IDX_ShouldExitOnStopLoss)))
+if (inLongTrade and (shouldSellOnKijun or f_true(IDX_ShouldExitOnStopLoss) or shouldSellOnTkCross))
     inLongTrade := false
     f_reset()
     didLongPositionClose := true
+    shouldSellOnStopLoss := false
 
 
 //###############################################################
@@ -533,6 +534,7 @@ if (inShortTrade and (shouldBuyOnKijun or f_true(IDX_ShouldExitOnStopLoss) or sh
     inShortTrade := false
     f_reset()
     didShortPositionClose := true
+    shouldBuyOnStopLoss := false
 
 
 //###############################################################
