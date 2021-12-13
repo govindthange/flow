@@ -325,9 +325,9 @@ if canPrepareForLong
     longStopLoss := longEntryStop
     sellLimitOrder := longEntryPrice + (longEntryPrice - longEntryStop) * riskToRewardRatio
     array.set(context, IDX_PriceLevelToBeginTrailingStopLoss, longEntryPrice + (longEntryPrice - longEntryStop) * ratioWrtRiskToBeginTrailingSL)
-    line.new(bar_index, f_get(IDX_PriceLevelToBeginTrailingStopLoss), bar_index+10, f_get(IDX_PriceLevelToBeginTrailingStopLoss), width=1, color=color.gray, style=line.style_dotted)
+    line.new(bar_index, f_get(IDX_PriceLevelToBeginTrailingStopLoss), bar_index+10, f_get(IDX_PriceLevelToBeginTrailingStopLoss), width=1, color=color.aqua, style=line.style_dotted)
     //line.new(bar_index+ta.highestbars(high, tenkanSenPeriod), ta.highest(high, tenkanSenPeriod), bar_index+3, ta.highest(high, tenkanSenPeriod), width=1, color=color.green, style=line.style_dotted)
-    line.new(bar_index, longStopLoss, bar_index+3, longStopLoss, width=1, color=color.green, style=line.style_dotted)
+    line.new(bar_index, longStopLoss, bar_index+10, longStopLoss, width=1, color=color.aqua, style=line.style_solid)
 
 if (inLongTrade and not shouldSellOnKijun and close < tenkanSen and close[1] >= tenkanSen[1])
     shouldSellOnTenkan := true
@@ -477,9 +477,9 @@ if canPrepareForShort
     shortStopLoss := shortEntryStop
     buyLimitOrder := shortEntryPrice - (shortEntryStop - shortEntryPrice) * riskToRewardRatio
     array.set(context, IDX_PriceLevelToBeginTrailingStopLoss, shortEntryPrice + (shortEntryPrice - shortStopLoss) * ratioWrtRiskToBeginTrailingSL)
-    line.new(bar_index, f_get(IDX_PriceLevelToBeginTrailingStopLoss), bar_index+10, f_get(IDX_PriceLevelToBeginTrailingStopLoss), width=1, color=color.gray, style=line.style_dotted)
+    line.new(bar_index, f_get(IDX_PriceLevelToBeginTrailingStopLoss), bar_index+10, f_get(IDX_PriceLevelToBeginTrailingStopLoss), width=1, color=color.orange, style=line.style_dotted)
     //line.new(bar_index+ta.lowestbars(low, tenkanSenPeriod)-2, ta.lowest(low, tenkanSenPeriod), bar_index+3, ta.lowest(low, tenkanSenPeriod), width=1, color=color.red, style=line.style_dotted)
-    line.new(bar_index, shortStopLoss, bar_index+3, shortStopLoss, width=1, color=color.red, style=line.style_dotted)
+    line.new(bar_index, shortStopLoss, bar_index+10, shortStopLoss, width=1, color=color.orange, style=line.style_solid)
 
 if (inShortTrade and not shouldBuyOnKijun and close > tenkanSen and close[1] <= tenkanSen[1])
     shouldBuyOnTenkan := true
