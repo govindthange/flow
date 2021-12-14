@@ -253,13 +253,11 @@ else // for confluence to enter position
 
 //f_print("low: " + str.tostring(low) + ", kijun: " + str.tostring(kijunSen) + ", = " + priceWrtKijun)
 
-bool didLongPositionClose = false
-bool didShortPositionClose = false
-
-
 var bool hasSignaledForLong = false
 var bool hasSignaledForShort = false
 
+bool didLongPositionClose = false
+bool didShortPositionClose = false
 
 //###############################################################
 //###############################################################
@@ -456,6 +454,7 @@ if (inLongTrade and (shouldSellOnKijun or f_true(IDX_ShouldExitOnStopLoss) or sh
 //###############################################################
 
 var canPrepareForShort = false
+var shouldGoShort = false
 var shouldBuyOnTenkan = false
 var shouldBuyOnKijun = false
 var shouldBuyOnTkCross = false
@@ -482,7 +481,6 @@ var tkCrossBuyPrice = 0.0
 var buyLimitOrder = 0.0
 
 if not inShortTrade
-    canPrepareForShort := false
     shouldBuyOnKijun := false
     //shouldScaleOut := true
     shouldBuyOnTkCross := false
@@ -535,7 +533,20 @@ if (inShortTrade and marketView == "bullish")
 //f_print("[S1] inShortTrade: " + str.tostring(inShortTrade) + ", exit? = " + str.tostring(shouldBuyOnKijun) + ", bearishConf? = " + str.tostring(hasBearishConfluence) + ", isPriceAboveKijunsen? = " + str.tostring(isPriceAboveKijunSen) + "\n\n\n")
 
 canPrepareForShort :=  not inShortTrade and not inLongTrade and marketView == "bearish"
-if canPrepareForShort
+
+if not canPrepareForShort
+    hasSignaledForShort := false
+else if canPrepareForShort and not hasSignaledForShort
+    shortBreakoutPrice := lowestTenkanValue
+        
+    // Draw 9-period high line to indicate the best entry point
+    //f_print(str.format("9-period-lowest-bar: {0}, 9-period-lowest: {1}", lowestTenkanSenBar, lowestTenkanValue))
+    line.new(bar_index+lowestTenkanSenBar, lowestTenkanValue, bar_index+6, lowestTenkanValue, width=1, color=color.orange, style=line.style_solid)
+
+if canPrepareForShort and low <= shortBreakoutPrice
+    shouldGoShort := true
+    shortBreakoutPrice := 0.0
+    hasSignaledForShort := false
     inShortTrade := true
     shouldBuyOnKijun := false
     shortEntryPrice := close
@@ -543,10 +554,6 @@ if canPrepareForShort
     buyLimitOrder := shortEntryPrice - (shortEntryStop - shortEntryPrice) * riskToRewardRatio
     array.set(context, IDX_PriceLevelToBeginTrailingStopLoss, shortEntryPrice + (shortEntryPrice - shortStopLoss) * ratioWrtRiskToBeginTrailingSL)
     line.new(bar_index, f_get(IDX_PriceLevelToBeginTrailingStopLoss), bar_index+10, f_get(IDX_PriceLevelToBeginTrailingStopLoss), width=2, color=color.orange, style=line.style_dotted)
-    
-    // Draw 9-period high line to indicate the best entry point
-    //f_print(str.format("9-period-lowest-bar: {0}, 9-period-lowest: {1}", lowestTenkanSenBar, lowestTenkanValue))
-    line.new(bar_index+lowestTenkanSenBar, lowestTenkanValue, bar_index+6, lowestTenkanValue, width=1, color=color.orange, style=line.style_solid)
     line.new(bar_index, shortStopLoss, bar_index+10, shortStopLoss, width=2, color=color.red, style=line.style_solid)
 
 if (inShortTrade and not shouldBuyOnKijun and close > tenkanSen and close[1] <= tenkanSen[1])
@@ -582,9 +589,14 @@ if (inShortTrade and not didBuyOnLimitOrder and low <= buyLimitOrder)
 //f_print("[S2] inShortTrade: " + str.tostring(inShortTrade) + ", exit? = " + str.tostring(shouldBuyOnKijun) + ", canPrepareForShort: " + str.tostring(canPrepareForShort) + ", isPriceAboveKijunsen? = " + str.tostring(isPriceAboveKijunSen) + "\n\n\n\n")
 
 // Plot SHORT signals based on confluence
-plotshape(canPrepareForShort,  title= "Short Entry", location=location.abovebar, color=color.red, transp=0, style=shape.triangledown, text="", size=size.small)
+plotshape(canPrepareForShort and not hasSignaledForShort and not shouldGoShort, title= "Prepare to go short", location=location.abovebar, color=color.orange, transp=0, style=shape.triangledown, text="", size=size.tiny)
 if canPrepareForShort
     canPrepareForShort := false // reset flag
+    hasSignaledForShort := true
+
+plotshape(shouldGoShort, title= "Short Entry", location=location.abovebar, color=color.red, transp=0, style=shape.triangledown, text="", size=size.small)
+if shouldGoShort
+    shouldGoShort := false
 
 plotshape(shouldBuyOnTenkan, title= "Tenkan Short Exit", location=location.belowbar, color=color.orange, transp=0, style=shape.diamond, text="", size=size.tiny)
 
@@ -605,6 +617,8 @@ if (inShortTrade and (shouldBuyOnKijun or f_true(IDX_ShouldExitOnStopLoss) or sh
     f_reset()
     didShortPositionClose := true
     shouldBuyOnStopLoss := false
+    hasSignaledForLong := false
+    canPrepareForLong := false
 
 
 //###############################################################
