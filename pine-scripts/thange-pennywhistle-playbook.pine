@@ -256,6 +256,11 @@ else // for confluence to enter position
 bool didLongPositionClose = false
 bool didShortPositionClose = false
 
+
+var bool hasSignaledForLong = false
+var bool hasSignaledForShort = false
+
+
 //###############################################################
 //###############################################################
 //####                                                       ####
@@ -265,6 +270,7 @@ bool didShortPositionClose = false
 //###############################################################
 
 var canPrepareForLong = false
+var shouldGoLong = false
 var shouldSellOnTenkan = false
 var shouldSellOnKijun = false
 var shouldSellOnTkCross = false
@@ -273,6 +279,7 @@ var shouldSellOnLimitOrder = false
 var didSellOnLimitOrder = false
 var shouldPreemptivelyExitLong = false
 
+var longBreakoutPrice = 0.0
 var longEntryPrice = 0.0
 var longStopLoss = 0.0
 var tenkanSellPrice1 = 0.0
@@ -345,7 +352,24 @@ if (inLongTrade and marketView == "bearish")
 //f_print("[L1] inLongTrade: " + str.tostring(inLongTrade) + ", exit? = " + str.tostring(shouldSellOnKijun) + ", bullishConf? = " + str.tostring(hasBullishConfluence) + "\n")
 
 canPrepareForLong := not inLongTrade and not inShortTrade and marketView == "bullish"
-if canPrepareForLong
+
+//f_print(str.format("prepare? {0}, signaled? {1}, {2} breakout? {3}, confluence? {4} -- currentPrice: {5}\n\n", canPrepareForLong, hasSignaledForLong, longBreakoutPrice, str.tostring(close >= longBreakoutPrice), marketView, close))
+
+if not canPrepareForLong
+    hasSignaledForLong := false
+else if canPrepareForLong and not hasSignaledForLong
+    longBreakoutPrice := highestTenkanValue
+    
+    // Draw 9-period high line to indicate the best entry point
+    //f_print(str.format("9-period-highest-bar: {0}, 9-period-highest: {1}", str.tostring(highestTenkanSenBar), str.tostring(highestTenkanValue)))
+    line.new(bar_index+highestTenkanSenBar, highestTenkanValue, bar_index+6, highestTenkanValue, width=1, color=color.aqua, style=line.style_solid)
+    
+//f_print(str.format("prepare? {0}, signaled? {1}, {2} breakout? {3}, confluence? {4} -- currentPrice: {5}", canPrepareForLong, hasSignaledForLong, longBreakoutPrice, str.tostring(high >= longBreakoutPrice), marketView, close))
+
+if canPrepareForLong and high >= longBreakoutPrice
+    shouldGoLong := true
+    longBreakoutPrice := 0.0
+    hasSignaledForLong := false
     inLongTrade := true
     shouldSellOnKijun := false
     longEntryPrice := close
@@ -354,10 +378,6 @@ if canPrepareForLong
     
     array.set(context, IDX_PriceLevelToBeginTrailingStopLoss, longEntryPrice + (longEntryPrice - longEntryStop) * ratioWrtRiskToBeginTrailingSL)
     line.new(bar_index, f_get(IDX_PriceLevelToBeginTrailingStopLoss), bar_index+10, f_get(IDX_PriceLevelToBeginTrailingStopLoss), width=2, color=color.aqua, style=line.style_dotted)
-    
-    // Draw 9-period high line to indicate the best entry point
-    //f_print(str.format("9-period-highest-bar: {0}, 9-period-highest: {1}", str.tostring(highestTenkanSenBar), str.tostring(highestTenkanValue)))
-    line.new(bar_index+highestTenkanSenBar, highestTenkanValue, bar_index+6, highestTenkanValue, width=1, color=color.aqua, style=line.style_solid)
     line.new(bar_index, longStopLoss, bar_index+10, longStopLoss, width=2, color=color.green, style=line.style_solid)
 
 if (inLongTrade and not shouldSellOnKijun and close < tenkanSen and close[1] >= tenkanSen[1])
@@ -391,9 +411,14 @@ if (inLongTrade and not didSellOnLimitOrder and high >= sellLimitOrder)
 //f_print("[L2] inLongTrade: " + str.tostring(inLongTrade) + ", exit? = " + str.tostring(shouldSellOnKijun) + ", canPrepareForLong: " + str.tostring(canPrepareForLong) + "\n\n")
 
 // Plot LONG signals based on confluence
-plotshape(canPrepareForLong, title= "Long Entry", location=location.belowbar, color=color.green, transp=0, style=shape.triangleup, text="", size=size.small)
+plotshape(canPrepareForLong and not hasSignaledForLong and not shouldGoLong, title= "Prepare to go long", location=location.belowbar, color=color.aqua, transp=0, style=shape.triangleup, text="", size=size.tiny)
 if canPrepareForLong
     canPrepareForLong := false // reset flag
+    hasSignaledForLong := true
+
+plotshape(shouldGoLong, title= "Long Entry", location=location.belowbar, color=color.green, transp=0, style=shape.triangleup, text="", size=size.small)
+if shouldGoLong
+    shouldGoLong := false
 
 plotshape(shouldSellOnTenkan, title= "Tenkan Long Exit", location=location.abovebar, color=color.aqua, transp=0, style=shape.diamond, text="", size=size.tiny)
 
@@ -404,6 +429,7 @@ plotshape(shouldSellOnTkCross, title= "TK Cross Long Exit", location=location.ab
 plotshape(inLongTrade and (f_true(IDX_ShouldExitOnStopLoss) or shouldSellOnStopLoss), title= "Stop Loss Long Exit", location=location.belowbar, color=color.rgb(182, 209, 186), transp=0, style=shape.xcross, text="", size=size.small)
 
 plotshape(shouldSellOnLimitOrder, title= "Fixed Long Exit", location=location.abovebar, color=color.aqua, transp=0, style=shape.square, text="", size=size.tiny)
+
 if shouldSellOnLimitOrder
     didSellOnLimitOrder := true
     shouldSellOnLimitOrder := false
@@ -417,6 +443,8 @@ if (inLongTrade and (shouldSellOnKijun or f_true(IDX_ShouldExitOnStopLoss) or sh
     f_reset()
     didLongPositionClose := true
     shouldSellOnStopLoss := false
+    hasSignaledForLong := false
+    canPrepareForLong := false
 
 
 //###############################################################
@@ -436,6 +464,7 @@ var shouldBuyOnLimitOrder = false
 var didBuyOnLimitOrder = false
 var shouldPreemptivelyExitShort = false
 
+var shortBreakoutPrice = 0.0
 var shortEntryPrice = 0.0
 var shortStopLoss = 0.0
 var tenkanBuyPrice1 = 0.0
@@ -453,6 +482,7 @@ var tkCrossBuyPrice = 0.0
 var buyLimitOrder = 0.0
 
 if not inShortTrade
+    canPrepareForShort := false
     shouldBuyOnKijun := false
     //shouldScaleOut := true
     shouldBuyOnTkCross := false
@@ -1043,4 +1073,8 @@ if (barstate.islast and showConfluenceInfo)
     table.cell(confluenceTable, 0, 14, "- Is 26 period high/low too far from the price?", text_color = color.yellow, text_halign = text.align_left)
     table.cell(confluenceTable, 0, 15, "- Does last 26 candle indicate kijun will trend?", text_color = color.yellow, text_halign = text.align_left)
     table.cell(confluenceTable, 0, 16, "- Are kumo shadows in the close proximity?", text_color = color.yellow, text_halign = text.align_left)
-    table.cell(confluenceTable, 0, 17, "* Enter upon 9-period high/low breakout.", text_color = color.aqua, text_halign = text.align_left)
+    
+    if inShortTrade or inLongTrade
+        table.cell(confluenceTable, 0, 17, "* Your trade is active! Respond to signals proactively.", text_color = color.aqua, text_halign = text.align_left)
+    else
+        table.cell(confluenceTable, 0, 17, str.format("* {0} {1}", (marketView == "bullish" ? "Go long upon" : (marketView == "bearish" ? "Go short upon" : "Hang on!")), (marketView == "bullish" ? str.tostring(longBreakoutPrice) + " breakout." : (marketView == "bearish" ? str.tostring(shortBreakoutPrice) + " breakout." : " Pennywhistle is scanning for signals."))), text_color = color.aqua, text_halign = text.align_left)
