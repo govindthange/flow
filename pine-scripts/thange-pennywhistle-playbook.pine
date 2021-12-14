@@ -58,6 +58,9 @@ allowTkCrossExitInNurturePhase = input.bool(false, title="Allow TK cross exits i
 atrLength = input.int(30, minval=1, title="ATR Length")
 atrStopMultiplier = input.float(1.0, minval=0.1, title="ATR x ?")
 
+
+
+
 //###############################################
 //###############################################
 //####                                       ####
@@ -94,6 +97,8 @@ r = ta.atr(atrLength) * atrStopMultiplier
 entryPrice = close
 longEntryStop = kijunSen - r
 shortEntryStop = kijunSen + r
+
+
 
 
 //##########################################################################
@@ -202,6 +207,8 @@ f_reset() =>
     f_set(IDX_TxCrossPrice, -1)
     
 
+
+
 //##########################################################################
 //##########################################################################
 //####                                                                  ####
@@ -259,10 +266,13 @@ var bool hasSignaledForShort = false
 bool didLongPositionClose = false
 bool didShortPositionClose = false
 
+
+
+
 //###############################################################
 //###############################################################
 //####                                                       ####
-//####              Manage LONG Position                     ####
+//####               Play LONG Whistles                      ####
 //####                                                       ####
 //###############################################################
 //###############################################################
@@ -445,10 +455,12 @@ if (inLongTrade and (shouldSellOnKijun or f_true(IDX_ShouldExitOnStopLoss) or sh
     canPrepareForLong := false
 
 
+
+
 //###############################################################
 //###############################################################
 //####                                                       ####
-//####              Manage SHORT Position                    ####
+//####               Play SHORT Whistles                     ####
 //####                                                       ####
 //###############################################################
 //###############################################################
@@ -619,6 +631,8 @@ if (inShortTrade and (shouldBuyOnKijun or f_true(IDX_ShouldExitOnStopLoss) or sh
     shouldBuyOnStopLoss := false
     hasSignaledForLong := false
     canPrepareForLong := false
+
+
 
 
 //###############################################################
@@ -898,6 +912,8 @@ if withinTestRange
     prevPnl := pnl
     prevPnlPercent := 100*pnl/tradeSize
     
+
+
 
 //##################################################################
 //##################################################################
