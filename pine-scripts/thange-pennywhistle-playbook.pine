@@ -264,6 +264,9 @@ else // for confluence to enter position
 
 //f_print("low: " + str.tostring(low) + ", kijun: " + str.tostring(kijunSen) + ", = " + priceWrtKijun)
 
+
+bool showSignalsUponBreakout = input.bool(true, "Show entry signals upon 9-period high/low breakout")
+
 var bool hasSignaledForLong = false
 var bool hasSignaledForShort = false
 
@@ -367,25 +370,33 @@ canPrepareForLong := not inLongTrade and not inShortTrade and marketView == "bul
 
 //f_print(str.format("prepare? {0}, signaled? {1}, {2} breakout*? {3}, confluence? {4} -- currentPrice: {5}\n\n", canPrepareForLong, hasSignaledForLong, highestTenkanValue, str.tostring(close >= longBreakoutPrice), marketView, close))
 
-if not canPrepareForLong
-    hasSignaledForLong := false
-    longBreakoutPrice := 0.0
-else if canPrepareForLong and not hasSignaledForLong
-    longBreakoutPrice := highestTenkanValue
-    
+
+if showSignalsUponBreakout
+    if not canPrepareForLong
+        hasSignaledForLong := false
+        longBreakoutPrice := 0.0
+    else if canPrepareForLong and not hasSignaledForLong
+        longBreakoutPrice := highestTenkanValue
+        // Draw 9-period high line to indicate the best entry point
+        //f_print(str.format("9-period-highest-bar: {0}, 9-period-highest: {1}", str.tostring(highestTenkanSenBar), str.tostring(highestTenkanValue)))
+        line.new(bar_index-tenkanSenPeriod, highestTenkanValue, bar_index, highestTenkanValue, width=1, color=color.gray, style=line.style_dotted)
+        line.new(bar_index+highestTenkanSenBar-1, highestTenkanValue, bar_index, highestTenkanValue, width=1, color=color.aqua, style=line.style_solid)
+else if canPrepareForLong
     // Draw 9-period high line to indicate the best entry point
     //f_print(str.format("9-period-highest-bar: {0}, 9-period-highest: {1}", str.tostring(highestTenkanSenBar), str.tostring(highestTenkanValue)))
     line.new(bar_index-tenkanSenPeriod, highestTenkanValue, bar_index, highestTenkanValue, width=1, color=color.gray, style=line.style_dotted)
     line.new(bar_index+highestTenkanSenBar-1, highestTenkanValue, bar_index, highestTenkanValue, width=1, color=color.aqua, style=line.style_solid)
+
     
 //f_print(str.format("prepare? {0}, signaled? {1}, {2} breakout? {3}, confluence? {4} -- currentPrice: {5}", canPrepareForLong, hasSignaledForLong, longBreakoutPrice, str.tostring(high >= longBreakoutPrice), marketView, close))
 
-if canPrepareForLong and high >= longBreakoutPrice
+if canPrepareForLong
+     and (not showSignalsUponBreakout or high >= longBreakoutPrice)
     shouldGoLong := true
     hasSignaledForLong := false
     inLongTrade := true
     shouldSellOnKijun := false
-    longEntryPrice := longBreakoutPrice
+    longEntryPrice := showSignalsUponBreakout ? longBreakoutPrice : close
     longBreakoutPrice := 0.0
     longStopLoss := longEntryStop
     sellLimitOrder := longEntryPrice + (longEntryPrice - longEntryStop) * riskToRewardRatio
@@ -425,13 +436,16 @@ if (inLongTrade and not didSellOnLimitOrder and high >= sellLimitOrder)
 //f_print("[L2] inLongTrade: " + str.tostring(inLongTrade) + ", exit? = " + str.tostring(shouldSellOnKijun) + ", canPrepareForLong: " + str.tostring(canPrepareForLong) + "\n\n")
 
 // Plot LONG signals based on confluence
-plotshape(canPrepareForLong and not hasSignaledForLong and not shouldGoLong, title= "Prepare to go long", location=location.belowbar, color=color.aqua, transp=0, style=shape.triangleup, text="", size=size.tiny)
+plotshape(showSignalsUponBreakout and canPrepareForLong and not hasSignaledForLong and not shouldGoLong, title= "Prepare to go long", location=location.belowbar, color=color.aqua, transp=0, style=shape.triangleup, text="", size=size.tiny)
 if canPrepareForLong
     canPrepareForLong := false // reset flag
-    hasSignaledForLong := true
+    if showSignalsUponBreakout
+        hasSignaledForLong := true
 
-plotshape(shouldGoLong, title= "Long Entry", location=location.belowbar, color=color.green, transp=0, style=shape.triangleup, text="", size=size.small)
-if shouldGoLong
+plotshape((showSignalsUponBreakout and shouldGoLong) or (not showSignalsUponBreakout and canPrepareForLong), title="Long Entry", location=location.belowbar, color=color.green, transp=0, style=shape.triangleup, text="", size=size.small)
+if not showSignalsUponBreakout
+    canPrepareForLong := false
+else if shouldGoLong
     shouldGoLong := false
 
 plotshape(shouldSellOnTenkan, title= "Tenkan Long Exit", location=location.abovebar, color=color.aqua, transp=0, style=shape.diamond, text="", size=size.tiny)
@@ -457,8 +471,9 @@ if (inLongTrade and (shouldSellOnKijun or f_true(IDX_ShouldExitOnStopLoss) or sh
     f_reset()
     didLongPositionClose := true
     shouldSellOnStopLoss := false
-    hasSignaledForLong := false
-    canPrepareForLong := false
+    if showSignalsUponBreakout
+        hasSignaledForLong := false
+        canPrepareForLong := false
 
 
 
@@ -552,23 +567,29 @@ if (inShortTrade and marketView == "bullish")
 
 canPrepareForShort :=  not inShortTrade and not inLongTrade and marketView == "bearish"
 
-if not canPrepareForShort
-    hasSignaledForShort := false
-    shortBreakoutPrice := 0.0
-else if canPrepareForShort and not hasSignaledForShort
-    shortBreakoutPrice := lowestTenkanValue
-        
+if showSignalsUponBreakout
+    if not canPrepareForShort
+        hasSignaledForShort := false
+        shortBreakoutPrice := 0.0
+    else if canPrepareForShort and not hasSignaledForShort
+        shortBreakoutPrice := lowestTenkanValue
+        // Draw 9-period high line to indicate the best entry point
+        //f_print(str.format("9-period-lowest-bar: {0}, 9-period-lowest: {1}", lowestTenkanSenBar, lowestTenkanValue))
+        line.new(bar_index-tenkanSenPeriod, lowestTenkanValue, bar_index, lowestTenkanValue, width=1, color=color.gray, style=line.style_dotted)
+        line.new(bar_index+lowestTenkanSenBar-1, lowestTenkanValue, bar_index, lowestTenkanValue, width=1, color=color.orange, style=line.style_solid)
+else if canPrepareForShort
     // Draw 9-period high line to indicate the best entry point
     //f_print(str.format("9-period-lowest-bar: {0}, 9-period-lowest: {1}", lowestTenkanSenBar, lowestTenkanValue))
     line.new(bar_index-tenkanSenPeriod, lowestTenkanValue, bar_index, lowestTenkanValue, width=1, color=color.gray, style=line.style_dotted)
     line.new(bar_index+lowestTenkanSenBar-1, lowestTenkanValue, bar_index, lowestTenkanValue, width=1, color=color.orange, style=line.style_solid)
 
-if canPrepareForShort and low <= shortBreakoutPrice
+if canPrepareForShort
+     and (not showSignalsUponBreakout or low <= shortBreakoutPrice)
     shouldGoShort := true
     hasSignaledForShort := false
     inShortTrade := true
     shouldBuyOnKijun := false
-    shortEntryPrice := shortBreakoutPrice
+    shortEntryPrice := showSignalsUponBreakout ? shortBreakoutPrice : close
     shortBreakoutPrice := 0.0
     shortStopLoss := shortEntryStop
     buyLimitOrder := shortEntryPrice - (shortEntryStop - shortEntryPrice) * riskToRewardRatio
@@ -609,13 +630,16 @@ if (inShortTrade and not didBuyOnLimitOrder and low <= buyLimitOrder)
 //f_print("[S2] inShortTrade: " + str.tostring(inShortTrade) + ", exit? = " + str.tostring(shouldBuyOnKijun) + ", canPrepareForShort: " + str.tostring(canPrepareForShort) + ", isPriceAboveKijunsen? = " + str.tostring(isPriceAboveKijunSen) + "\n\n\n\n")
 
 // Plot SHORT signals based on confluence
-plotshape(canPrepareForShort and not hasSignaledForShort and not shouldGoShort, title= "Prepare to go short", location=location.abovebar, color=color.orange, transp=0, style=shape.triangledown, text="", size=size.tiny)
+plotshape(showSignalsUponBreakout and canPrepareForShort and not hasSignaledForShort and not shouldGoShort, title= "Prepare to go short", location=location.abovebar, color=color.orange, transp=0, style=shape.triangledown, text="", size=size.tiny)
 if canPrepareForShort
     canPrepareForShort := false // reset flag
-    hasSignaledForShort := true
+    if showSignalsUponBreakout
+        hasSignaledForShort := true
 
-plotshape(shouldGoShort, title= "Short Entry", location=location.abovebar, color=color.red, transp=0, style=shape.triangledown, text="", size=size.small)
-if shouldGoShort
+plotshape((showSignalsUponBreakout and shouldGoShort) or (not showSignalsUponBreakout and canPrepareForShort), title= "Short Entry", location=location.abovebar, color=color.red, transp=0, style=shape.triangledown, text="", size=size.small)
+if not showSignalsUponBreakout
+    canPrepareForShort := false
+else if shouldGoShort
     shouldGoShort := false
 
 plotshape(shouldBuyOnTenkan, title= "Tenkan Short Exit", location=location.belowbar, color=color.orange, transp=0, style=shape.diamond, text="", size=size.tiny)
@@ -637,8 +661,9 @@ if (inShortTrade and (shouldBuyOnKijun or f_true(IDX_ShouldExitOnStopLoss) or sh
     f_reset()
     didShortPositionClose := true
     shouldBuyOnStopLoss := false
-    hasSignaledForLong := false
-    canPrepareForLong := false
+    if showSignalsUponBreakout
+        hasSignaledForLong := false
+        canPrepareForLong := false
 
 
 
