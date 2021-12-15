@@ -368,8 +368,7 @@ if (inLongTrade and marketView == "bearish")
 
 canPrepareForLong := not inLongTrade and not inShortTrade and marketView == "bullish"
 
-//f_print(str.format("prepare? {0}, signaled? {1}, {2} breakout*? {3}, confluence? {4} -- currentPrice: {5}\n\n", canPrepareForLong, hasSignaledForLong, highestTenkanValue, str.tostring(close >= longBreakoutPrice), marketView, close))
-
+//f_print(str.format("[1] prepare? {0}, signaled? {1}, {2} breakout*? {3}, confluence? {4} -- currentPrice: {5}, inLong? {6}\n\n\n", canPrepareForLong, hasSignaledForLong, highestTenkanValue, str.tostring(close >= longBreakoutPrice), marketView, close, inLongTrade))
 
 if showSignalsUponBreakout
     if not canPrepareForLong
@@ -387,8 +386,7 @@ else if canPrepareForLong
     line.new(bar_index-tenkanSenPeriod, highestTenkanValue, bar_index, highestTenkanValue, width=1, color=color.gray, style=line.style_dotted)
     line.new(bar_index+highestTenkanSenBar-1, highestTenkanValue, bar_index, highestTenkanValue, width=1, color=color.aqua, style=line.style_solid)
 
-    
-//f_print(str.format("prepare? {0}, signaled? {1}, {2} breakout? {3}, confluence? {4} -- currentPrice: {5}", canPrepareForLong, hasSignaledForLong, longBreakoutPrice, str.tostring(high >= longBreakoutPrice), marketView, close))
+//f_print(str.format("[2] prepare? {0}, signaled? {1}, {2} breakout? {3}, confluence? {4} -- currentPrice: {5}", canPrepareForLong, hasSignaledForLong, longBreakoutPrice, str.tostring(high >= longBreakoutPrice), marketView, close))
 
 if canPrepareForLong
      and (not showSignalsUponBreakout or high >= longBreakoutPrice)
@@ -433,15 +431,16 @@ else
 if (inLongTrade and not didSellOnLimitOrder and high >= sellLimitOrder)
     shouldSellOnLimitOrder := true
 
-//f_print("[L2] inLongTrade: " + str.tostring(inLongTrade) + ", exit? = " + str.tostring(shouldSellOnKijun) + ", canPrepareForLong: " + str.tostring(canPrepareForLong) + "\n\n")
+//f_print("[3] inLongTrade: " + str.tostring(inLongTrade) + ", exit? = " + str.tostring(shouldSellOnKijun) + ", canPrepareForLong: " + str.tostring(canPrepareForLong) + "\n\n")
 
 // Plot LONG signals based on confluence
 plotshape(showSignalsUponBreakout and canPrepareForLong and not hasSignaledForLong and not shouldGoLong, title= "Prepare to go long", location=location.belowbar, color=color.aqua, transp=0, style=shape.triangleup, text="", size=size.tiny)
-if canPrepareForLong
+if showSignalsUponBreakout and canPrepareForLong
     canPrepareForLong := false // reset flag
     if showSignalsUponBreakout
         hasSignaledForLong := true
 
+//f_print(str.format("[4] PRINT BUY SIGNAL: showSignalsUponBreakout:{0}, canPrepareForLong: {1} {2}\n\n\n\n", str.tostring(showSignalsUponBreakout), str.tostring(canPrepareForLong), str.tostring(not showSignalsUponBreakout and canPrepareForLong)))
 plotshape((showSignalsUponBreakout and shouldGoLong) or (not showSignalsUponBreakout and canPrepareForLong), title="Long Entry", location=location.belowbar, color=color.green, transp=0, style=shape.triangleup, text="", size=size.small)
 if not showSignalsUponBreakout
     canPrepareForLong := false
@@ -631,7 +630,7 @@ if (inShortTrade and not didBuyOnLimitOrder and low <= buyLimitOrder)
 
 // Plot SHORT signals based on confluence
 plotshape(showSignalsUponBreakout and canPrepareForShort and not hasSignaledForShort and not shouldGoShort, title= "Prepare to go short", location=location.abovebar, color=color.orange, transp=0, style=shape.triangledown, text="", size=size.tiny)
-if canPrepareForShort
+if showSignalsUponBreakout and canPrepareForShort
     canPrepareForShort := false // reset flag
     if showSignalsUponBreakout
         hasSignaledForShort := true
@@ -708,7 +707,7 @@ if not inLongTrade and not inShortTrade
 
 if inLongTrade or didLongPositionClose
     ep := longEntryPrice
-    sl := shortStopLoss
+    sl := longStopLoss
     qty := maxRiskPerPosition / (longEntryPrice - longStopLoss)
     tradeSize := qty * longEntryPrice
     remainingUnitsAllocation := qty
