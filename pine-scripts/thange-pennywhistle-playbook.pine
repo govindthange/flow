@@ -102,12 +102,12 @@ string leadingKumoView = temp > 0 ? "bullish" : (temp < 0 ? "bearish" : "neutral
 
 // Where is price w.r.t kumo?
 string priceWrtKumo = "within"
-if (kumoView == "bullish" and close > senkouSpanA[displacement-1])
-     or (kumoView == "bearish" and close > senkouSpanB[displacement-1])
+if ((kumoView == "bullish" or kumoView == "neutral") and close > senkouSpanA[displacement-1])
+     or ((kumoView == "bearish" or kumoView == "neutral") and close > senkouSpanB[displacement-1])
     priceWrtKumo := "above"
-else if (kumoView == "bullish" and close < senkouSpanB[displacement-1])
-     or (kumoView == "bearish" and close < senkouSpanA[displacement-1])
-    priceWrtKumo := "below"
+else if ((kumoView == "bullish" or kumoView == "neutral") and close < senkouSpanB[displacement-1])
+     or ((kumoView == "bearish" or kumoView == "neutral") and close < senkouSpanA[displacement-1])
+priceWrtKumo := "below"
 
 // Where is price w.r.t tenkan?
 string priceWrtTenkan = close > tenkanSen ? "above" : (close < tenkanSen ? "below" : "at")
