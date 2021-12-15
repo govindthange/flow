@@ -80,10 +80,12 @@ kijunSen = donchian(kijunSenPeriod)
 senkouSpanA = math.avg(tenkanSen, kijunSen)
 senkouSpanB = donchian(senkouSpanBPeriod)
 
-highestTenkanSenBar = ta.highestbars(tenkanSenPeriod)
-highestTenkanValue = ta.highest(tenkanSenPeriod)
-lowestTenkanSenBar = ta.lowestbars(tenkanSenPeriod)
-lowestTenkanValue = ta.lowest(tenkanSenPeriod)
+includeCurrentBarFor9PeriodHighLow = input.bool(false, title="Include current bar to find 9-period high/low")
+barIndex = includeCurrentBarFor9PeriodHighLow ? 0 : 1
+highestTenkanSenBar = ta.highestbars(high[barIndex], tenkanSenPeriod)
+highestTenkanValue = ta.highest(high[barIndex], tenkanSenPeriod)
+lowestTenkanSenBar = ta.lowestbars(low[barIndex], tenkanSenPeriod)
+lowestTenkanValue = ta.lowest(low[barIndex], tenkanSenPeriod)
 
 highestKijunSenBar = ta.highestbars(kijunSenPeriod)
 highestKijunValue = ta.highest(kijunSenPeriod)
@@ -119,12 +121,14 @@ string leadingKumoView = temp > 0 ? "bullish" : (temp < 0 ? "bearish" : "neutral
 
 // Where is price w.r.t kumo?
 string priceWrtKumo = "within"
-if (kumoView == "bullish" and close > senkouSpanA[displacement-1])
-     or (kumoView == "bearish" and close > senkouSpanB[displacement-1])
+if ((kumoView == "bullish" or kumoView == "neutral") and close > senkouSpanA[displacement-1])
+     or ((kumoView == "bearish" or kumoView == "neutral") and close > senkouSpanB[displacement-1])
     priceWrtKumo := "above"
-else if (kumoView == "bullish" and close < senkouSpanB[displacement-1])
-     or (kumoView == "bearish" and close < senkouSpanA[displacement-1])
+else if ((kumoView == "bullish" or kumoView == "neutral") and close < senkouSpanB[displacement-1])
+     or ((kumoView == "bearish" or kumoView == "neutral") and close < senkouSpanA[displacement-1])
     priceWrtKumo := "below"
+
+//f_print(str.format("kumo: {0}, price {1}. ssA: {2, number}, ssB: {3, number}\n", kumoView, priceWrtKumo, senkouSpanA[displacement-1], senkouSpanB[displacement-1]))
 
 // Where is price w.r.t tenkan?
 string priceWrtTenkan = close > tenkanSen ? "above" : (close < tenkanSen ? "below" : "at")
@@ -361,26 +365,28 @@ if (inLongTrade and marketView == "bearish")
 
 canPrepareForLong := not inLongTrade and not inShortTrade and marketView == "bullish"
 
-//f_print(str.format("prepare? {0}, signaled? {1}, {2} breakout? {3}, confluence? {4} -- currentPrice: {5}\n\n", canPrepareForLong, hasSignaledForLong, longBreakoutPrice, str.tostring(close >= longBreakoutPrice), marketView, close))
+//f_print(str.format("prepare? {0}, signaled? {1}, {2} breakout*? {3}, confluence? {4} -- currentPrice: {5}\n\n", canPrepareForLong, hasSignaledForLong, highestTenkanValue, str.tostring(close >= longBreakoutPrice), marketView, close))
 
 if not canPrepareForLong
     hasSignaledForLong := false
+    longBreakoutPrice := 0.0
 else if canPrepareForLong and not hasSignaledForLong
     longBreakoutPrice := highestTenkanValue
     
     // Draw 9-period high line to indicate the best entry point
     //f_print(str.format("9-period-highest-bar: {0}, 9-period-highest: {1}", str.tostring(highestTenkanSenBar), str.tostring(highestTenkanValue)))
-    line.new(bar_index+highestTenkanSenBar, highestTenkanValue, bar_index+6, highestTenkanValue, width=1, color=color.aqua, style=line.style_solid)
+    line.new(bar_index-tenkanSenPeriod, highestTenkanValue, bar_index, highestTenkanValue, width=1, color=color.gray, style=line.style_dotted)
+    line.new(bar_index+highestTenkanSenBar-1, highestTenkanValue, bar_index, highestTenkanValue, width=1, color=color.aqua, style=line.style_solid)
     
 //f_print(str.format("prepare? {0}, signaled? {1}, {2} breakout? {3}, confluence? {4} -- currentPrice: {5}", canPrepareForLong, hasSignaledForLong, longBreakoutPrice, str.tostring(high >= longBreakoutPrice), marketView, close))
 
 if canPrepareForLong and high >= longBreakoutPrice
     shouldGoLong := true
-    longBreakoutPrice := 0.0
     hasSignaledForLong := false
     inLongTrade := true
     shouldSellOnKijun := false
-    longEntryPrice := close
+    longEntryPrice := longBreakoutPrice
+    longBreakoutPrice := 0.0
     longStopLoss := longEntryStop
     sellLimitOrder := longEntryPrice + (longEntryPrice - longEntryStop) * riskToRewardRatio
     
@@ -548,20 +554,22 @@ canPrepareForShort :=  not inShortTrade and not inLongTrade and marketView == "b
 
 if not canPrepareForShort
     hasSignaledForShort := false
+    shortBreakoutPrice := 0.0
 else if canPrepareForShort and not hasSignaledForShort
     shortBreakoutPrice := lowestTenkanValue
         
     // Draw 9-period high line to indicate the best entry point
     //f_print(str.format("9-period-lowest-bar: {0}, 9-period-lowest: {1}", lowestTenkanSenBar, lowestTenkanValue))
-    line.new(bar_index+lowestTenkanSenBar, lowestTenkanValue, bar_index+6, lowestTenkanValue, width=1, color=color.orange, style=line.style_solid)
+    line.new(bar_index-tenkanSenPeriod, lowestTenkanValue, bar_index, lowestTenkanValue, width=1, color=color.gray, style=line.style_dotted)
+    line.new(bar_index+lowestTenkanSenBar-1, lowestTenkanValue, bar_index, lowestTenkanValue, width=1, color=color.orange, style=line.style_solid)
 
 if canPrepareForShort and low <= shortBreakoutPrice
     shouldGoShort := true
-    shortBreakoutPrice := 0.0
     hasSignaledForShort := false
     inShortTrade := true
     shouldBuyOnKijun := false
-    shortEntryPrice := close
+    shortEntryPrice := shortBreakoutPrice
+    shortBreakoutPrice := 0.0
     shortStopLoss := shortEntryStop
     buyLimitOrder := shortEntryPrice - (shortEntryStop - shortEntryPrice) * riskToRewardRatio
     array.set(context, IDX_PriceLevelToBeginTrailingStopLoss, shortEntryPrice + (shortEntryPrice - shortStopLoss) * ratioWrtRiskToBeginTrailingSL)
@@ -642,7 +650,6 @@ if (inShortTrade and (shouldBuyOnKijun or f_true(IDX_ShouldExitOnStopLoss) or sh
 //####                                                       ####
 //###############################################################
 //###############################################################
-
 
 var int totalCandles = 0
 if withinTestRange
@@ -1084,7 +1091,7 @@ if (barstate.islast and showL1DebugInfo)
 
 // Display confluence information
 showConfluenceInfo = input.bool(true, title="Confluence Info")
-var table confluenceTable = table.new(position.top_right, 3, 18, bgcolor = color.rgb(0, 0, 0, 30), frame_width = 2, frame_color = color.black)
+var table confluenceTable = table.new(position.top_right, 3, 19, bgcolor = color.rgb(0, 0, 0, 30), frame_width = 2, frame_color = color.black)
 if (barstate.islast and showConfluenceInfo)
     table.cell(confluenceTable, 0, 0, "1. Future kumo is " + leadingKumoView + ".", text_color = (leadingKumoView == "bullish" ? color.green : (leadingKumoView == "bearish" ? color.red : color.white)), text_halign = text.align_left)
     table.cell(confluenceTable, 0, 1, "2. Price is " + priceWrtKumo + " kumo.", text_color = (priceWrtKumo == "above" ? color.green : (priceWrtKumo == "below" ? color.red : color.white)), text_halign = text.align_left)
@@ -1095,16 +1102,26 @@ if (barstate.islast and showConfluenceInfo)
     table.cell(confluenceTable, 0, 6, "7. Chikou is " + chikouWrtKumo + " kumo.", text_color = (chikouWrtKumo == "above" ? color.rgb(182, 209, 186) : (chikouWrtKumo == "below" ? color.rgb(255, 153, 153) : color.gray)), text_halign = text.align_left)
     table.cell(confluenceTable, 0, 7, "8. SSB " + (ssbProximityToChikou < 0 ? " may not block Chikou" : " might block Chikou at " + str.tostring(ssbProximityToChikou) + "%") + " for " + (chikouWrtKumo == "above" ? "long" : "short"  )+ " trade.", text_color = ( ssbProximityToChikou < 0 and marketView == "bullish" ? color.green : ( ssbProximityToChikou < 0 and marketView == "bearish" ? color.red : color.gray)), text_halign = text.align_left)
     table.cell(confluenceTable, 0, 8, "9. Chikou " + (isChikouSpanFree ? "clear from congestion." : " heading into " + str.tostring(congestionProximity) + " candles!"), text_color = (isChikouSpanFree ? (marketView == "bullish" ? color.green : (marketView == "bearish" ? color.red : color.gray)) : color.white), text_halign = text.align_left)
-    table.cell(confluenceTable, 0, 9, "- Is current kumo thick?", text_color = color.yellow, text_halign = text.align_left)
-    table.cell(confluenceTable, 0, 10, "- Is current kumo in flux?", text_color = color.yellow, text_halign = text.align_left)
-    table.cell(confluenceTable, 0, 11, "- Is Senkou-Span-B flat & long?", text_color = color.yellow, text_halign = text.align_left)
-    table.cell(confluenceTable, 0, 12, "- Is future kumo trending?", text_color = color.yellow, text_halign = text.align_left)
-    table.cell(confluenceTable, 0, 13, "- Is kijun flat & long?", text_color = color.yellow, text_halign = text.align_left)
-    table.cell(confluenceTable, 0, 14, "- Is 26 period high/low too far from the price?", text_color = color.yellow, text_halign = text.align_left)
-    table.cell(confluenceTable, 0, 15, "- Does last 26 candle indicate kijun will trend?", text_color = color.yellow, text_halign = text.align_left)
-    table.cell(confluenceTable, 0, 16, "- Are kumo shadows in the close proximity?", text_color = color.yellow, text_halign = text.align_left)
     
     if inShortTrade or inLongTrade
-        table.cell(confluenceTable, 0, 17, "* Your trade is active! Respond to signals proactively.", text_color = color.aqua, text_halign = text.align_left)
+        table.cell(confluenceTable, 0, 9, "", text_color = color.yellow, text_halign = text.align_left)
+        table.cell(confluenceTable, 0, 10, "* Your trade is live! Respond to signals proactively.", text_color = color.aqua, text_halign = text.align_left)
+        table.cell(confluenceTable, 0, 11, "", text_color = color.yellow, text_halign = text.align_left)
+        table.cell(confluenceTable, 0, 12, "", text_color = color.yellow, text_halign = text.align_left)
+        table.cell(confluenceTable, 0, 13, "", text_color = color.yellow, text_halign = text.align_left)
+        table.cell(confluenceTable, 0, 14, "", text_color = color.yellow, text_halign = text.align_left)
+        table.cell(confluenceTable, 0, 15, "", text_color = color.yellow, text_halign = text.align_left)
+        table.cell(confluenceTable, 0, 16, "", text_color = color.yellow, text_halign = text.align_left)
+        table.cell(confluenceTable, 0, 17, "", text_color = color.yellow, text_halign = text.align_left)
+        table.cell(confluenceTable, 0, 18, "", text_color = color.yellow, text_halign = text.align_left)
     else
-        table.cell(confluenceTable, 0, 17, str.format("* {0} {1}", (marketView == "bullish" ? "Go long upon" : (marketView == "bearish" ? "Go short upon" : "Hang on!")), (marketView == "bullish" ? str.tostring(longBreakoutPrice) + " breakout." : (marketView == "bearish" ? str.tostring(shortBreakoutPrice) + " breakout." : " Pennywhistle is scanning for signals."))), text_color = color.aqua, text_halign = text.align_left)
+        table.cell(confluenceTable, 0, 9, "- Is current kumo thick?", text_color = color.yellow, text_halign = text.align_left)
+        table.cell(confluenceTable, 0, 10, "- Is current kumo in flux?", text_color = color.yellow, text_halign = text.align_left)
+        table.cell(confluenceTable, 0, 11, "- Is Senkou-Span-B flat & long?", text_color = color.yellow, text_halign = text.align_left)
+        table.cell(confluenceTable, 0, 12, "- Is future kumo trending?", text_color = color.yellow, text_halign = text.align_left)
+        table.cell(confluenceTable, 0, 13, "- Is kijun flat & long?", text_color = color.yellow, text_halign = text.align_left)
+        table.cell(confluenceTable, 0, 14, "- Is 26 period high/low too far from the price?", text_color = color.yellow, text_halign = text.align_left)
+        table.cell(confluenceTable, 0, 15, "- Does last 26 candle indicate kijun will trend?", text_color = color.yellow, text_halign = text.align_left)
+        table.cell(confluenceTable, 0, 16, "- Are kumo shadows in the close proximity?", text_color = color.yellow, text_halign = text.align_left)
+        table.cell(confluenceTable, 0, 17, str.format("{0} {1}", (marketView == "bullish" ? "Go long upon" : (marketView == "bearish" ? "Go short upon" : "Hang on!")), (marketView == "bullish" ? str.tostring(longBreakoutPrice) + " breakout." : (marketView == "bearish" ? str.tostring(shortBreakoutPrice) + " breakout." : " Pennywhistle is scanning for signals."))), text_color = color.aqua, text_halign = text.align_left)
+    table.cell(confluenceTable, 0, 18, "Be ready with a limit-order at 9-period high/low.", text_color = color.aqua, text_halign = text.align_left)
