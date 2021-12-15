@@ -94,13 +94,6 @@ lowestKijunValue = ta.lowest(kijunSenPeriod)
 
 //f_print(str.format("##### highestBar: {0}, highest: {1}, lowestBar: {2}, lowest: {3}", ta.highestbars(tenkanSenPeriod), ta.highest(tenkanSenPeriod), ta.lowestbars(tenkanSenPeriod), ta.lowest(tenkanSenPeriod)))
 
-// Calculate stop-loss using ATR
-r = ta.atr(atrLength) * atrStopMultiplier
-entryPrice = close
-longEntryStop = kijunSen - r
-shortEntryStop = kijunSen + r
-
-
 
 
 //##########################################################################
@@ -264,6 +257,7 @@ else // for confluence to enter position
 
 //f_print("low: " + str.tostring(low) + ", kijun: " + str.tostring(kijunSen) + ", = " + priceWrtKijun)
 
+atr = ta.atr(atrLength) * atrStopMultiplier
 
 bool showSignalsUponBreakout = input.bool(true, "Show entry signals upon 9-period high/low breakout")
 
@@ -396,10 +390,9 @@ if canPrepareForLong
     shouldSellOnKijun := false
     longEntryPrice := showSignalsUponBreakout ? longBreakoutPrice : close
     longBreakoutPrice := 0.0
-    longStopLoss := longEntryStop
-    sellLimitOrder := longEntryPrice + (longEntryPrice - longEntryStop) * riskToRewardRatio
-    
-    array.set(context, IDX_PriceLevelToBeginTrailingStopLoss, longEntryPrice + (longEntryPrice - longEntryStop) * ratioWrtRiskToBeginTrailingSL)
+    longStopLoss := kijunSen - atr
+    sellLimitOrder := longEntryPrice + (longEntryPrice - longStopLoss) * riskToRewardRatio
+    array.set(context, IDX_PriceLevelToBeginTrailingStopLoss, longEntryPrice + (longEntryPrice - longStopLoss) * ratioWrtRiskToBeginTrailingSL)
     line.new(bar_index, f_get(IDX_PriceLevelToBeginTrailingStopLoss), bar_index+10, f_get(IDX_PriceLevelToBeginTrailingStopLoss), width=2, color=color.aqua, style=line.style_dotted)
     line.new(bar_index, longStopLoss, bar_index+10, longStopLoss, width=2, color=color.green, style=line.style_solid)
 
@@ -590,8 +583,8 @@ if canPrepareForShort
     shouldBuyOnKijun := false
     shortEntryPrice := showSignalsUponBreakout ? shortBreakoutPrice : close
     shortBreakoutPrice := 0.0
-    shortStopLoss := shortEntryStop
-    buyLimitOrder := shortEntryPrice - (shortEntryStop - shortEntryPrice) * riskToRewardRatio
+    shortStopLoss := kijunSen + atr
+    buyLimitOrder := shortEntryPrice - (shortStopLoss - shortEntryPrice) * riskToRewardRatio
     array.set(context, IDX_PriceLevelToBeginTrailingStopLoss, shortEntryPrice + (shortEntryPrice - shortStopLoss) * ratioWrtRiskToBeginTrailingSL)
     line.new(bar_index, f_get(IDX_PriceLevelToBeginTrailingStopLoss), bar_index+10, f_get(IDX_PriceLevelToBeginTrailingStopLoss), width=2, color=color.orange, style=line.style_dotted)
     line.new(bar_index, shortStopLoss, bar_index+10, shortStopLoss, width=2, color=color.red, style=line.style_solid)
