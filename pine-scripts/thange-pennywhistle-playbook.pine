@@ -931,7 +931,7 @@ if withinTestRange
 //##################################################################
 
 // Display confluence information
-showPnl = input.bool(true, title="Profit & Loss")
+showPnl = input.bool(true, title="Show Profit & Loss Summary")
 var table pnlTable = table.new(position.bottom_left, 8, 3, bgcolor = color.rgb(0, 0, 0, 30), frame_color = color.black)
 if (barstate.islast and showPnl)
     table.cell(pnlTable, 0, 0, "Current", text_halign = text.align_center, text_color = color.white)
@@ -960,7 +960,7 @@ if (barstate.islast and showPnl)
     table.cell(pnlTable, 7, 2, "-", text_halign = text.align_center, text_color = color.gray)
     
 // Display trade information
-showTradePlan = input.bool(false, title="Trade Plan")
+showTradePlan = input.bool(false, title="Show Entry/Exit Prices")
 horizontalTradePlan = input.bool(true, title="Show Trade Plan Horizontally")
 
 if horizontalTradePlan
@@ -1065,7 +1065,7 @@ else
         table.cell(tradeTable, 2, 15, str.format("{0, number, percent}", (pnl+realtime)/tradeSize), text_color = (pnl+realtime > 0 ? color.green : color.red))
 
 // Display debug information
-showL1DebugInfo = input.bool(false, title="Debug Info (Level 1)")
+showL1DebugInfo = input.bool(false, title="Show Debug Info (Level 1)")
 var table debugTable = table.new(position.bottom_center, 7, 3, bgcolor = color.silver, frame_width = 2, frame_color = color.gray)
 if (barstate.islast and showL1DebugInfo)
     table.cell(debugTable, 1, 0, "Is Active?", text_color = color.black)
@@ -1090,7 +1090,7 @@ if (barstate.islast and showL1DebugInfo)
     table.cell(debugTable, 6, 2, marketView, text_color = color.rgb(255, 153, 153))
 
 // Display confluence information
-showConfluenceInfo = input.bool(true, title="Confluence Info")
+showConfluenceInfo = input.bool(true, title="Show Confluence Summary")
 var table confluenceTable = table.new(position.top_right, 3, 19, bgcolor = color.rgb(0, 0, 0, 30), frame_width = 2, frame_color = color.black)
 if (barstate.islast and showConfluenceInfo)
     table.cell(confluenceTable, 0, 0, "1. Future kumo is " + leadingKumoView + ".", text_color = (leadingKumoView == "bullish" ? color.green : (leadingKumoView == "bearish" ? color.red : color.white)), text_halign = text.align_left)
