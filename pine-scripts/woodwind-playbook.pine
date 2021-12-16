@@ -953,7 +953,7 @@ var table pnlTable = table.new(position.bottom_left, 8, 3, bgcolor = color.rgb(0
 if (barstate.islast and showPnl)
     table.cell(pnlTable, 0, 0, "Current", text_halign = text.align_center, text_color = color.white)
     table.cell(pnlTable, 0, 1, str.format("{0, number, currency}", pnl), text_color = (pnl > 0 ? color.rgb(182, 209, 186) : color.rgb(182, 153, 153)), text_halign = text.align_center)
-    table.cell(pnlTable, 0, 2, (tradeSize > 0 ? str.format("{0, number, percent}", pnl/tradeSize) : ""), text_color = (pnl > 0 ? color.rgb(182, 209, 186) : color.rgb(182, 153, 153)), text_halign = text.align_center)
+    table.cell(pnlTable, 0, 2, (tradeSize > 0 ? str.format("{0, number, #0.00%}", pnl/tradeSize) : ""), text_color = (pnl > 0 ? color.rgb(182, 209, 186) : color.rgb(182, 153, 153)), text_halign = text.align_center)
     table.cell(pnlTable, 1, 0, "Previous", text_halign = text.align_center, text_color = color.white)
     table.cell(pnlTable, 1, 1, str.format("{0, number, currency}", prevPnl), text_color = (prevPnlPercent > 0 ? color.rgb(182, 209, 186) : color.rgb(182, 153, 153)), text_halign = text.align_center)
     table.cell(pnlTable, 1, 2, str.format("{0, number, #0.00}%", prevPnlPercent) , text_halign = text.align_center, text_color = (prevPnlPercent > 0 ? color.rgb(182, 209, 186) : color.rgb(182, 153, 153)))
@@ -1029,7 +1029,7 @@ if horizontalTradePlan
         table.cell(tradeTable, 12, 2, str.tostring(k, str.tostring(f_tickFormat())), text_color = (k > 0 ? color.rgb(182, 209, 186) : color.rgb(182, 153, 153)))
         table.cell(tradeTable, 13, 2, str.tostring(lo, str.tostring(f_tickFormat())), text_color = (lo > 0 ? color.rgb(182, 209, 186) : color.rgb(182, 153, 153)))
         table.cell(tradeTable, 14, 2, str.format("{0, number, currency}", pnl+realtime), text_color = (pnl+realtime > 0 ? color.green : color.red))
-        table.cell(tradeTable, 15, 2, str.format("{0, number, percent}", (pnl+realtime)/tradeSize), text_color = (pnl+realtime > 0 ? color.green : color.red))
+        table.cell(tradeTable, 15, 2, str.format("{0, number, #0.00%}", (pnl+realtime)/tradeSize), text_color = (pnl+realtime > 0 ? color.green : color.red))
 else
     var table tradeTable = table.new(position.bottom_right, 4, 17, bgcolor = color.rgb(0, 0, 0, 30), frame_width = 2, frame_color = color.black)
     if (barstate.islast and showTradePlan)
