@@ -40,15 +40,12 @@ fromDateInput = input.time(timestamp("15 Oct 2021 05:30 +0300"), title="Backtest
 toDateInput = input.time(timestamp("24 Nov 2021 05:30 +0300"), title="Backtest To Date")
 
 bool withinTestRange = (time >= fromDateInput and time <= toDateInput)
-var fromDateDrawn = false
-if time >= fromDateInput and not fromDateDrawn
-    line.new(bar_index, open, bar_index, open * 1.01, extend = extend.both, color = color.blue, style = line.style_solid, width = 2)
-    fromDateDrawn := true
 
-var toDateDrawn = false
-if time >= toDateInput and not toDateDrawn
-    line.new(bar_index, open, bar_index, open * 1.01, extend = extend.both, color = color.maroon, style = line.style_solid, width = 2)
-    toDateDrawn := true
+sessionColor = color.rgb(0, 0, 0, 100)
+if withinTestRange
+    sessionColor := color.rgb(0, 0, 0, 70)
+
+bgcolor(sessionColor)
 
 riskToRewardRatio = input.int(1, minval=1, title="Risk:Reward")
 ratioWrtRiskToBeginTrailingSL = input.float (1, minval=0, title="Nurture Phase (Ratio w.r.t risk before trailing SL)")
@@ -360,7 +357,10 @@ if (inLongTrade and marketView == "bearish")
 
 //f_print("[L1] inLongTrade: " + str.tostring(inLongTrade) + ", exit? = " + str.tostring(shouldSellOnKijun) + ", bullishConf? = " + str.tostring(hasBullishConfluence) + "\n")
 
-canPrepareForLong := not inLongTrade and not inShortTrade and marketView == "bullish"
+canPrepareForLong := withinTestRange
+                         and not inLongTrade
+                         and not inShortTrade
+                         and marketView == "bullish"
 
 //f_print(str.format("[1] prepare? {0}, signaled? {1}, {2} breakout*? {3}, confluence? {4} -- currentPrice: {5}, inLong? {6}\n\n\n", canPrepareForLong, hasSignaledForLong, highestTenkanValue, str.tostring(close >= longBreakoutPrice), marketView, close, inLongTrade))
 
@@ -557,7 +557,10 @@ if (inShortTrade and marketView == "bullish")
 
 //f_print("[S1] inShortTrade: " + str.tostring(inShortTrade) + ", exit? = " + str.tostring(shouldBuyOnKijun) + ", bearishConf? = " + str.tostring(hasBearishConfluence) + ", isPriceAboveKijunsen? = " + str.tostring(isPriceAboveKijunSen) + "\n\n\n")
 
-canPrepareForShort :=  not inShortTrade and not inLongTrade and marketView == "bearish"
+canPrepareForShort :=  withinTestRange
+                         and not inShortTrade
+                         and not inLongTrade
+                         and marketView == "bearish"
 
 if showSignalsUponBreakout
     if not canPrepareForShort
