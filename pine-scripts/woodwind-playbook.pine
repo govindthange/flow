@@ -264,10 +264,11 @@ var bool hasSignaledForShort = false
 bool didLongPositionClose = false
 bool didShortPositionClose = false
 
-
 bool allowEntryUponGaps = input.bool(false, "Allow entering trades upon gap-up/down.")
 bool didCandleGap = (open > high[1] and low > high[1]) or (open < low[1] and high < low[1])
 plotshape(not allowEntryUponGaps and didCandleGap, title= "Candle Gap Up/Down", location=location.belowbar, color=color.gray, transp=0, style=shape.arrowup, text="Gap", size=size.normal)
+
+
 
 
 //###############################################################
@@ -462,15 +463,6 @@ if shouldSellOnLimitOrder
 
 //f_print(str.format("{0}, inLongTrade: {1}, withinRange: {2}", (shouldSellOnKijun or f_true(IDX_ShouldExitOnStopLoss)), inLongTrade, withinTestRange))
 
-if (inLongTrade and (shouldSellOnKijun or f_true(IDX_ShouldExitOnStopLoss) or shouldSellOnTkCross or shouldPreemptivelyExitLong))
-    inLongTrade := false
-    f_reset()
-    didLongPositionClose := true
-    shouldSellOnStopLoss := false
-    if showSignalsUponBreakout
-        hasSignaledForLong := false
-        canPrepareForLong := false
-
 
 
 
@@ -655,6 +647,26 @@ plotshape(shouldBuyOnLimitOrder, title= "Fixed Short Exit", location=location.be
 if shouldBuyOnLimitOrder
     didBuyOnLimitOrder := true
     shouldBuyOnLimitOrder := false
+
+
+
+
+//################################################################
+//################################################################
+//####                                                        ####
+//####                  Close Open Positions                  ####
+//####                                                        ####
+//################################################################
+//################################################################
+
+if (inLongTrade and (shouldSellOnKijun or f_true(IDX_ShouldExitOnStopLoss) or shouldSellOnTkCross or shouldPreemptivelyExitLong))
+    inLongTrade := false
+    f_reset()
+    didLongPositionClose := true
+    shouldSellOnStopLoss := false
+    if showSignalsUponBreakout
+        hasSignaledForLong := false
+        canPrepareForLong := false
 
 if (inShortTrade and (shouldBuyOnKijun or f_true(IDX_ShouldExitOnStopLoss) or shouldBuyOnTkCross or shouldPreemptivelyExitShort))
     inShortTrade := false
