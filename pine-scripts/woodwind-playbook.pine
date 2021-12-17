@@ -265,6 +265,9 @@ bool didLongPositionClose = false
 bool didShortPositionClose = false
 
 
+bool allowEntryUponGaps = input.bool(false, "Allow entering trades upon gap-up/down.")
+bool didCandleGap = (open > high[1] and low > high[1]) or (open < low[1] and high < low[1])
+plotshape(not allowEntryUponGaps and didCandleGap, title= "Candle Gap Up/Down", location=location.belowbar, color=color.gray, transp=0, style=shape.arrowup, text="Gap", size=size.normal)
 
 
 //###############################################################
@@ -358,6 +361,7 @@ if (inLongTrade and marketView == "bearish")
 //f_print("[L1] inLongTrade: " + str.tostring(inLongTrade) + ", exit? = " + str.tostring(shouldSellOnKijun) + ", bullishConf? = " + str.tostring(hasBullishConfluence) + "\n")
 
 canPrepareForLong := withinTestRange
+                         and (allowEntryUponGaps or not didCandleGap)
                          and not inLongTrade
                          and not inShortTrade
                          and marketView == "bullish"
@@ -558,6 +562,7 @@ if (inShortTrade and marketView == "bullish")
 //f_print("[S1] inShortTrade: " + str.tostring(inShortTrade) + ", exit? = " + str.tostring(shouldBuyOnKijun) + ", bearishConf? = " + str.tostring(hasBearishConfluence) + ", isPriceAboveKijunsen? = " + str.tostring(isPriceAboveKijunSen) + "\n\n\n")
 
 canPrepareForShort :=  withinTestRange
+                         and (allowEntryUponGaps or not didCandleGap)
                          and not inShortTrade
                          and not inLongTrade
                          and marketView == "bearish"
