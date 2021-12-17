@@ -396,6 +396,8 @@ if canPrepareForLong
     longEntryPrice := showSignalsUponBreakout ? longBreakoutPrice : close
     longBreakoutPrice := 0.0
     longStopLoss := kijunSen - atr
+    if longStopLoss > low
+        longStopLoss := low - atr
     sellLimitOrder := longEntryPrice + (longEntryPrice - longStopLoss) * riskToRewardRatio
     array.set(context, IDX_PriceLevelToBeginTrailingStopLoss, longEntryPrice + (longEntryPrice - longStopLoss) * ratioWrtRiskToBeginTrailingSL)
     line.new(bar_index, f_get(IDX_PriceLevelToBeginTrailingStopLoss), bar_index+10, f_get(IDX_PriceLevelToBeginTrailingStopLoss), width=2, color=color.aqua, style=line.style_dotted)
@@ -584,6 +586,9 @@ if canPrepareForShort
     shortEntryPrice := showSignalsUponBreakout ? shortBreakoutPrice : close
     shortBreakoutPrice := 0.0
     shortStopLoss := kijunSen + atr
+    if shortStopLoss < high
+        shortStopLoss := high + atr
+    f_print(str.format("sl: {0}, high: {1}", shortStopLoss, high))
     buyLimitOrder := shortEntryPrice - (shortStopLoss - shortEntryPrice) * riskToRewardRatio
     array.set(context, IDX_PriceLevelToBeginTrailingStopLoss, shortEntryPrice + (shortEntryPrice - shortStopLoss) * ratioWrtRiskToBeginTrailingSL)
     line.new(bar_index, f_get(IDX_PriceLevelToBeginTrailingStopLoss), bar_index+10, f_get(IDX_PriceLevelToBeginTrailingStopLoss), width=2, color=color.orange, style=line.style_dotted)
