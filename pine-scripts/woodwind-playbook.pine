@@ -23,10 +23,10 @@ float exitPercent = input.float(10, title="Scale out percent") / 100
 int atrLength = input.int(30, minval=1, title="ATR Length")
 float atrStopMultiplier = input.float(1.0, minval=0.1, title="ATR x ?")
 
-bool showPnl = input.bool(true, title="Show profit & loss summary")
+bool showPnl = input.bool(false, title="Show profit & loss summary")
 bool showTradePlan = input.bool(false, title="Show all entry & exits")
-bool horizontalTradePlan = input.bool(true, title="Show trade plan horizontally")
-bool showConfluenceInfo = input.bool(true, title="Show confluence Summary")
+bool horizontalTradePlan = input.bool(false, title="Show trade plan horizontally")
+bool showConfluenceInfo = input.bool(false, title="Show confluence Summary")
 
 int tenkanSenPeriod = input.int(9, minval=1, title="Tenkan-Sen Length")
 int kijunSenPeriod = input.int(26, minval=1, title="Kijun-Sen Length")
@@ -1054,8 +1054,8 @@ if withinTestRange
 //##################################################################
 //##################################################################
 
-// Display confluence information
-var table pnlTable = table.new(position.top_right, 8, 3, bgcolor = color.rgb(0, 0, 0, 30), frame_color = color.black)
+// Display PnL summary
+var table pnlTable = table.new(position.bottom_right, 8, 3, bgcolor = color.rgb(0, 0, 0, 30), frame_color = color.black)
 if (barstate.islast and showPnl)
     table.cell(pnlTable, 0, 0, "Current", text_halign = text.align_center, text_color = color.white)
     table.cell(pnlTable, 0, 1, str.format("{0, number, currency}", pnl), text_color = (pnl > 0 ? color.rgb(182, 209, 186) : color.rgb(182, 153, 153)), text_halign = text.align_center)
@@ -1084,7 +1084,7 @@ if (barstate.islast and showPnl)
 
 // Display trade information
 if horizontalTradePlan
-    var table tradeTable = table.new(position.bottom_left, 17, 4, bgcolor = color.rgb(0, 0, 0, 30), frame_width = 2, frame_color = color.black)
+    var table tradeTable = table.new(position.top_right, 17, 4, bgcolor = color.rgb(0, 0, 0, 30), frame_width = 2, frame_color = color.black)
     if (barstate.islast and showTradePlan)
         table.cell(tradeTable, 1, 0, "Entry", text_color = color.white)
         table.cell(tradeTable, 2, 0, "TP", text_color = color.white)
@@ -1134,7 +1134,7 @@ if horizontalTradePlan
         table.cell(tradeTable, 14, 2, str.format("{0, number, currency}", pnl+realtime), text_color = (pnl+realtime > 0 ? color.green : color.red))
         table.cell(tradeTable, 15, 2, str.format("{0, number, #0.00%}", (pnl+realtime)/tradeSize), text_color = (pnl+realtime > 0 ? color.green : color.red))
 else
-    var table tradeTable = table.new(position.bottom_left, 4, 17, bgcolor = color.rgb(0, 0, 0, 30), frame_width = 2, frame_color = color.black)
+    var table tradeTable = table.new(position.top_right, 4, 17, bgcolor = color.rgb(0, 0, 0, 30), frame_width = 2, frame_color = color.black)
     if (barstate.islast and showTradePlan)
         table.cell(tradeTable, 0, 1, "Entry", text_color = color.white)
         table.cell(tradeTable, 0, 2, "TP", text_color = color.white)
@@ -1209,7 +1209,7 @@ if (barstate.islast and showL1DebugInfo)
     table.cell(debugTable, 6, 2, marketView, text_color = color.rgb(255, 153, 153))
 
 // Display confluence information
-var table confluenceTable = table.new(position.bottom_right, 3, 19, bgcolor = color.rgb(0, 0, 0, 30), frame_width = 2, frame_color = color.black)
+var table confluenceTable = table.new(position.bottom_left, 3, 19, bgcolor = color.rgb(0, 0, 0, 30), frame_width = 2, frame_color = color.black)
 if (barstate.islast and showConfluenceInfo)
     table.cell(confluenceTable, 0, 0, "1. Future kumo is " + leadingKumoView + ".", text_color = (leadingKumoView == "bullish" ? color.green : (leadingKumoView == "bearish" ? color.red : color.white)), text_halign = text.align_left)
     table.cell(confluenceTable, 0, 1, "2. Price is " + priceWrtKumo + " kumo.", text_color = (priceWrtKumo == "above" ? color.green : (priceWrtKumo == "below" ? color.red : color.white)), text_halign = text.align_left)
