@@ -2,22 +2,33 @@
 // @ govindthange
 
 //@version=5
-indicator("Thange Piccolo Playbook", shorttitle="Thange/Piccolo", overlay=true)
+indicator("Thange Piccolo Playbook", shorttitle="Thange/Piccolo", overlay=true, max_labels_count=250)
 
 // Standard constants
 YES = 1.0
 NO = 0.0
 
 // Color definitions
+
 sessionColor = color.rgb(0, 0, 0, 100)
-longBgColor = color.rgb(0,255,0,97)
+
+longBgColor = color.rgb(0,255,0,94)
 longLineColor = color.rgb(29, 176, 12, 0)
-longPrimarySignalColor = color.rgb(29, 176, 12, 0)
-longSecondarySignalColor = color.rgb(29, 176, 12, 30)
-shortBgColor = color.rgb(255,0,0,95)
+longPrimarySignalColor = color.rgb(29, 176, 12, 30)
+longSecondarySignalColor = color.new(longPrimarySignalColor, 60)
+shortBgColor = color.rgb(255,0,0,92)
 shortLineColor = color.rgb(242, 10, 10, 0)
-shortPrimarySignalColor = color.rgb(242, 10, 10, 0)
-shortSecondarySignalColor = color.rgb(242, 10, 10, 30)
+shortPrimarySignalColor = color.rgb(242, 10, 10, 30)
+shortSecondarySignalColor = color.new(shortPrimarySignalColor, 60)
+
+pnlLabelColor = color.new(color.black, 60)
+pnlLabelProfitColor = color.green
+pnlLabelProfitBgColor = color.new(longPrimarySignalColor, 87)
+pnlLabelLossColor = color.red
+pnlLabelLossBgColor = color.new(shortPrimarySignalColor, 85)
+
+pnlLabelMaxCapitalColor =  color.new(color.blue, 45)
+pnlLabelMaxCapitalTextColor =  color.yellow
 
 // Initialize an empty array to store trading parameters
 var context = array.new_float(15)
@@ -594,7 +605,7 @@ if canPrepareForShort
     shortStopLoss := kijunSen + atr
     if shortStopLoss < high
         shortStopLoss := high + atr
-    f_print(str.format("sl: {0}, high: {1}", shortStopLoss, high))
+    //f_print(str.format("sl: {0}, high: {1}", shortStopLoss, high))
     buyLimitOrder := shortEntryPrice - (shortStopLoss - shortEntryPrice) * riskToRewardRatio
     array.set(context, IDX_PriceLevelToBeginTrailingStopLoss, shortEntryPrice + (shortEntryPrice - shortStopLoss) * ratioWrtRiskToBeginTrailingSL)
     line.new(bar_index, f_get(IDX_PriceLevelToBeginTrailingStopLoss), bar_index+10, f_get(IDX_PriceLevelToBeginTrailingStopLoss), width=2, color=shortLineColor, style=line.style_dotted)
@@ -970,6 +981,10 @@ if inShortTrade or didShortPositionClose
     else
         realtime := (shortEntryPrice - close) * remainingUnitsAllocation
 
+var label maxCapitalLabel = na
+var color maxCapitalLabelBgColor = na
+var color maxCapitalLabelTextColor = na
+
 if withinTestRange
      and (didLongPositionClose or didShortPositionClose)
     totalTrades := totalTrades + 1
@@ -988,6 +1003,26 @@ if withinTestRange
     prevPnl := pnl
     prevPnlPercent := 100*pnl/tradeSize
     
+    pnlLabel = label.new(x = bar_index,
+                 y = (didLongPositionClose ? low : high),
+                 style = (didLongPositionClose ? label.style_label_down : label.style_label_up),
+                 color = (pnl > 0 ? pnlLabelProfitBgColor : pnlLabelLossBgColor),
+                 textcolor = (pnl > 0 ? pnlLabelProfitColor : pnlLabelLossColor),
+                 yloc = (didLongPositionClose ? yloc.abovebar : yloc.belowbar),
+                 text = str.format("{0, number, currency}", pnl),
+                 tooltip = str.format("Capital: {0, number, currency}\nUnits: {1}\nRoI: {2, number, #0.00%}", tradeSize, qty, pnl/tradeSize))
+                 
+    if tradeSize == maxCapital
+        if maxCapitalLabel != na
+            label.set_color(maxCapitalLabel, maxCapitalLabelBgColor)
+            label.set_textcolor(maxCapitalLabel, maxCapitalLabelTextColor)
+            
+        maxCapitalLabelBgColor := (pnl > 0 ? pnlLabelProfitBgColor : pnlLabelLossBgColor)
+        maxCapitalLabelTextColor := (pnl > 0 ? pnlLabelProfitColor : pnlLabelLossColor)
+        maxCapitalLabel := pnlLabel
+        label.set_color(pnlLabel, pnlLabelMaxCapitalColor)
+        label.set_textcolor(pnlLabel, pnlLabelMaxCapitalTextColor)
+
 
 
 
