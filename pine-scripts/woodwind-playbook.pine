@@ -282,7 +282,7 @@ bool didShortPositionClose = false
 
 bool allowEntryUponGaps = input.bool(false, "Allow entering trades upon gap-up/down.")
 bool didCandleGap = (open > high[1] and low > high[1]) or (open < low[1] and high < low[1])
-plotshape(not allowEntryUponGaps and didCandleGap, title= "Candle Gap Up/Down", location=location.belowbar, color=color.gray, transp=0, style=shape.arrowup, text="", size=size.normal)
+//plotshape(not allowEntryUponGaps and didCandleGap, title= "Candle Gap Up/Down", location=location.belowbar, color=color.gray, transp=0, style=shape.arrowup, text="", size=size.normal, editable=false)
 
 
 
@@ -371,7 +371,7 @@ if (inLongTrade and recentTkCross == "bearish"
     //shouldScaleOut := true
     tkCrossSellPrice := close
 
-plotshape(inLongTrade and marketView == "bearish", title= "Stop Loss Long Exit", location=location.belowbar, color=longPrimarySignalColor, transp=0, style=shape.flag, text="", size=size.small)
+plotshape(inLongTrade and marketView == "bearish", title= "Stop Loss Long Exit", location=location.belowbar, color=longPrimarySignalColor, transp=0, style=shape.flag, text="", size=size.small, editable=false)
 if (inLongTrade and marketView == "bearish")
     shouldPreemptivelyExitLong := true
 
@@ -450,29 +450,29 @@ if (inLongTrade and not didSellOnLimitOrder and high >= sellLimitOrder)
 //f_print("[3] inLongTrade: " + str.tostring(inLongTrade) + ", exit? = " + str.tostring(shouldSellOnKijun) + ", canPrepareForLong: " + str.tostring(canPrepareForLong) + "\n\n")
 
 // Plot LONG signals based on confluence
-plotshape(showSignalsUponBreakout and canPrepareForLong and not hasSignaledForLong and not shouldGoLong, title= "Prepare to go long", location=location.belowbar, color=color.teal, transp=0, style=shape.triangleup, text="", size=size.tiny)
+plotshape(showSignalsUponBreakout and canPrepareForLong and not hasSignaledForLong and not shouldGoLong, title= "Prepare to go long", location=location.belowbar, color=color.teal, transp=0, style=shape.triangleup, text="", size=size.tiny, editable=false)
 if showSignalsUponBreakout and canPrepareForLong
     canPrepareForLong := false // reset flag
     if showSignalsUponBreakout
         hasSignaledForLong := true
 
 //f_print(str.format("[4] PRINT BUY SIGNAL: showSignalsUponBreakout:{0}, canPrepareForLong: {1} {2}\n\n\n\n", str.tostring(showSignalsUponBreakout), str.tostring(canPrepareForLong), str.tostring(not showSignalsUponBreakout and canPrepareForLong)))
-plotshape((showSignalsUponBreakout and shouldGoLong) or (not showSignalsUponBreakout and canPrepareForLong), title="Long Entry A", location=location.belowbar, color=longPrimarySignalColor, transp=0, style=shape.triangleup, text="", size=size.small)
-plotshape((showSignalsUponBreakout and shouldGoLong) or (not showSignalsUponBreakout and canPrepareForLong), title="Long Entry B", location=location.belowbar, color=longPrimarySignalColor, transp=0, style=shape.triangleup, text="", size=size.tiny)
+plotshape((showSignalsUponBreakout and shouldGoLong) or (not showSignalsUponBreakout and canPrepareForLong), title="Long Entry A", location=location.belowbar, color=longPrimarySignalColor, transp=0, style=shape.triangleup, text="", size=size.small, editable=false)
+plotshape((showSignalsUponBreakout and shouldGoLong) or (not showSignalsUponBreakout and canPrepareForLong), title="Long Entry B", location=location.belowbar, color=longPrimarySignalColor, transp=0, style=shape.triangleup, text="", size=size.tiny, editable=false)
 if not showSignalsUponBreakout
     canPrepareForLong := false
 else if shouldGoLong
     shouldGoLong := false
 
-plotshape(shouldSellOnTenkan, title= "Tenkan Long Exit", location=location.abovebar, color=longSecondarySignalColor, transp=0, style=shape.diamond, text="", size=size.tiny)
+plotshape(shouldSellOnTenkan, title= "Tenkan Long Exit", location=location.abovebar, color=longSecondarySignalColor, transp=0, style=shape.diamond, text="", size=size.tiny, editable=false)
 
-plotshape(shouldSellOnKijun, title= "Kijun Long Exit", location=location.abovebar, color=longSecondarySignalColor, transp=0, style=shape.circle, text="", size=size.tiny)
+plotshape(shouldSellOnKijun, title= "Kijun Long Exit", location=location.abovebar, color=longSecondarySignalColor, transp=0, style=shape.circle, text="", size=size.tiny, editable=false)
 
-plotshape(shouldSellOnTkCross, title= "TK Cross Long Exit", location=location.abovebar, color=longSecondarySignalColor, transp=0, style=shape.xcross, text="", size=size.small)
+plotshape(shouldSellOnTkCross, title= "TK Cross Long Exit", location=location.abovebar, color=longSecondarySignalColor, transp=0, style=shape.xcross, text="", size=size.small, editable=false)
 
-plotshape(inLongTrade and (f_true(IDX_ShouldExitOnStopLoss) or shouldSellOnStopLoss), title= "Stop Loss Long Exit", location=location.belowbar, color=longPrimarySignalColor, transp=0, style=shape.flag, text="", size=size.small)
+plotshape(inLongTrade and (f_true(IDX_ShouldExitOnStopLoss) or shouldSellOnStopLoss), title= "Stop Loss Long Exit", location=location.belowbar, color=longPrimarySignalColor, transp=0, style=shape.flag, text="", size=size.small, editable=false)
 
-plotshape(shouldSellOnLimitOrder, title= "Fixed Long Exit", location=location.abovebar, color=longSecondarySignalColor, transp=0, style=shape.square, text="", size=size.tiny)
+plotshape(shouldSellOnLimitOrder, title= "Fixed Long Exit", location=location.abovebar, color=longSecondarySignalColor, transp=0, style=shape.square, text="", size=size.tiny, editable=false)
 
 if shouldSellOnLimitOrder
     didSellOnLimitOrder := true
@@ -566,7 +566,7 @@ if (inShortTrade and recentTkCross == "bullish"
     //shouldScaleOut := true
     tkCrossBuyPrice := close
 
-plotshape(inShortTrade and marketView == "bullish", title= "Stop Loss Short Exit", location=location.belowbar, color=shortPrimarySignalColor, transp=0, style=shape.flag, text="", size=size.small)
+plotshape(inShortTrade and marketView == "bullish", title= "Stop Loss Short Exit", location=location.belowbar, color=shortPrimarySignalColor, transp=0, style=shape.flag, text="", size=size.small, editable=false)
 if (inShortTrade and marketView == "bullish")
     shouldPreemptivelyExitShort := true
 
@@ -644,28 +644,28 @@ if (inShortTrade and not didBuyOnLimitOrder and low <= buyLimitOrder)
 //f_print("[S2] inShortTrade: " + str.tostring(inShortTrade) + ", exit? = " + str.tostring(shouldBuyOnKijun) + ", canPrepareForShort: " + str.tostring(canPrepareForShort) + ", isPriceAboveKijunsen? = " + str.tostring(isPriceAboveKijunSen) + "\n\n\n\n")
 
 // Plot SHORT signals based on confluence
-plotshape(showSignalsUponBreakout and canPrepareForShort and not hasSignaledForShort and not shouldGoShort, title= "Prepare to go short", location=location.abovebar, color=color.red, transp=0, style=shape.triangledown, text="", size=size.tiny)
+plotshape(showSignalsUponBreakout and canPrepareForShort and not hasSignaledForShort and not shouldGoShort, title= "Prepare to go short", location=location.abovebar, color=color.red, transp=0, style=shape.triangledown, text="", size=size.tiny, editable=false)
 if showSignalsUponBreakout and canPrepareForShort
     canPrepareForShort := false // reset flag
     if showSignalsUponBreakout
         hasSignaledForShort := true
 
-plotshape((showSignalsUponBreakout and shouldGoShort) or (not showSignalsUponBreakout and canPrepareForShort), title= "Short Entry A", location=location.abovebar, color=shortPrimarySignalColor, transp=0, style=shape.triangledown, text="", size=size.small)
-plotshape((showSignalsUponBreakout and shouldGoShort) or (not showSignalsUponBreakout and canPrepareForShort), title= "Short Entry B", location=location.abovebar, color=shortPrimarySignalColor, transp=0, style=shape.triangledown, text="", size=size.tiny)
+plotshape((showSignalsUponBreakout and shouldGoShort) or (not showSignalsUponBreakout and canPrepareForShort), title= "Short Entry A", location=location.abovebar, color=shortPrimarySignalColor, transp=0, style=shape.triangledown, text="", size=size.small, editable=false)
+plotshape((showSignalsUponBreakout and shouldGoShort) or (not showSignalsUponBreakout and canPrepareForShort), title= "Short Entry B", location=location.abovebar, color=shortPrimarySignalColor, transp=0, style=shape.triangledown, text="", size=size.tiny, editable=false)
 if not showSignalsUponBreakout
     canPrepareForShort := false
 else if shouldGoShort
     shouldGoShort := false
 
-plotshape(shouldBuyOnTenkan, title= "Tenkan Short Exit", location=location.belowbar, color=shortSecondarySignalColor, transp=0, style=shape.diamond, text="", size=size.tiny)
+plotshape(shouldBuyOnTenkan, title= "Tenkan Short Exit", location=location.belowbar, color=shortSecondarySignalColor, transp=0, style=shape.diamond, text="", size=size.tiny, editable=false)
 
-plotshape(shouldBuyOnKijun, title= "Kijun Short Exit", location=location.belowbar, color=shortSecondarySignalColor, transp=0, style=shape.circle, text="", size=size.tiny)
+plotshape(shouldBuyOnKijun, title= "Kijun Short Exit", location=location.belowbar, color=shortSecondarySignalColor, transp=0, style=shape.circle, text="", size=size.tiny, editable=false)
 
-plotshape(shouldBuyOnTkCross, title= "TK Cross Short Exit", location=location.belowbar, color=shortSecondarySignalColor, transp=0, style=shape.xcross, text="", size=size.small)
+plotshape(shouldBuyOnTkCross, title= "TK Cross Short Exit", location=location.belowbar, color=shortSecondarySignalColor, transp=0, style=shape.xcross, text="", size=size.small, editable=false)
 
-plotshape(inShortTrade and (f_true(IDX_ShouldExitOnStopLoss) or shouldBuyOnStopLoss), title= "Stop Loss Short Exit", location=location.abovebar, color=shortPrimarySignalColor, transp=0, style=shape.flag, text="", size=size.small)
+plotshape(inShortTrade and (f_true(IDX_ShouldExitOnStopLoss) or shouldBuyOnStopLoss), title= "Stop Loss Short Exit", location=location.abovebar, color=shortPrimarySignalColor, transp=0, style=shape.flag, text="", size=size.small, editable=false)
 
-plotshape(shouldBuyOnLimitOrder, title= "Fixed Short Exit", location=location.belowbar, color=shortSecondarySignalColor, transp=0, style=shape.square, text="", size=size.tiny)
+plotshape(shouldBuyOnLimitOrder, title= "Fixed Short Exit", location=location.belowbar, color=shortSecondarySignalColor, transp=0, style=shape.square, text="", size=size.tiny, editable=false)
 
 if shouldBuyOnLimitOrder
     didBuyOnLimitOrder := true
@@ -718,7 +718,7 @@ else if inShortTrade
 else if withinTestRange
     sessionColor := color.rgb(0, 0, 0, 60)
 
-bgcolor(sessionColor)
+bgcolor(sessionColor, editable=false)
 
 
 
