@@ -278,8 +278,9 @@ else if (marketView == "bearish" and chikouWrtKumo == "above")
     ssbProximityToChikou := (close - lowestSSB)*100/close
     //f_print(">> underlying support at " + str.tostring(ssbProximityToChikou) + "\n")
 
+//
 // Asssess exit scenarios
-
+//
 var inLongTrade = false
 var inShortTrade = false
 
@@ -296,6 +297,10 @@ else // for confluence to enter position
 
 atr = ta.atr(atrLength) * atrStopMultiplier
 
+//
+// Prepare for signaling long/short entries
+//
+
 var bool hasSignaledForLong = false
 var bool hasSignaledForShort = false
 
@@ -306,6 +311,15 @@ bool didCandleGap = (open > high[1] and low > high[1]) or (open < low[1] and hig
 //plotshape(not allowEntryUponGaps and didCandleGap, title= "Candle Gap Up/Down", location=location.belowbar, color=color.gray, transp=0, style=shape.arrowup, text="", size=size.normal, editable=false)
 
 bool withinTestRange = (time >= fromDateInput and time <= toDateInput)
+
+var label activeTradeLabel = na
+var string activeTradeInfo = na
+var label maxCapitalLabel = na
+var color maxCapitalLabelBgColor = na
+var color maxCapitalLabelTextColor = na
+
+float maxRiskPerPosition = accountSize * maxRisk
+var float qty = 0.0
 
 
 
@@ -438,37 +452,63 @@ if canPrepareForLong
     if longStopLoss > low
         longStopLoss := low - atr
     sellLimitOrder := longEntryPrice + (longEntryPrice - longStopLoss) * riskToRewardRatio
+    qty := maxRiskPerPosition / (longEntryPrice - longStopLoss)
+    tradeSize = qty * longEntryPrice
     array.set(context, IDX_PriceLevelToBeginTrailingStopLoss, longEntryPrice + (longEntryPrice - longStopLoss) * ratioWrtRiskToBeginTrailingSL)
     line.new(bar_index, f_get(IDX_PriceLevelToBeginTrailingStopLoss), bar_index+10, f_get(IDX_PriceLevelToBeginTrailingStopLoss), width=2, color=longLineColor, style=line.style_dotted)
     line.new(bar_index, longStopLoss, bar_index+10, longStopLoss, width=2, color=longLineColor, style=line.style_solid)
+    
+    activeTradeInfo := str.format("Buy {1} @ {0, number, currency}", tradeSize, qty)
+    activeTradeLabel := label.new(x = bar_index,
+                             y = low,
+                             style = label.style_label_up,
+                             color = pnlLabelLossBgColor,
+                             textcolor = pnlLabelLossColor,
+                             yloc = yloc.belowbar,
+                             text = "Long",
+                             tooltip = activeTradeInfo)
 
 if (inLongTrade and not shouldSellOnKijun and close < tenkanSen and close[1] >= tenkanSen[1])
     shouldSellOnTenkan := true
     if (tenkanSellPrice1 == 0.0)
         tenkanSellPrice1 := close
+        activeTradeInfo += str.format("\nTE1: {1} @ {0, number, currency}", close, close * exitPercent * qty)
     else if (tenkanSellPrice2 == 0.0)
         tenkanSellPrice2 := close
+        activeTradeInfo += str.format("\nTE2: {1} @ {0, number, currency}", close, close * exitPercent * qty)
     else if (tenkanSellPrice3 == 0.0)
         tenkanSellPrice3 := close
+        activeTradeInfo += str.format("\nTE3: {1} @ {0, number, currency}", close, close * exitPercent * qty)
     else if (tenkanSellPrice4 == 0.0)
         tenkanSellPrice4 := close
+        activeTradeInfo += str.format("\nTE4: {1} @ {0, number, currency}", close, close * exitPercent * qty)
     else if (tenkanSellPrice5 == 0.0)
         tenkanSellPrice5 := close
+        activeTradeInfo += str.format("\nTE5: {1} @ {0, number, currency}", close, close * exitPercent * qty)
     else if (tenkanSellPrice6 == 0.0)
         tenkanSellPrice6 := close
+        activeTradeInfo += str.format("\nTE6: {1} @ {0, number, currency}", close, close * exitPercent * qty)
     else if (tenkanSellPrice7 == 0.0)
         tenkanSellPrice7 := close
+        activeTradeInfo += str.format("\nTE7: {1} @ {0, number, currency}", close, close * exitPercent * qty)
     else if (tenkanSellPrice8 == 0.0)
         tenkanSellPrice8 := close
+        activeTradeInfo += str.format("\nTE8: {1} @ {0, number, currency}", close, close * exitPercent * qty)
     else if (tenkanSellPrice9 == 0.0)
         tenkanSellPrice9 := close
+        activeTradeInfo += str.format("\nTE9: {1} @ {0, number, currency}", close, close * exitPercent * qty)
     else if (tenkanSellPrice10 == 0.0)
         tenkanSellPrice10 := close
+        activeTradeInfo += str.format("\nTE10: {1} @ {0, number, currency}", close, close * exitPercent * qty)
+    
+    label.set_tooltip(activeTradeLabel, activeTradeInfo)
 else
     shouldSellOnTenkan := false
     
 if (inLongTrade and not didSellOnLimitOrder and high >= sellLimitOrder)
     shouldSellOnLimitOrder := true
+    activeTradeInfo += str.format("\nLO: {1} @ {0, number, currency}", sellLimitOrder, sellLimitOrder * exitPercent * qty)
+    label.set_tooltip(activeTradeLabel, activeTradeInfo)
 
 //f_print("[3] inLongTrade: " + str.tostring(inLongTrade) + ", exit? = " + str.tostring(shouldSellOnKijun) + ", canPrepareForLong: " + str.tostring(canPrepareForLong) + "\n\n")
 
@@ -630,37 +670,63 @@ if canPrepareForShort
         shortStopLoss := high + atr
     //f_print(str.format("sl: {0}, high: {1}", shortStopLoss, high))
     buyLimitOrder := shortEntryPrice - (shortStopLoss - shortEntryPrice) * riskToRewardRatio
+    qty := maxRiskPerPosition / (shortStopLoss - shortEntryPrice)
+    tradeSize = qty * shortEntryPrice
     array.set(context, IDX_PriceLevelToBeginTrailingStopLoss, shortEntryPrice + (shortEntryPrice - shortStopLoss) * ratioWrtRiskToBeginTrailingSL)
     line.new(bar_index, f_get(IDX_PriceLevelToBeginTrailingStopLoss), bar_index+10, f_get(IDX_PriceLevelToBeginTrailingStopLoss), width=2, color=shortLineColor, style=line.style_dotted)
     line.new(bar_index, shortStopLoss, bar_index+10, shortStopLoss, width=2, color=shortLineColor, style=line.style_solid)
+    
+    activeTradeInfo := str.format("Sell {1} @ {0, number, currency}", tradeSize, qty)
+    activeTradeLabel := label.new(x = bar_index,
+                             y = high,
+                             style = label.style_label_down,
+                             color = pnlLabelLossBgColor,
+                             textcolor = pnlLabelLossColor,
+                             yloc = yloc.abovebar,
+                             text = "Short",
+                             tooltip = activeTradeInfo)
 
 if (inShortTrade and not shouldBuyOnKijun and close > tenkanSen and close[1] <= tenkanSen[1])
     shouldBuyOnTenkan := true
     if (tenkanBuyPrice1 == 0.0)
         tenkanBuyPrice1 := close
+        activeTradeInfo += str.format("\nTE1: {1} @ {0, number, currency}", close, close * exitPercent * qty)
     else if (tenkanBuyPrice2 == 0.0)
         tenkanBuyPrice2 := close
+        activeTradeInfo += str.format("\nTE2: {1} @ {0, number, currency}", close, close * exitPercent * qty)
     else if (tenkanBuyPrice3 == 0.0)
         tenkanBuyPrice3 := close
+        activeTradeInfo += str.format("\nTE3: {1} @ {0, number, currency}", close, close * exitPercent * qty)
     else if (tenkanBuyPrice4 == 0.0)
         tenkanBuyPrice4 := close
+        activeTradeInfo += str.format("\nTE4: {1} @ {0, number, currency}", close, close * exitPercent * qty)
     else if (tenkanBuyPrice5 == 0.0)
         tenkanBuyPrice5 := close
+        activeTradeInfo += str.format("\nTE5: {1} @ {0, number, currency}", close, close * exitPercent * qty)
     else if (tenkanBuyPrice6 == 0.0)
         tenkanBuyPrice6 := close
+        activeTradeInfo += str.format("\nTE6: {1} @ {0, number, currency}", close, close * exitPercent * qty)
     else if (tenkanBuyPrice7 == 0.0)
         tenkanBuyPrice7 := close
+        activeTradeInfo += str.format("\nTE7: {1} @ {0, number, currency}", close, close * exitPercent * qty)
     else if (tenkanBuyPrice8 == 0.0)
         tenkanBuyPrice8 := close
+        activeTradeInfo += str.format("\nTE8: {1} @ {0, number, currency}", close, close * exitPercent * qty)
     else if (tenkanBuyPrice9 == 0.0)
         tenkanBuyPrice9 := close
+        activeTradeInfo += str.format("\nTE9: {1} @ {0, number, currency}", close, close * exitPercent * qty)
     else if (tenkanBuyPrice10 == 0.0)
         tenkanBuyPrice10 := close
+        activeTradeInfo += str.format("\nTE10: {1} @ {0, number, currency}", close, close * exitPercent * qty)
+    
+    label.set_tooltip(activeTradeLabel, activeTradeInfo)
 else
     shouldBuyOnTenkan := false
     
 if (inShortTrade and not didBuyOnLimitOrder and low <= buyLimitOrder)
     shouldBuyOnLimitOrder := true
+    activeTradeInfo += str.format("\nLO: {1} @ {0, number, currency}", buyLimitOrder, buyLimitOrder * exitPercent * qty)
+    label.set_tooltip(activeTradeLabel, activeTradeInfo)
 
 //f_print("[S2] inShortTrade: " + str.tostring(inShortTrade) + ", didBuyOnLimitOrder? = " + str.tostring(didBuyOnLimitOrder) + ", low: " + str.tostring(low) + ", buyLimitOrder: = " + str.tostring(buyLimitOrder) + ", shouldBuyOnLimitOrder: = " + str.tostring(shouldBuyOnLimitOrder) + "\n\n\n\n")
 
@@ -758,8 +824,7 @@ var int totalCandles = 0
 if withinTestRange
     totalCandles := totalCandles + 1
 
-float maxRiskPerPosition = accountSize * maxRisk
-float qty = 0.0, tradeSize = 0.0, pnl = 0.0, remainingUnitsAllocation = 0.0, remainingPercentAllocation = 1.0
+float tradeSize = 0.0, pnl = 0.0, remainingUnitsAllocation = 0.0, remainingPercentAllocation = 1.0
 
 var int winners = 0
 var int loosers = 0
@@ -865,29 +930,43 @@ if inLongTrade or didLongPositionClose
         pnl := pnl + t10
         remainingUnitsAllocation := remainingUnitsAllocation - (qty * exitPercent)
         remainingPercentAllocation := remainingPercentAllocation - exitPercent
+    
+    
+    // Trade exit calculations
     if kijunSellPrice > 0 and remainingPercentAllocation > 0
         kp := kijunSellPrice
         if kijunSellPrice < longStopLoss
             k := (longStopLoss - longEntryPrice) * remainingUnitsAllocation
             pnl := pnl + k
+            activeTradeInfo += str.format("\nKE~SL: {1} @ {0, number, currency}", longStopLoss, remainingUnitsAllocation)
         else
             pnl := pnl + (kijunSellPrice - longEntryPrice) * remainingUnitsAllocation
+            activeTradeInfo += str.format("\nKE: {1} @ {0, number, currency}", kp, remainingUnitsAllocation)
+        label.set_tooltip(activeTradeLabel, activeTradeInfo)
     else if tkCrossSellPrice > 0 and remainingPercentAllocation > 0
         tkcp := tkCrossSellPrice
         if tkCrossSellPrice < longStopLoss
             tkc := (longStopLoss - longEntryPrice) * remainingUnitsAllocation
             pnl := pnl + tkc
+            activeTradeInfo += str.format("\nTKCP~SL: {1} @ {0, number, currency}", longStopLoss, remainingUnitsAllocation)
         else
             pnl := pnl + (tkCrossSellPrice - longEntryPrice) * remainingUnitsAllocation
+            activeTradeInfo += str.format("\nTKCP: {1} @ {0, number, currency}", tkcp, remainingUnitsAllocation)
+        label.set_tooltip(activeTradeLabel, activeTradeInfo)
     else if shouldSellOnStopLoss and remainingPercentAllocation > 0
         s := (longStopLoss - longEntryPrice) * remainingUnitsAllocation
         pnl := pnl + s
+        activeTradeInfo += str.format("\nSL: {1} @ {0, number, currency}", longStopLoss, remainingUnitsAllocation)
+        label.set_tooltip(activeTradeLabel, activeTradeInfo)
     else if shouldPreemptivelyExitLong and remainingPercentAllocation > 0
         realtime := (close - longEntryPrice) * remainingUnitsAllocation
         if close < longStopLoss
             pnl := pnl + ((longStopLoss - longEntryPrice) * remainingUnitsAllocation)
+            activeTradeInfo += str.format("\nPE~SL: {1} @ {0, number, currency}", longStopLoss, remainingUnitsAllocation) // PE is Preemptive Exit
         else
             pnl := pnl + realtime
+            activeTradeInfo += str.format("\nPE: {1} @ {0, number, currency}", realtime, remainingUnitsAllocation) // PE is Preemptive Exit
+        label.set_tooltip(activeTradeLabel, activeTradeInfo)
     else
         realtime := (close - longEntryPrice) * remainingUnitsAllocation
 
@@ -975,35 +1054,54 @@ if inShortTrade or didShortPositionClose
         pnl := pnl + t10
         remainingUnitsAllocation := remainingUnitsAllocation - (qty * exitPercent)
         remainingPercentAllocation := remainingPercentAllocation - exitPercent
+    
+    
+    // Trade exit calculation
     if kijunBuyPrice > 0 and remainingPercentAllocation > 0
         kp := kijunBuyPrice
         if kijunBuyPrice > shortStopLoss
             k := (shortEntryPrice - shortStopLoss) * remainingUnitsAllocation
             pnl := pnl + k
+            activeTradeInfo += str.format("\nKE~SL: {1} @ {0, number, currency}", shortStopLoss, remainingUnitsAllocation)
         else
             pnl := pnl + (shortEntryPrice - kijunBuyPrice) * remainingUnitsAllocation
+            activeTradeInfo += str.format("\nKE: {1} @ {0, number, currency}", kp, remainingUnitsAllocation)
+        label.set_tooltip(activeTradeLabel, activeTradeInfo)
     else if tkCrossBuyPrice > 0 and remainingPercentAllocation > 0
         tkcp := tkCrossBuyPrice
         if tkCrossBuyPrice > shortStopLoss
             tkc := (shortEntryPrice - shortStopLoss) * remainingUnitsAllocation
             pnl := pnl + tkc
+            activeTradeInfo += str.format("\nTKCP~SL: {1} @ {0, number, currency}", shortStopLoss, remainingUnitsAllocation)
         else
             pnl := pnl + (shortEntryPrice - tkCrossBuyPrice) * remainingUnitsAllocation
+            activeTradeInfo += str.format("\nTKCP: {1} @ {0, number, currency}", tkcp, remainingUnitsAllocation)
+        label.set_tooltip(activeTradeLabel, activeTradeInfo)
     else if shouldBuyOnStopLoss and remainingPercentAllocation > 0
         s := (shortEntryPrice - shortStopLoss) * remainingUnitsAllocation
         pnl := pnl + s
+        activeTradeInfo += str.format("\nSL: {1} @ {0, number, currency}", shortStopLoss, remainingUnitsAllocation)
+        label.set_tooltip(activeTradeLabel, activeTradeInfo)
     else if shouldPreemptivelyExitShort and remainingPercentAllocation > 0
         realtime := (shortEntryPrice - close) * remainingUnitsAllocation
         if close > shortStopLoss
             pnl := pnl + ((shortEntryPrice - shortStopLoss) * remainingUnitsAllocation)
+            activeTradeInfo += str.format("\nPE~SL: {1} @ {0, number, currency}", shortStopLoss, remainingUnitsAllocation) // PE is Preemptive Exit
         else
             pnl := pnl + realtime
+            activeTradeInfo += str.format("\nPE: {1} @ {0, number, currency}", realtime, remainingUnitsAllocation) // PE is Preemptive Exit
+        label.set_tooltip(activeTradeLabel, activeTradeInfo)
     else
         realtime := (shortEntryPrice - close) * remainingUnitsAllocation
 
-var label maxCapitalLabel = na
-var color maxCapitalLabelBgColor = na
-var color maxCapitalLabelTextColor = na
+
+if (activeTradeLabel != na
+     and (inLongTrade or didLongPositionClose
+             or inShortTrade or didShortPositionClose))
+    label.set_color(activeTradeLabel, ((pnl+realtime) > 0 ? pnlLabelProfitBgColor : pnlLabelLossBgColor))
+    label.set_textcolor(activeTradeLabel, ((pnl+realtime) > 0 ? pnlLabelProfitColor : pnlLabelLossColor))
+    label.set_text(activeTradeLabel, str.format("{0, number, currency}", pnl+realtime))
+    label.set_tooltip(activeTradeLabel, str.format("{0}\n⟶ {1, number, #0.00%} RoI", activeTradeInfo, (pnl + realtime)/tradeSize))
 
 if withinTestRange
      and (didLongPositionClose or didShortPositionClose)
@@ -1023,15 +1121,6 @@ if withinTestRange
     prevPnl := pnl
     prevPnlPercent := 100*pnl/tradeSize
     
-    pnlLabel = label.new(x = bar_index,
-                 y = (didLongPositionClose ? low : high),
-                 style = (didLongPositionClose ? label.style_label_down : label.style_label_up),
-                 color = (pnl > 0 ? pnlLabelProfitBgColor : pnlLabelLossBgColor),
-                 textcolor = (pnl > 0 ? pnlLabelProfitColor : pnlLabelLossColor),
-                 yloc = (didLongPositionClose ? yloc.abovebar : yloc.belowbar),
-                 text = str.format("{0, number, currency}", pnl),
-                 tooltip = str.format("Capital: {0, number, currency}\nUnits: {1}\nRoI: {2, number, #0.00%}", tradeSize, qty, pnl/tradeSize))
-                 
     if tradeSize == maxCapital
         if maxCapitalLabel != na
             label.set_color(maxCapitalLabel, maxCapitalLabelBgColor)
@@ -1039,9 +1128,12 @@ if withinTestRange
             
         maxCapitalLabelBgColor := (pnl > 0 ? pnlLabelProfitBgColor : pnlLabelLossBgColor)
         maxCapitalLabelTextColor := (pnl > 0 ? pnlLabelProfitColor : pnlLabelLossColor)
-        maxCapitalLabel := pnlLabel
-        label.set_color(pnlLabel, pnlLabelMaxCapitalColor)
-        label.set_textcolor(pnlLabel, pnlLabelMaxCapitalTextColor)
+        maxCapitalLabel := activeTradeLabel
+        label.set_color(activeTradeLabel, pnlLabelMaxCapitalColor)
+        label.set_textcolor(activeTradeLabel, pnlLabelMaxCapitalTextColor)
+        
+    activeTradeLabel := na
+    activeTradeInfo := na
 
 
 
