@@ -392,7 +392,7 @@ if (inLongTrade and high > f_get(IDX_PriceLevelToBeginTrailingStopLoss))
 
 if (inLongTrade and low <= longStopLoss)
     f_set(IDX_ShouldExitOnStopLoss, YES)
-    shouldSellOnStopLoss = true
+    shouldSellOnStopLoss := true
 
 if (inLongTrade and priceWrtKijun == "below" and f_true(IDX_CanExitAfterKijunOrTkCross))
     shouldSellOnKijun := true
@@ -458,7 +458,7 @@ if canPrepareForLong
     line.new(bar_index, f_get(IDX_PriceLevelToBeginTrailingStopLoss), bar_index+10, f_get(IDX_PriceLevelToBeginTrailingStopLoss), width=2, color=longLineColor, style=line.style_dotted)
     line.new(bar_index, longStopLoss, bar_index+10, longStopLoss, width=2, color=longLineColor, style=line.style_solid)
     
-    activeTradeInfo := str.format("Buy {0} @ {1, number, currency}", str.tostring(qty), tradeSize)
+    activeTradeInfo := str.format("Buy {0} w/ {1, number, currency}\nEntry @ {2, number, currency}\nStop @ {3, number, currency}\nProfit @ {4, number, currency} ({5} R/R)", str.tostring(qty), tradeSize, longEntryPrice, longStopLoss, sellLimitOrder, riskToRewardRatio)
     activeTradeLabel := label.new(x = bar_index,
                              y = low,
                              style = label.style_label_up,
@@ -613,7 +613,7 @@ if (inShortTrade and low < f_get(IDX_PriceLevelToBeginTrailingStopLoss))
 
 if (inShortTrade and high >= shortStopLoss)
     f_set(IDX_ShouldExitOnStopLoss, YES)
-    shouldBuyOnStopLoss = true
+    shouldBuyOnStopLoss := true
 
 //f_print("low: " + str.tostring(low) + ", shortSL: " + str.tostring(shortStopLoss) +", finalSL: " + f_getString(IDX_PriceLevelToBeginTrailingStopLoss) + ", useKijonAsSL: " + f_getString(IDX_CanExitAfterKijunOrTkCross)+ ", shouldExitOnSL: " + f_getString(IDX_ShouldExitOnStopLoss))
 
@@ -676,7 +676,7 @@ if canPrepareForShort
     line.new(bar_index, f_get(IDX_PriceLevelToBeginTrailingStopLoss), bar_index+10, f_get(IDX_PriceLevelToBeginTrailingStopLoss), width=2, color=shortLineColor, style=line.style_dotted)
     line.new(bar_index, shortStopLoss, bar_index+10, shortStopLoss, width=2, color=shortLineColor, style=line.style_solid)
     
-    activeTradeInfo := str.format("Sell {0} @ {1, number, currency}", str.tostring(qty), tradeSize)
+    activeTradeInfo := str.format("Sell {0} w/ {1, number, currency}\nEntry @ {2, number, currency}\nStop @ {3, number, currency}\nProfit @ {4, number, currency} ({5} R/R)", str.tostring(qty), tradeSize, shortEntryPrice, shortStopLoss, buyLimitOrder, riskToRewardRatio)
     activeTradeLabel := label.new(x = bar_index,
                              y = high,
                              style = label.style_label_down,
@@ -775,7 +775,6 @@ if (inLongTrade and (shouldSellOnKijun or f_true(IDX_ShouldExitOnStopLoss) or sh
     inLongTrade := false
     f_reset()
     didLongPositionClose := true
-    shouldSellOnStopLoss := false
     if showSignalsUponBreakout
         hasSignaledForLong := false
         canPrepareForLong := false
@@ -784,7 +783,6 @@ if (inShortTrade and (shouldBuyOnKijun or f_true(IDX_ShouldExitOnStopLoss) or sh
     inShortTrade := false
     f_reset()
     didShortPositionClose := true
-    shouldBuyOnStopLoss := false
     if showSignalsUponBreakout
         hasSignaledForLong := false
         canPrepareForLong := false
