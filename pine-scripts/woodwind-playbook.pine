@@ -340,7 +340,7 @@ var shouldGoLong = false
 var shouldSellOnTenkan = false
 var shouldSellOnKijun = false
 var shouldSellOnTkCross = false
-var shouldSellOnStopLoss = false
+var shouldSellOnStop = false
 var shouldSellOnTakeProfit = false
 var didSellOnTakeProfit = false
 var shouldPreemptivelyExitLong = false
@@ -383,7 +383,7 @@ if not inLongTrade
     //shouldScaleOut := true
     shouldSellOnTenkan := false
     shouldSellOnTkCross := false
-    shouldSellOnStopLoss := false
+    shouldSellOnStop := false
     shouldSellOnTakeProfit := false
     didSellOnTakeProfit := false
     shouldPreemptivelyExitLong := false
@@ -427,7 +427,7 @@ if (inLongTrade and high > f_get(IDX_PriceLevelToBeginTrailingStopLoss))
 
 if (inLongTrade and low <= longStop)
     f_set(IDX_ShouldExitOnStopLoss, YES)
-    shouldSellOnStopLoss := true
+    shouldSellOnStop := true
 
 if (inLongTrade and priceWrtKijun == "below" and f_true(IDX_CanExitAfterKijunOrTkCross))
     shouldSellOnKijun := true
@@ -505,7 +505,7 @@ if canPrepareForLong
                              text = "Long",
                              tooltip = activeTradeInfo)
 
-if (inLongTrade and not shouldSellOnKijun and close < tenkanSen and close[1] >= tenkanSen[1] and remainingExitQty)
+if (inLongTrade and not shouldSellOnStop and not shouldSellOnKijun and close < tenkanSen and close[1] >= tenkanSen[1] and remainingExitQty)
     shouldSellOnTenkan := true
     if (tenkanSellPrice1 == 0.0)
         tenkanSellPrice1 := close
@@ -648,7 +648,7 @@ plotshape(shouldSellOnKijun, title= "Kijun Long Exit", location=location.aboveba
 
 plotshape(shouldSellOnTkCross, title= "TK Cross Long Exit", location=location.abovebar, color=longSecondarySignalColor, transp=0, style=shape.xcross, text="", size=size.small, editable=false)
 
-plotshape(inLongTrade and (f_true(IDX_ShouldExitOnStopLoss) or shouldSellOnStopLoss), title= "Stop Loss Long Exit", location=location.belowbar, color=longPrimarySignalColor, transp=0, style=shape.flag, text="", size=size.small, editable=false)
+plotshape(inLongTrade and (f_true(IDX_ShouldExitOnStopLoss) or shouldSellOnStop), title= "Stop Loss Long Exit", location=location.belowbar, color=longPrimarySignalColor, transp=0, style=shape.flag, text="", size=size.small, editable=false)
 
 plotshape(shouldSellOnTakeProfit, title= "Fixed Long Exit", location=location.abovebar, color=longSecondarySignalColor, transp=0, style=shape.square, text="", size=size.tiny, editable=false)
 
@@ -676,7 +676,7 @@ var shouldGoShort = false
 var shouldBuyOnTenkan = false
 var shouldBuyOnKijun = false
 var shouldBuyOnTkCross = false
-var shouldBuyOnStopLoss = false
+var shouldBuyOnStop = false
 var shouldBuyOnTakeProfit = false
 var didBuyOnTakeProfit = false
 var shouldPreemptivelyExitShort = false
@@ -718,7 +718,7 @@ if not inShortTrade
     shouldBuyOnKijun := false
     //shouldScaleOut := true
     shouldBuyOnTkCross := false
-    shouldBuyOnStopLoss := false
+    shouldBuyOnStop := false
     shouldBuyOnTakeProfit := false
     didBuyOnTakeProfit := false
     shouldPreemptivelyExitShort := false
@@ -760,7 +760,7 @@ if (inShortTrade and low < f_get(IDX_PriceLevelToBeginTrailingStopLoss))
 
 if (inShortTrade and high >= shortStop)
     f_set(IDX_ShouldExitOnStopLoss, YES)
-    shouldBuyOnStopLoss := true
+    shouldBuyOnStop := true
 
 //f_print("low: " + str.tostring(low) + ", shortSL: " + str.tostring(shortStop) +", finalSL: " + f_getString(IDX_PriceLevelToBeginTrailingStopLoss) + ", useKijonAsSL: " + f_getString(IDX_CanExitAfterKijunOrTkCross)+ ", shouldExitOnSL: " + f_getString(IDX_ShouldExitOnStopLoss))
 
@@ -835,7 +835,7 @@ if canPrepareForShort
                              text = "Short",
                              tooltip = activeTradeInfo)
 
-if (inShortTrade and not shouldBuyOnKijun and close > tenkanSen and close[1] <= tenkanSen[1] and remainingExitQty > 0)
+if (inShortTrade and not shouldBuyOnStop and not shouldBuyOnKijun and close > tenkanSen and close[1] <= tenkanSen[1] and remainingExitQty > 0)
     shouldBuyOnTenkan := true
     if (tenkanBuyPrice1 == 0.0)
         tenkanBuyPrice1 := close
@@ -979,7 +979,7 @@ plotshape(shouldBuyOnKijun, title= "Kijun Short Exit", location=location.belowba
 
 plotshape(shouldBuyOnTkCross, title= "TK Cross Short Exit", location=location.belowbar, color=shortSecondarySignalColor, transp=0, style=shape.xcross, text="", size=size.small, editable=false)
 
-plotshape(inShortTrade and (f_true(IDX_ShouldExitOnStopLoss) or shouldBuyOnStopLoss), title= "Stop Loss Short Exit", location=location.abovebar, color=shortPrimarySignalColor, transp=0, style=shape.flag, text="", size=size.small, editable=false)
+plotshape(inShortTrade and (f_true(IDX_ShouldExitOnStopLoss) or shouldBuyOnStop), title= "Stop Loss Short Exit", location=location.abovebar, color=shortPrimarySignalColor, transp=0, style=shape.flag, text="", size=size.small, editable=false)
 
 plotshape(shouldBuyOnTakeProfit, title= "Fixed Short Exit", location=location.belowbar, color=shortSecondarySignalColor, transp=0, style=shape.square, text="", size=size.tiny, editable=false)
 
@@ -1146,7 +1146,7 @@ if inLongTrade or didLongPositionClose
             pnl := pnl + p
             activeTradeInfo += str.format("\nTKCP: Sell {0} @ {1, number, currency} = {2, number, currency}", str.tostring(remainingExitQty), tkcp, p)
         label.set_tooltip(activeTradeLabel, activeTradeInfo)
-    else if shouldSellOnStopLoss and remainingExitQty > 0
+    else if shouldSellOnStop and remainingExitQty > 0
         s := (longStop - longEntryPrice) * remainingExitQty
         pnl := pnl + s
         activeTradeInfo += str.format("\nSL: Sell {0} @ {1, number, currency} = {2, number, currency}", str.tostring(remainingExitQty), longStop, s)
@@ -1154,7 +1154,7 @@ if inLongTrade or didLongPositionClose
     else if shouldPreemptivelyExitLong and remainingExitQty > 0
         realtime := (close - longEntryPrice) * remainingExitQty
         if close < longStop
-            p = ((longStop - longEntryPrice) * remainingExitQty)
+            p = (longStop - longEntryPrice) * remainingExitQty
             pnl := pnl + p
             activeTradeInfo += str.format("\nPE~SL: Sell {0} @ {1, number, currency} = {2, number, currency}", str.tostring(remainingExitQty), longStop, p) // PE is Preemptive Exit
         else
@@ -1239,7 +1239,7 @@ if inShortTrade or didShortPositionClose
             pnl := pnl + p
             activeTradeInfo += str.format("\nTKCP: Buy {0} @ {1, number, currency} = {2, number, currency}", str.tostring(remainingExitQty), tkcp, p)
         label.set_tooltip(activeTradeLabel, activeTradeInfo)
-    else if shouldBuyOnStopLoss and remainingExitQty > 0
+    else if shouldBuyOnStop and remainingExitQty > 0
         s := (shortEntryPrice - shortStop) * remainingExitQty
         pnl := pnl + s
         activeTradeInfo += str.format("\nSL: Buy {0} @ {1, number, currency} = {2, number, currency}", str.tostring(remainingExitQty), shortStop, s)
@@ -1247,7 +1247,7 @@ if inShortTrade or didShortPositionClose
     else if shouldPreemptivelyExitShort and remainingExitQty > 0
         realtime := (shortEntryPrice - close) * remainingExitQty
         if close > shortStop
-            p = ((shortEntryPrice - shortStop) * remainingExitQty)
+            p = (shortEntryPrice - shortStop) * remainingExitQty
             pnl := pnl + p
             activeTradeInfo += str.format("\nPE~SL: Buy {0} @ {1, number, currency} = {2, number, currency}", str.tostring(remainingExitQty), shortStop, p) // PE is Preemptive Exit
         else
@@ -1259,8 +1259,7 @@ if inShortTrade or didShortPositionClose
 
 
 if (activeTradeLabel != na
-     and (inLongTrade or didLongPositionClose
-             or inShortTrade or didShortPositionClose))
+     and (inLongTrade or inShortTrade))
     label.set_color(activeTradeLabel, ((pnl+realtime) > 0 ? pnlLabelProfitBgColor : pnlLabelLossBgColor))
     label.set_textcolor(activeTradeLabel, ((pnl+realtime) > 0 ? pnlLabelProfitColor : pnlLabelLossColor))
     label.set_text(activeTradeLabel, str.format("{0, number, currency}", pnl+realtime))
@@ -1268,6 +1267,14 @@ if (activeTradeLabel != na
 
 if withinTestRange
      and (didLongPositionClose or didShortPositionClose)
+     
+    realtime := 0.0
+    
+    label.set_color(activeTradeLabel, (pnl > 0 ? pnlLabelProfitBgColor : pnlLabelLossBgColor))
+    label.set_textcolor(activeTradeLabel, (pnl > 0 ? pnlLabelProfitColor : pnlLabelLossColor))
+    label.set_text(activeTradeLabel, str.format("{0, number, currency}", pnl))
+    label.set_tooltip(activeTradeLabel, str.format("{0}\n⟶ {1, number, #0.00%} RoI", activeTradeInfo, pnl/tradeSize))
+    
     totalTrades := totalTrades + 1
     
     totalPnl := totalPnl + pnl
