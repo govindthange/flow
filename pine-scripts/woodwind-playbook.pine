@@ -320,6 +320,7 @@ var color maxCapitalLabelTextColor = na
 
 float maxRiskPerPosition = accountSize * maxRisk
 var float qty = 0.0
+var int totalTrades = 0
 
 
 
@@ -458,7 +459,7 @@ if canPrepareForLong
     line.new(bar_index, f_get(IDX_PriceLevelToBeginTrailingStopLoss), bar_index+10, f_get(IDX_PriceLevelToBeginTrailingStopLoss), width=2, color=longLineColor, style=line.style_dotted)
     line.new(bar_index, longStopLoss, bar_index+10, longStopLoss, width=2, color=longLineColor, style=line.style_solid)
     
-    activeTradeInfo := str.format("Buy {0} w/ {1, number, currency}\n Entry @ {2, number, currency}\n  Stop @ {3, number, currency}\nProfit @ {4, number, currency} ({5} R/R)", str.tostring(qty), tradeSize, longEntryPrice, longStopLoss, sellLimitOrder, riskToRewardRatio)
+    activeTradeInfo := str.format("#{0}. Buy {1} w/ {2, number, currency}\nEntry @ {3, number, currency}\nStop @ {4, number, currency}\nProfit @ {5, number, currency} ({6} R/R)", totalTrades+1, str.tostring(qty), tradeSize, longEntryPrice, longStopLoss, sellLimitOrder, riskToRewardRatio)
     activeTradeLabel := label.new(x = bar_index,
                              y = low,
                              style = label.style_label_up,
@@ -472,31 +473,31 @@ if (inLongTrade and not shouldSellOnKijun and close < tenkanSen and close[1] >= 
     shouldSellOnTenkan := true
     if (tenkanSellPrice1 == 0.0)
         tenkanSellPrice1 := close
-        activeTradeInfo += str.format("\n TE1: Sell {0} @ {1, number, currency}", str.tostring(exitPercent * qty), close)
+        activeTradeInfo += str.format("\nTE1: Sell {0} @ {1, number, currency}", str.tostring(exitPercent * qty), close)
     else if (tenkanSellPrice2 == 0.0)
         tenkanSellPrice2 := close
-        activeTradeInfo += str.format("\n TE2: Sell {0} @ {1, number, currency}", str.tostring(exitPercent * qty), close)
+        activeTradeInfo += str.format("\nTE2: Sell {0} @ {1, number, currency}", str.tostring(exitPercent * qty), close)
     else if (tenkanSellPrice3 == 0.0)
         tenkanSellPrice3 := close
-        activeTradeInfo += str.format("\n TE3: Sell {0} @ {1, number, currency}", str.tostring(exitPercent * qty), close)
+        activeTradeInfo += str.format("\nTE3: Sell {0} @ {1, number, currency}", str.tostring(exitPercent * qty), close)
     else if (tenkanSellPrice4 == 0.0)
         tenkanSellPrice4 := close
-        activeTradeInfo += str.format("\n TE4: Sell {0} @ {1, number, currency}", str.tostring(exitPercent * qty), close)
+        activeTradeInfo += str.format("\nTE4: Sell {0} @ {1, number, currency}", str.tostring(exitPercent * qty), close)
     else if (tenkanSellPrice5 == 0.0)
         tenkanSellPrice5 := close
-        activeTradeInfo += str.format("\n TE5: Sell {0} @ {1, number, currency}", str.tostring(exitPercent * qty), close)
+        activeTradeInfo += str.format("\nTE5: Sell {0} @ {1, number, currency}", str.tostring(exitPercent * qty), close)
     else if (tenkanSellPrice6 == 0.0)
         tenkanSellPrice6 := close
-        activeTradeInfo += str.format("\n TE6: Sell {0} @ {1, number, currency}", str.tostring(exitPercent * qty), close)
+        activeTradeInfo += str.format("\nTE6: Sell {0} @ {1, number, currency}", str.tostring(exitPercent * qty), close)
     else if (tenkanSellPrice7 == 0.0)
         tenkanSellPrice7 := close
-        activeTradeInfo += str.format("\n TE7: Sell {0} @ {1, number, currency}", str.tostring(exitPercent * qty), close)
+        activeTradeInfo += str.format("\nTE7: Sell {0} @ {1, number, currency}", str.tostring(exitPercent * qty), close)
     else if (tenkanSellPrice8 == 0.0)
         tenkanSellPrice8 := close
-        activeTradeInfo += str.format("\n TE8: Sell {0} @ {1, number, currency}", str.tostring(exitPercent * qty), close)
+        activeTradeInfo += str.format("\nTE8: Sell {0} @ {1, number, currency}", str.tostring(exitPercent * qty), close)
     else if (tenkanSellPrice9 == 0.0)
         tenkanSellPrice9 := close
-        activeTradeInfo += str.format("\n TE9: Sell {0} @ {1, number, currency}", str.tostring(exitPercent * qty), close)
+        activeTradeInfo += str.format("\nTE9: Sell {0} @ {1, number, currency}", str.tostring(exitPercent * qty), close)
     else if (tenkanSellPrice10 == 0.0)
         tenkanSellPrice10 := close
         activeTradeInfo += str.format("\nTE10: Sell {0} @ {1, number, currency}", str.tostring(exitPercent * qty), close)
@@ -507,7 +508,7 @@ else
     
 if (inLongTrade and not didSellOnLimitOrder and high >= sellLimitOrder)
     shouldSellOnLimitOrder := true
-    activeTradeInfo += str.format("\n  LO: Sell {0} @ {1, number, currency}", str.tostring(exitPercent * qty), sellLimitOrder)
+    activeTradeInfo += str.format("\nLO: Sell {0} @ {1, number, currency}", str.tostring(exitPercent * qty), sellLimitOrder)
     label.set_tooltip(activeTradeLabel, activeTradeInfo)
 
 //f_print("[3] inLongTrade: " + str.tostring(inLongTrade) + ", exit? = " + str.tostring(shouldSellOnKijun) + ", canPrepareForLong: " + str.tostring(canPrepareForLong) + "\n\n")
@@ -676,7 +677,7 @@ if canPrepareForShort
     line.new(bar_index, f_get(IDX_PriceLevelToBeginTrailingStopLoss), bar_index+10, f_get(IDX_PriceLevelToBeginTrailingStopLoss), width=2, color=shortLineColor, style=line.style_dotted)
     line.new(bar_index, shortStopLoss, bar_index+10, shortStopLoss, width=2, color=shortLineColor, style=line.style_solid)
     
-    activeTradeInfo := str.format("Sell {0} w/ {1, number, currency}\n Entry @ {2, number, currency}\n  Stop @ {3, number, currency}\nProfit @ {4, number, currency} ({5} R/R)", str.tostring(qty), tradeSize, shortEntryPrice, shortStopLoss, buyLimitOrder, riskToRewardRatio)
+    activeTradeInfo := str.format("#{0}. Sell {1} w/ {2, number, currency}\nEntry @ {3, number, currency}\nStop @ {4, number, currency}\nProfit @ {5, number, currency} ({6} R/R)", totalTrades+1, str.tostring(qty), tradeSize, shortEntryPrice, shortStopLoss, buyLimitOrder, riskToRewardRatio)
     activeTradeLabel := label.new(x = bar_index,
                              y = high,
                              style = label.style_label_down,
@@ -690,31 +691,31 @@ if (inShortTrade and not shouldBuyOnKijun and close > tenkanSen and close[1] <= 
     shouldBuyOnTenkan := true
     if (tenkanBuyPrice1 == 0.0)
         tenkanBuyPrice1 := close
-        activeTradeInfo += str.format("\n TE1: Buy {0} @ {1, number, currency}", str.tostring(exitPercent * qty), close)
+        activeTradeInfo += str.format("\nTE1: Buy {0} @ {1, number, currency}", str.tostring(exitPercent * qty), close)
     else if (tenkanBuyPrice2 == 0.0)
         tenkanBuyPrice2 := close
-        activeTradeInfo += str.format("\n TE2: Buy {0} @ {1, number, currency}", str.tostring(exitPercent * qty), close)
+        activeTradeInfo += str.format("\nTE2: Buy {0} @ {1, number, currency}", str.tostring(exitPercent * qty), close)
     else if (tenkanBuyPrice3 == 0.0)
         tenkanBuyPrice3 := close
-        activeTradeInfo += str.format("\n TE3: Buy {0} @ {1, number, currency}", str.tostring(exitPercent * qty), close)
+        activeTradeInfo += str.format("\nTE3: Buy {0} @ {1, number, currency}", str.tostring(exitPercent * qty), close)
     else if (tenkanBuyPrice4 == 0.0)
         tenkanBuyPrice4 := close
-        activeTradeInfo += str.format("\n TE4: Buy {0} @ {1, number, currency}", str.tostring(exitPercent * qty), close)
+        activeTradeInfo += str.format("\nTE4: Buy {0} @ {1, number, currency}", str.tostring(exitPercent * qty), close)
     else if (tenkanBuyPrice5 == 0.0)
         tenkanBuyPrice5 := close
-        activeTradeInfo += str.format("\n TE5: Buy {0} @ {1, number, currency}", str.tostring(exitPercent * qty), close)
+        activeTradeInfo += str.format("\nTE5: Buy {0} @ {1, number, currency}", str.tostring(exitPercent * qty), close)
     else if (tenkanBuyPrice6 == 0.0)
         tenkanBuyPrice6 := close
-        activeTradeInfo += str.format("\n TE6: Buy {0} @ {1, number, currency}", str.tostring(exitPercent * qty), close)
+        activeTradeInfo += str.format("\nTE6: Buy {0} @ {1, number, currency}", str.tostring(exitPercent * qty), close)
     else if (tenkanBuyPrice7 == 0.0)
         tenkanBuyPrice7 := close
-        activeTradeInfo += str.format("\n TE7: Buy {0} @ {1, number, currency}", str.tostring(exitPercent * qty), close)
+        activeTradeInfo += str.format("\nTE7: Buy {0} @ {1, number, currency}", str.tostring(exitPercent * qty), close)
     else if (tenkanBuyPrice8 == 0.0)
         tenkanBuyPrice8 := close
-        activeTradeInfo += str.format("\n TE8: Buy {0} @ {1, number, currency}", str.tostring(exitPercent * qty), close)
+        activeTradeInfo += str.format("\nTE8: Buy {0} @ {1, number, currency}", str.tostring(exitPercent * qty), close)
     else if (tenkanBuyPrice9 == 0.0)
         tenkanBuyPrice9 := close
-        activeTradeInfo += str.format("\n TE9: Buy {0} @ {1, number, currency}", str.tostring(exitPercent * qty), close)
+        activeTradeInfo += str.format("\nTE9: Buy {0} @ {1, number, currency}", str.tostring(exitPercent * qty), close)
     else if (tenkanBuyPrice10 == 0.0)
         tenkanBuyPrice10 := close
         activeTradeInfo += str.format("\nTE10: Buy {0} @ {1, number, currency}", str.tostring(exitPercent * qty), close)
@@ -725,7 +726,7 @@ else
     
 if (inShortTrade and not didBuyOnLimitOrder and low <= buyLimitOrder)
     shouldBuyOnLimitOrder := true
-    activeTradeInfo += str.format("\n  LO: Buy {0} @ {1, number, currency}", str.tostring(exitPercent * qty), buyLimitOrder)
+    activeTradeInfo += str.format("\nLO: Buy {0} @ {1, number, currency}", str.tostring(exitPercent * qty), buyLimitOrder)
     label.set_tooltip(activeTradeLabel, activeTradeInfo)
 
 //f_print("[S2] inShortTrade: " + str.tostring(inShortTrade) + ", didBuyOnLimitOrder? = " + str.tostring(didBuyOnLimitOrder) + ", low: " + str.tostring(low) + ", buyLimitOrder: = " + str.tostring(buyLimitOrder) + ", shouldBuyOnLimitOrder: = " + str.tostring(shouldBuyOnLimitOrder) + "\n\n\n\n")
@@ -826,7 +827,6 @@ float tradeSize = 0.0, pnl = 0.0, remainingUnitsAllocation = 0.0, remainingPerce
 
 var int winners = 0
 var int loosers = 0
-var int totalTrades = 0
 var float cumulativeCapital = 0.0
 var float maxCapital = 0.0
 var float totalPnl = 0.0
@@ -939,7 +939,7 @@ if inLongTrade or didLongPositionClose
             activeTradeInfo += str.format("\nKE~SL: Sell {0} @ {1, number, currency}", str.tostring(remainingUnitsAllocation), longStopLoss)
         else
             pnl := pnl + (kijunSellPrice - longEntryPrice) * remainingUnitsAllocation
-            activeTradeInfo += str.format("\n  KE: Sell {0} @ {1, number, currency}", str.tostring(remainingUnitsAllocation), kp)
+            activeTradeInfo += str.format("\nKE: Sell {0} @ {1, number, currency}", str.tostring(remainingUnitsAllocation), kp)
         label.set_tooltip(activeTradeLabel, activeTradeInfo)
     else if tkCrossSellPrice > 0 and remainingPercentAllocation > 0
         tkcp := tkCrossSellPrice
@@ -954,7 +954,7 @@ if inLongTrade or didLongPositionClose
     else if shouldSellOnStopLoss and remainingPercentAllocation > 0
         s := (longStopLoss - longEntryPrice) * remainingUnitsAllocation
         pnl := pnl + s
-        activeTradeInfo += str.format("\n  SL: Sell {0} @ {1, number, currency}", str.tostring(remainingUnitsAllocation), longStopLoss)
+        activeTradeInfo += str.format("\nSL: Sell {0} @ {1, number, currency}", str.tostring(remainingUnitsAllocation), longStopLoss)
         label.set_tooltip(activeTradeLabel, activeTradeInfo)
     else if shouldPreemptivelyExitLong and remainingPercentAllocation > 0
         realtime := (close - longEntryPrice) * remainingUnitsAllocation
@@ -963,7 +963,7 @@ if inLongTrade or didLongPositionClose
             activeTradeInfo += str.format("\nPE~SL: Sell {0} @ {1, number, currency}", str.tostring(remainingUnitsAllocation), longStopLoss) // PE is Preemptive Exit
         else
             pnl := pnl + realtime
-            activeTradeInfo += str.format("\n  PE: Sell {0} @ {1, number, currency}", str.tostring(remainingUnitsAllocation), realtime) // PE is Preemptive Exit
+            activeTradeInfo += str.format("\nPE: Sell {0} @ {1, number, currency}", str.tostring(remainingUnitsAllocation), realtime) // PE is Preemptive Exit
         label.set_tooltip(activeTradeLabel, activeTradeInfo)
     else
         realtime := (close - longEntryPrice) * remainingUnitsAllocation
@@ -1063,7 +1063,7 @@ if inShortTrade or didShortPositionClose
             activeTradeInfo += str.format("\nKE~SL: Buy {0} @ {1, number, currency}", str.tostring(remainingUnitsAllocation), shortStopLoss)
         else
             pnl := pnl + (shortEntryPrice - kijunBuyPrice) * remainingUnitsAllocation
-            activeTradeInfo += str.format("\n  KE: Buy {0} @ {1, number, currency}", str.tostring(remainingUnitsAllocation), kp)
+            activeTradeInfo += str.format("\nKE: Buy {0} @ {1, number, currency}", str.tostring(remainingUnitsAllocation), kp)
         label.set_tooltip(activeTradeLabel, activeTradeInfo)
     else if tkCrossBuyPrice > 0 and remainingPercentAllocation > 0
         tkcp := tkCrossBuyPrice
@@ -1078,7 +1078,7 @@ if inShortTrade or didShortPositionClose
     else if shouldBuyOnStopLoss and remainingPercentAllocation > 0
         s := (shortEntryPrice - shortStopLoss) * remainingUnitsAllocation
         pnl := pnl + s
-        activeTradeInfo += str.format("\n  SL: Buy {0} @ {1, number, currency}", str.tostring(remainingUnitsAllocation), shortStopLoss)
+        activeTradeInfo += str.format("\nSL: Buy {0} @ {1, number, currency}", str.tostring(remainingUnitsAllocation), shortStopLoss)
         label.set_tooltip(activeTradeLabel, activeTradeInfo)
     else if shouldPreemptivelyExitShort and remainingPercentAllocation > 0
         realtime := (shortEntryPrice - close) * remainingUnitsAllocation
@@ -1087,7 +1087,7 @@ if inShortTrade or didShortPositionClose
             activeTradeInfo += str.format("\nPE~SL: Buy {0} @ {1, number, currency}", str.tostring(remainingUnitsAllocation), shortStopLoss) // PE is Preemptive Exit
         else
             pnl := pnl + realtime
-            activeTradeInfo += str.format("\n  PE: Buy {0} @ {1, number, currency}", str.tostring(remainingUnitsAllocation), realtime) // PE is Preemptive Exit
+            activeTradeInfo += str.format("\nPE: Buy {0} @ {1, number, currency}", str.tostring(remainingUnitsAllocation), realtime) // PE is Preemptive Exit
         label.set_tooltip(activeTradeLabel, activeTradeInfo)
     else
         realtime := (shortEntryPrice - close) * remainingUnitsAllocation
