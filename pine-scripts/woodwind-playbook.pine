@@ -952,7 +952,7 @@ if (inShortTrade and not didBuyOnTakeProfit and low <= shortTakeProfit and remai
     
     p = (shortEntryPrice - shortTakeProfit) * shortTakeProfitQty
     remainingExitQty := remainingExitQty - shortTakeProfitQty
-    activeTradeInfo += str.format("\nLO: Buy {0} @ {1, number, currency} = {2, number, currency}", str.tostring(longTakeProfitQty), shortTakeProfitQty, p)
+    activeTradeInfo += str.format("\nLO: Buy {0} @ {1, number, currency} = {2, number, currency}", str.tostring(shortTakeProfitQty), shortTakeProfitQty, p)
     label.set_tooltip(activeTradeLabel, activeTradeInfo)
 
 //f_print("[S2] inShortTrade: " + str.tostring(inShortTrade) + ", didBuyOnTakeProfit? = " + str.tostring(didBuyOnTakeProfit) + ", low: " + str.tostring(low) + ", shortTakeProfit: = " + str.tostring(shortTakeProfit) + ", shouldBuyOnTakeProfit: = " + str.tostring(shouldBuyOnTakeProfit) + "\n\n\n\n")
@@ -1011,8 +1011,8 @@ if (inShortTrade and (shouldBuyOnKijun or f_true(IDX_ShouldExitOnStopLoss) or sh
     f_reset()
     didShortPositionClose := true
     if showSignalsUponBreakout
-        hasSignaledForLong := false
-        canPrepareForLong := false
+        hasSignaledForShort := false
+        canPrepareForShort := false
 
 
 
@@ -1174,45 +1174,45 @@ if inShortTrade or didShortPositionClose
         lim := shortTakeProfit
         lo := (shortEntryPrice - shortTakeProfit) * shortTakeProfitQty
         pnl := pnl + lo
-    if tenkanBuyPrice1 > 0 and tenkanSellQty1 > 0
+    if tenkanBuyPrice1 > 0 and tenkanBuyQty1 > 0
         tp1 := tenkanBuyPrice1
-        t1 :=  (shortEntryPrice - tenkanBuyPrice1) * tenkanSellQty1
+        t1 :=  (shortEntryPrice - tenkanBuyPrice1) * tenkanBuyQty1
         pnl := pnl + t1
-    if tenkanBuyPrice2 > 0 and tenkanSellQty2 > 0
+    if tenkanBuyPrice2 > 0 and tenkanBuyQty2 > 0
         tp2 := tenkanBuyPrice2
-        t2 :=  (shortEntryPrice - tenkanBuyPrice2) * tenkanSellQty2
+        t2 :=  (shortEntryPrice - tenkanBuyPrice2) * tenkanBuyQty2
         pnl := pnl + t2
-    if tenkanBuyPrice3 > 0 and tenkanSellQty3 > 0
+    if tenkanBuyPrice3 > 0 and tenkanBuyQty3 > 0
         tp3 := tenkanBuyPrice3
-        t3 :=  (shortEntryPrice - tenkanBuyPrice3) * tenkanSellQty3
+        t3 :=  (shortEntryPrice - tenkanBuyPrice3) * tenkanBuyQty3
         pnl := pnl + t3
-    if tenkanBuyPrice4 > 0 and tenkanSellQty4 > 0
+    if tenkanBuyPrice4 > 0 and tenkanBuyQty4 > 0
         tp4 := tenkanBuyPrice4
-        t4 :=  (shortEntryPrice - tenkanBuyPrice4) * tenkanSellQty4
+        t4 :=  (shortEntryPrice - tenkanBuyPrice4) * tenkanBuyQty4
         pnl := pnl + t4
-    if tenkanBuyPrice5 > 0 and tenkanSellQty5 > 0
+    if tenkanBuyPrice5 > 0 and tenkanBuyQty5 > 0
         tp5 := tenkanBuyPrice5
-        t5 :=  (shortEntryPrice - tenkanBuyPrice5) * tenkanSellQty5
+        t5 :=  (shortEntryPrice - tenkanBuyPrice5) * tenkanBuyQty5
         pnl := pnl + t5
-    if tenkanBuyPrice6 > 0 and tenkanSellQty6 > 0
+    if tenkanBuyPrice6 > 0 and tenkanBuyQty6 > 0
         tp6 := tenkanBuyPrice6
-        t6 :=  (shortEntryPrice - tenkanBuyPrice6) * tenkanSellQty6
+        t6 :=  (shortEntryPrice - tenkanBuyPrice6) * tenkanBuyQty6
         pnl := pnl + t6
-    if tenkanBuyPrice7 > 0 and tenkanSellQty7 > 0
+    if tenkanBuyPrice7 > 0 and tenkanBuyQty7 > 0
         tp7 := tenkanBuyPrice7
-        t7 :=  (shortEntryPrice - tenkanBuyPrice7) * tenkanSellQty7
+        t7 :=  (shortEntryPrice - tenkanBuyPrice7) * tenkanBuyQty7
         pnl := pnl + t7
-    if tenkanBuyPrice8 > 0 and tenkanSellQty8 > 0
+    if tenkanBuyPrice8 > 0 and tenkanBuyQty8 > 0
         tp8 := tenkanBuyPrice8
-        t8 :=  (shortEntryPrice - tenkanBuyPrice8) * tenkanSellQty8
+        t8 :=  (shortEntryPrice - tenkanBuyPrice8) * tenkanBuyQty8
         pnl := pnl + t8
-    if tenkanBuyPrice9 > 0 and tenkanSellQty9 > 0
+    if tenkanBuyPrice9 > 0 and tenkanBuyQty9 > 0
         tp9 := tenkanBuyPrice9
-        t9 :=  (shortEntryPrice - tenkanBuyPrice9) * tenkanSellQty9
+        t9 :=  (shortEntryPrice - tenkanBuyPrice9) * tenkanBuyQty9
         pnl := pnl + t9
-    if tenkanBuyPrice10 > 0 and tenkanSellQty10 > 0
+    if tenkanBuyPrice10 > 0 and tenkanBuyQty10 > 0
         tp10 := tenkanBuyPrice10
-        t10 :=  (shortEntryPrice - tenkanBuyPrice10) * tenkanSellQty10
+        t10 :=  (shortEntryPrice - tenkanBuyPrice10) * tenkanBuyQty10
         pnl := pnl + t10
     
     
