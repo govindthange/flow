@@ -39,7 +39,6 @@ bool allowTkCrossExitInNurturePhase = input.bool(true, title="Allow TK cross exi
 bool allowEntryUponGaps = input.bool(false, "Show entry signals even on gap-up/down candles.", tooltip="This is not recommended!. This setting is only for study purposes.")
 bool includeCurrentBarFor9PeriodHighLow = input.bool(false, title="Include current bar to show 9-period highs/lows", tooltip="This is not recommended!. This setting is only for study purposes.")
 
-bool showL1DebugInfo = input.bool(false, title="Show Debug Info (Level 1)")
 
 
 
@@ -411,12 +410,10 @@ if showSignalsUponBreakout
     else if canPrepareForLong and not hasSignaledForLong
         longBreakoutPrice := highestTenkanValue
         // Draw 9-period high line to indicate the best entry point
-        //f_print(str.format("9-period-highest-bar: {0}, 9-period-highest: {1}", str.tostring(highestTenkanSenBar), str.tostring(highestTenkanValue)))
         line.new(bar_index-tenkanSenPeriod, highestTenkanValue, bar_index, highestTenkanValue, width=1, color=color.silver, style=line.style_dotted)
         line.new(bar_index+highestTenkanSenBar-1, highestTenkanValue, bar_index, highestTenkanValue, width=1, color=longLineColor, style=line.style_solid)
 else if canPrepareForLong
     // Draw 9-period high line to indicate the best entry point
-    //f_print(str.format("9-period-highest-bar: {0}, 9-period-highest: {1}", str.tostring(highestTenkanSenBar), str.tostring(highestTenkanValue)))
     line.new(bar_index-tenkanSenPeriod, highestTenkanValue, bar_index, highestTenkanValue, width=1, color=color.silver, style=line.style_dotted)
     line.new(bar_index+highestTenkanSenBar-1, highestTenkanValue, bar_index, highestTenkanValue, width=1, color=longLineColor, style=line.style_solid)
 
@@ -424,20 +421,26 @@ else if canPrepareForLong
 
 if canPrepareForLong
      and (not showSignalsUponBreakout or high >= longBreakoutPrice)
+    
     shouldGoLong := true
     hasSignaledForLong := false
     inLongTrade := true
     shouldExitOnKijun := false
+    
     entryPrice := showSignalsUponBreakout ? longBreakoutPrice : close
     longBreakoutPrice := 0.0
     stopLoss := kijunSen - atr
+    
     if stopLoss > low
         stopLoss := low - atr
+    
     takeProfit := entryPrice + (entryPrice - stopLoss) * riskToRewardRatio
+    
     qty := maxRiskPerPosition / (entryPrice - stopLoss)
     qtyPerExit := qty * exitPercent
     remainingExitQty := qty
     tradeSize := qty * entryPrice
+    
     array.set(context, IDX_PriceLevelToBeginTrailingStopLoss, entryPrice + (entryPrice - stopLoss) * ratioWrtRiskToBeginTrailingSL)
     line.new(bar_index, f_get(IDX_PriceLevelToBeginTrailingStopLoss), bar_index+10, f_get(IDX_PriceLevelToBeginTrailingStopLoss), width=2, color=longLineColor, style=line.style_dotted)
     line.new(bar_index, stopLoss, bar_index+10, stopLoss, width=2, color=longLineColor, style=line.style_solid)
@@ -474,8 +477,8 @@ if (inLongTrade and high > f_get(IDX_PriceLevelToBeginTrailingStopLoss))
 //f_print("[L1] inLongTrade: " + str.tostring(inLongTrade) + ", high: " + str.tostring(high) + ", f_get(IDX_PriceLevelToBeginTrailingStopLoss): = " + str.tostring(f_get(IDX_PriceLevelToBeginTrailingStopLoss)) + ", condition? = " + str.tostring((inLongTrade and high > f_get(IDX_PriceLevelToBeginTrailingStopLoss))) + "\n")
 
 //
-// Since kijun is a trailling stop-loss, the old stop-loss order is only valid
-// if the trade is in nurture period (i.e. IDX_CanExitAfterKijunOrTkCross = false)
+// Since kijun is a trailing stop-loss, the old stop-loss order is valid only
+// if the trade is in nurture phase (i.e. IDX_CanExitAfterKijunOrTkCross = false)
 //
 if (inLongTrade and low <= stopLoss and not f_true(IDX_CanExitAfterKijunOrTkCross))
     f_set(IDX_ShouldExitOnStopLoss, YES)
@@ -488,7 +491,6 @@ if (inLongTrade and low <= stopLoss and not f_true(IDX_CanExitAfterKijunOrTkCros
 
 if (inLongTrade and priceWrtKijun == "below" and f_true(IDX_CanExitAfterKijunOrTkCross))
     shouldExitOnKijun := true
-    //shouldScaleOut := true
     kijunExit := kijunSen
     
     if kijunExit < stopLoss
@@ -515,7 +517,6 @@ if (inLongTrade
      and (allowTkCrossExitInNurturePhase 
              or (not allowTkCrossExitInNurturePhase and f_true(IDX_CanExitAfterKijunOrTkCross))))
     shouldExitOnTkCross := true
-    //shouldScaleOut := true
     tkCrossExit := close
     
     if tkCrossExit < stopLoss
@@ -705,10 +706,6 @@ if shouldTakeProfit
     didTakeProfit := true
     shouldTakeProfit := false
 
-// Draw labels to enter or trail a stop-loss order based on confluence
-
-//f_print(str.format("{0}, inLongTrade: {1}, withinRange: {2}", (shouldExitOnKijun or f_true(IDX_ShouldExitOnStopLoss)), inLongTrade, withinTestRange))
-
 
 
 
@@ -739,32 +736,35 @@ if showSignalsUponBreakout
     else if canPrepareForShort and not hasSignaledForShort
         shortBreakoutPrice := lowestTenkanValue
         // Draw 9-period high line to indicate the best entry point
-        //f_print(str.format("9-period-lowest-bar: {0}, 9-period-lowest: {1}", lowestTenkanSenBar, lowestTenkanValue))
         line.new(bar_index-tenkanSenPeriod, lowestTenkanValue, bar_index, lowestTenkanValue, width=1, color=color.silver, style=line.style_dotted)
         line.new(bar_index+lowestTenkanSenBar-1, lowestTenkanValue, bar_index, lowestTenkanValue, width=1, color=shortLineColor, style=line.style_solid)
 else if canPrepareForShort
     // Draw 9-period high line to indicate the best entry point
-    //f_print(str.format("9-period-lowest-bar: {0}, 9-period-lowest: {1}", lowestTenkanSenBar, lowestTenkanValue))
     line.new(bar_index-tenkanSenPeriod, lowestTenkanValue, bar_index, lowestTenkanValue, width=1, color=color.silver, style=line.style_dotted)
     line.new(bar_index+lowestTenkanSenBar-1, lowestTenkanValue, bar_index, lowestTenkanValue, width=1, color=shortLineColor, style=line.style_solid)
 
 if canPrepareForShort
      and (not showSignalsUponBreakout or low <= shortBreakoutPrice)
+    
     shouldGoShort := true
     hasSignaledForShort := false
     inShortTrade := true
     shouldExitOnKijun := false
+    
     entryPrice := showSignalsUponBreakout ? shortBreakoutPrice : close
     shortBreakoutPrice := 0.0
     stopLoss := kijunSen + atr
+    
     if stopLoss < high
         stopLoss := high + atr
-    //f_print(str.format("sl: {0}, high: {1}", stopLoss, high))
+    
     takeProfit := entryPrice - (stopLoss - entryPrice) * riskToRewardRatio
+    
     qty := maxRiskPerPosition / (stopLoss - entryPrice)
     qtyPerExit := qty * exitPercent
     remainingExitQty := qty
     tradeSize := qty * entryPrice
+    
     array.set(context, IDX_PriceLevelToBeginTrailingStopLoss, entryPrice + (entryPrice - stopLoss) * ratioWrtRiskToBeginTrailingSL)
     line.new(bar_index, f_get(IDX_PriceLevelToBeginTrailingStopLoss), bar_index+10, f_get(IDX_PriceLevelToBeginTrailingStopLoss), width=2, color=shortLineColor, style=line.style_dotted)
     line.new(bar_index, stopLoss, bar_index+10, stopLoss, width=2, color=shortLineColor, style=line.style_solid)
@@ -801,8 +801,8 @@ if (inShortTrade and low < f_get(IDX_PriceLevelToBeginTrailingStopLoss))
 //f_print("low: " + str.tostring(low) + ", shortSL: " + str.tostring(stopLoss) +", finalSL: " + f_getString(IDX_PriceLevelToBeginTrailingStopLoss) + ", useKijonAsSL: " + f_getString(IDX_CanExitAfterKijunOrTkCross)+ ", shouldExitOnSL: " + f_getString(IDX_ShouldExitOnStopLoss))
 
 //
-// Since kijun is a trailling stop-loss, the old stop-loss order is only valid
-// if the trade is in nurture period (i.e. IDX_CanExitAfterKijunOrTkCross = false)
+// Since kijun is a trailing stop-loss, the old stop-loss order is valid only
+// if the trade is in nurture phase (i.e. IDX_CanExitAfterKijunOrTkCross = false)
 //
 if (inShortTrade and high >= stopLoss and not f_true(IDX_CanExitAfterKijunOrTkCross))
     f_set(IDX_ShouldExitOnStopLoss, YES)
@@ -815,7 +815,6 @@ if (inShortTrade and high >= stopLoss and not f_true(IDX_CanExitAfterKijunOrTkCr
 
 if (inShortTrade and priceWrtKijun == "above" and f_true(IDX_CanExitAfterKijunOrTkCross))
     shouldExitOnKijun := true
-    //shouldScaleOut := true
     kijunExit := kijunSen
     
     if kijunExit > stopLoss
@@ -839,7 +838,6 @@ if (inShortTrade
      and tkCrossExitEnabled
      and (allowTkCrossExitInNurturePhase or (not allowTkCrossExitInNurturePhase and f_true(IDX_CanExitAfterKijunOrTkCross))))
     shouldExitOnTkCross := true
-    //shouldScaleOut := true
     tkCrossExit := close
     
     if tkCrossExit > stopLoss
@@ -1055,17 +1053,9 @@ if (inShortTrade and (shouldExitOnKijun or f_true(IDX_ShouldExitOnStopLoss) or s
         hasSignaledForShort := false
         canPrepareForShort := false
 
-
-
-
-//##############################################################
-//##############################################################
-//####                                                      ####
-//####                   Background Color                   ####
-//####                                                      ####
-//##############################################################
-//##############################################################
-
+//
+// Draw background color
+//
 if inLongTrade
     sessionColor := longBgColor
 else if inShortTrade
@@ -1150,7 +1140,7 @@ if withinTestRange
         maxCapitalLabel := activeTradeLabel
         label.set_color(activeTradeLabel, pnlLabelMaxCapitalColor)
         label.set_textcolor(activeTradeLabel, pnlLabelMaxCapitalTextColor)
-        
+    
     activeTradeLabel := na
     activeTradeInfo := na
     qty := 0.0
@@ -1160,7 +1150,6 @@ if withinTestRange
     tradeSize := 0.0
     
     shouldExitOnKijun := false
-    //shouldScaleOut := true
     shouldExitOnTenkan := false
     shouldExitOnTkCross := false
     shouldExitOnStop := false
@@ -1356,30 +1345,6 @@ else
         table.cell(tradeTable, 2, 13, str.tostring(kijunExitGains, str.tostring(f_tickFormat())), text_color = (kijunExitGains > 0 ? color.rgb(182, 209, 186) : color.rgb(182, 153, 153)))
         table.cell(tradeTable, 2, 14, str.format("{0, number, currency}", pnl+realtime), text_color = (pnl+realtime > 0 ? color.green : color.red))
         table.cell(tradeTable, 2, 15, str.format("{0, number, percent}", (pnl+realtime)/tradeSize), text_color = (pnl+realtime > 0 ? color.green : color.red))
-
-// Display debug information
-var table debugTable = table.new(position.bottom_center, 7, 3, bgcolor = color.silver, frame_width = 2, frame_color = color.gray)
-if (barstate.islast and showL1DebugInfo)
-    table.cell(debugTable, 1, 0, "Is Active?", text_color = color.black)
-    table.cell(debugTable, 2, 0, "Should Scale Out?", text_color = color.black)
-    table.cell(debugTable, 3, 0, "Need Exit?", text_color = color.black)
-    table.cell(debugTable, 4, 0, "Should Enter?", text_color = color.black)
-    table.cell(debugTable, 5, 0, "-", text_color = color.black)
-    table.cell(debugTable, 6, 0, "Sentiment", text_color = color.black)
-    table.cell(debugTable, 0, 1, "Long", text_color = color.black)
-    table.cell(debugTable, 1, 1, str.tostring(inLongTrade), text_color = color.navy)
-    //table.cell(debugTable, 2, 1, str.tostring(shouldScaleOut), text_color = color.navy)
-    table.cell(debugTable, 3, 1, str.tostring(shouldExitOnKijun), text_color = color.navy)
-    table.cell(debugTable, 4, 1, str.tostring(canPrepareForLong), text_color = color.navy)
-    table.cell(debugTable, 5, 1, "-", text_color = color.navy)
-    table.cell(debugTable, 6, 1, marketView, text_color = color.navy)
-    table.cell(debugTable, 0, 2, "Short", text_color = color.black)
-    table.cell(debugTable, 1, 2, str.tostring(inShortTrade), text_color = color.maroon)
-    //table.cell(debugTable, 2, 2, str.tostring(shouldScaleOut), text_color = color.maroon)
-    table.cell(debugTable, 3, 2, str.tostring(shouldExitOnKijun), text_color = color.maroon)
-    table.cell(debugTable, 4, 2, str.tostring(canPrepareForShort), text_color = color.maroon)
-    table.cell(debugTable, 5, 2, "-", text_color = color.maroon)
-    table.cell(debugTable, 6, 2, marketView, text_color = color.rgb(255, 153, 153))
 
 // Display confluence information
 var table confluenceTable = table.new(position.bottom_left, 3, 19, bgcolor = color.rgb(0, 0, 0, 30), frame_width = 2, frame_color = color.black)
