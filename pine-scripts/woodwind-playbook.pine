@@ -34,7 +34,7 @@ int senkouSpanBPeriod = input.int(52, minval=1, title="Leading Span B Length")
 int displacement = input.int(26, minval=1, title="Displacement")
 
 bool tkCrossExitEnabled = input.bool(true, title="Enable TK Cross Exits")
-bool allowTkCrossExitInNurturePhase = input.bool(false, title="Allow TK cross exits in nurture phase")
+bool allowTkCrossExitInNurturePhase = input.bool(true, title="Allow TK cross exits in nurture phase")
 
 bool allowEntryUponGaps = input.bool(false, "Show entry signals even on gap-up/down candles.", tooltip="This is not recommended!. This setting is only for study purposes.")
 bool includeCurrentBarFor9PeriodHighLow = input.bool(false, title="Include current bar to show 9-period highs/lows", tooltip="This is not recommended!. This setting is only for study purposes.")
