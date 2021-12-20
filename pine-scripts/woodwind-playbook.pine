@@ -20,8 +20,8 @@ bool showSignalsUponBreakout = input.bool(true, "Show entry signals upon 9-perio
 float accountSize = input.float(1000, title="Account Size")
 float maxRisk = input.float(25, title="Maximum risk per position") / 100
 float exitPercent = input.float(10, title="Scale out percent") / 100
-int atrLength = input.int(9, minval=1, title="ATR Length", tooltip="Choose higher values for lower timeframes. For BTC following works: [9/30 for 5m/1H], [9 for 4H/12H]")
-float atrStopMultiplier = input.float(3.0, minval=0.1, title="ATR x ?", tooltip="BTC best combinatiobns are [3-4 for 15m/1H], [4 for 4H/6H], [6 for 12H] ")
+int atrLength = input.int(9, minval=1, title="ATR Length", tooltip="Choose higher values for lower timeframes. Following works best for BTC: [9/30 for 5m/1H], [9 for 4H/12H]")
+float atrStopMultiplier = input.float(3.0, minval=0.1, title="ATR x ?", tooltip="Following works best for BTC: [3-4 for 15m/1H], [4 for 4H/6H], [6 for 12H] ")
 
 bool showPnl = input.bool(true, title="Show profit & loss summary")
 bool showTradePlan = input.bool(false, title="Show all entry & exits")
