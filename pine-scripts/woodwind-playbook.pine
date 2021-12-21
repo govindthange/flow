@@ -142,11 +142,17 @@ lowestKijunValue = ta.lowest(kijunSenPeriod)
 float temp = senkouSpanA[displacement-1] - senkouSpanB[displacement-1]
 string kumoView = temp > 0 ? "bullish" : (temp < 0 ? "bearish" : "neutral")
 
+
+//
 // How is future kumo?
+//
 temp := senkouSpanA - senkouSpanB
 string leadingKumoView = temp > 0 ? "bullish" : (temp < 0 ? "bearish" : "neutral")
 
+
+//
 // Where is price w.r.t kumo?
+//
 string priceWrtKumo = "within"
 if ((kumoView == "bullish" or kumoView == "neutral") and close > senkouSpanA[displacement-1])
      or ((kumoView == "bearish" or kumoView == "neutral") and close > senkouSpanB[displacement-1])
