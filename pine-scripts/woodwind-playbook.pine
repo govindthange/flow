@@ -40,8 +40,6 @@ bool allowEntryUponGaps = input.bool(false, "Show entry signals even on gap-up/d
 bool includeCurrentBarFor9PeriodHighLow = input.bool(false, title="Include current bar to show 9-period highs/lows", tooltip="This is not recommended!. This setting is only for study purposes.")
 
 
-
-
 //########################################################
 //########################################################
 //####                                                ####
@@ -50,12 +48,15 @@ bool includeCurrentBarFor9PeriodHighLow = input.bool(false, title="Include curre
 //########################################################
 //########################################################
 
+//
 // Standard constants
+//
 YES = 1.0
 NO = 0.0
 
+//
 // Color definitions
-
+//
 sessionColor = color.rgb(0, 0, 0, 100)
 
 longBgColor = color.rgb(0,255,0,94)
@@ -88,9 +89,7 @@ f_getString(_key) => str.tostring(array.get(context, _key))
 f_true(_key) => f_get(_key) == YES
 
 f_print(_text) =>
-    // Create label on the first bar.
     var _label = label.new(bar_index, na, _text, xloc.bar_index, yloc.price, color(na), label.style_none, color.white, size.small, text.align_left)
-    // On next bars, update the label's x and y position, and the text it displays.
     label.set_xy(_label, bar_index, ta.highest(10)[1])
     label.set_text(_label, _text)
 
@@ -100,8 +99,6 @@ f_tickFormat() =>
     _s := str.replace_all(_s, "25", "00")
     _s := str.replace_all(_s, "5",  "0")
     _s := str.replace_all(_s, "1",  "0")
-
-
 
 
 //###############################################
@@ -130,9 +127,6 @@ highestKijunValue = ta.highest(kijunSenPeriod)
 lowestKijunSenBar = ta.lowestbars(kijunSenPeriod)
 lowestKijunValue = ta.lowest(kijunSenPeriod)
 
-//f_print(str.format("##### highestBar: {0}, highest: {1}, lowestBar: {2}, lowest: {3}", ta.highestbars(tenkanSenPeriod), ta.highest(tenkanSenPeriod), ta.lowestbars(tenkanSenPeriod), ta.lowest(tenkanSenPeriod)))
-
-
 
 //##########################################################################
 //##########################################################################
@@ -142,7 +136,9 @@ lowestKijunValue = ta.lowest(kijunSenPeriod)
 //##########################################################################
 //##########################################################################
 
+//
 // How is current kumo?
+//
 float temp = senkouSpanA[displacement-1] - senkouSpanB[displacement-1]
 string kumoView = temp > 0 ? "bullish" : (temp < 0 ? "bearish" : "neutral")
 
@@ -159,15 +155,22 @@ else if ((kumoView == "bullish" or kumoView == "neutral") and close < senkouSpan
      or ((kumoView == "bearish" or kumoView == "neutral") and close < senkouSpanA[displacement-1])
     priceWrtKumo := "below"
 
-//f_print(str.format("kumo: {0}, price {1}. ssA: {2, number}, ssB: {3, number}\n", kumoView, priceWrtKumo, senkouSpanA[displacement-1], senkouSpanB[displacement-1]))
 
+//
 // Where is price w.r.t tenkan?
+//
 string priceWrtTenkan = close > tenkanSen ? "above" : (close < tenkanSen ? "below" : "at")
 
+
+//
 // Where tenkan w.r.t kijun?
+//
 string tenkanWrtKijun = tenkanSen > kijunSen ? "above" : ( tenkanSen < kijunSen ? "below" : "at")
 
+
+//
 // Where is TK cross w.r.t kumo? <--- This is not a filter. Ignore!
+//
 var string recentTkCross = "unknown"
 
 bool didNewTkCrossOccur = false
@@ -189,20 +192,20 @@ else if (didNewTkCrossOccur
      or (kumoView == "bearish" and kijunSen < senkouSpanA[displacement-1])))
     tkCrossWrtKumo := "below"
 
-//f_print("ten1: " + str.tostring(tenkanSen[1]) + ", kin1: " + str.tostring(kijunSen[1]) + ", t>k " + str.tostring(tenkanSen > kijunSen) + ", recentTkCross: " + recentTkCross + "\n\n")
-//f_print("ten: " + str.tostring(tenkanSen) + ", kin: " + str.tostring(kijunSen) + ", t<k " + str.tostring(tenkanSen < kijunSen) + ", recentTkCross: " + recentTkCross + "\n")
-//f_print("senkouSpanA[displacement-1]: " + str.tostring(senkouSpanA[displacement-1]) + ", senkouSpanB[displacement-1]: " + str.tostring(senkouSpanB[displacement-1]) + ", > " + str.tostring(kumoView))
 
+//
 // Where is chikou w.r.t price?
+//
 string chikouWrtPrice = "at"
 if (close > high[displacement-1])
     chikouWrtPrice := "above"
 else if (close < low[displacement-1])
     chikouWrtPrice := "below"
 
-//f_print(str.tostring(displacement-1) + " bar price" + str.tostring(close[displacement-1]))
 
+//
 // Where is chikou w.r.t kumo?
+//
 temp := senkouSpanA[2*displacement-1] - senkouSpanB[2*displacement-1]
 string laggingKumoView = temp > 0 ? "bullish" : (temp < 0 ? "bearish" : "neutral")
 
@@ -214,18 +217,23 @@ else if (laggingKumoView == "bullish" and close < senkouSpanB[2*displacement-1])
      or (laggingKumoView == "bearish" and close < senkouSpanA[2*displacement-1])
     chikouWrtKumo := "below"
 
+
+//
 // Where is chikou w.r.t a flat Senkou-Span-B ahead?
+//
 
+
+//
 // Is chikou free from congestion ahead? Is it heading into price?
-
+//
 highestForChikou = (1-congestionTolerance/100) * ta.highest(high[displacement-congestionProximity], congestionProximity)
 lowestForChikou = (1-congestionTolerance/100) * ta.lowest(low[displacement-congestionProximity], congestionProximity)
-
 isChikouSpanFree = chikouWrtPrice == "above" ? (close > highestForChikou) : chikouWrtPrice == "below" ? (close < lowestForChikou) : false
-//f_print("isChikouSpanFree: " + str.tostring(isChikouSpanFree) + " in the next " + str.tostring(congestionProximity) + " bars, highest: " + str.tostring(highestForChikou) + ", lowest: " + str.tostring(lowestForChikou) + "\n")
 
 
+//
 // Declare constants to access global variables
+//
 IDX_PriceLevelToBeginTrailingStopLoss = 0
 IDX_ShouldExitOnStopLoss = 1
 IDX_CanExitAfterKijunOrTkCross = 2
@@ -239,8 +247,6 @@ f_reset() =>
     f_set(IDX_ShouldExitOnTkCross, NO)
     f_set(IDX_TxCrossPrice, -1)
     
-
-
 
 //##########################################################################
 //##########################################################################
@@ -272,10 +278,8 @@ highestSSB = ta.highest(senkouSpanB[2*displacement - 1 - congestionProximity], c
 float ssbProximityToChikou = -1.0
 if (marketView == "bullish" and chikouWrtKumo == "below")
     ssbProximityToChikou := (lowestSSB - close)*100/close
-    //f_print(">> overhead resistance at " + str.tostring(ssbProximityToChikou))
 else if (marketView == "bearish" and chikouWrtKumo == "above")
     ssbProximityToChikou := (close - lowestSSB)*100/close
-    //f_print(">> underlying support at " + str.tostring(ssbProximityToChikou) + "\n")
 
 //
 // Asssess exit scenarios
@@ -292,14 +296,11 @@ else if inShortTrade // for exiting in a short position
 else // for confluence to enter position
     priceWrtKijun := close < kijunSen ? "below" : (close > kijunSen ? "above" : "at")
 
-//f_print("low: " + str.tostring(low) + ", kijun: " + str.tostring(kijunSen) + ", = " + priceWrtKijun)
-
 atr = ta.atr(atrLength) * atrStopMultiplier
 
 //
 // Prepare for signaling long/short entries
 //
-
 
 bool didCandleGap = (open > high[1] and low > high[1]) or (open < low[1] and high < low[1])
 //plotshape(not allowEntryUponGaps and didCandleGap, title= "Candle Gap Up/Down", location=location.belowbar, color=color.gray, transp=0, style=shape.arrowup, text="", size=size.normal, editable=false)
@@ -379,15 +380,15 @@ var tkCrossExitGains = 0.0
 var preemptiveExitGains = 0.0
 
 
+//################################################################
+//################################################################
+//####                                                        ####
+//####                    Entry Strategies                    ####
+//####                                                        ####
+//################################################################
+//################################################################
 
-
-//###############################################################
-//###############################################################
-//####                                                       ####
-//####                   Play LONG Signal                    ####
-//####                                                       ####
-//###############################################################
-//###############################################################
+f_tradeDirection(long, short) => long ? 1 : (short ? -1 : 0)
 
 var canPrepareForLong = false
 var shouldGoLong = false
@@ -400,8 +401,6 @@ canPrepareForLong := withinTestRange
                          and not inLongTrade
                          and not inShortTrade
                          and marketView == "bullish"
-
-//f_print(str.format("[1] prepare? {0}, signaled? {1}, {2} breakout*? {3}, confluence? {4} -- currentPrice: {5}, inLong? {6}\n\n\n", canPrepareForLong, hasSignaledForLong, highestTenkanValue, str.tostring(close >= longBreakoutPrice), marketView, close, inLongTrade))
 
 if showSignalsUponBreakout
     if not canPrepareForLong
@@ -416,8 +415,6 @@ else if canPrepareForLong
     // Draw 9-period high line to indicate the best entry point
     line.new(bar_index-tenkanSenPeriod, highestTenkanValue, bar_index, highestTenkanValue, width=1, color=color.silver, style=line.style_dotted)
     line.new(bar_index+highestTenkanSenBar-1, highestTenkanValue, bar_index, highestTenkanValue, width=1, color=longLineColor, style=line.style_solid)
-
-//f_print(str.format("[2] prepare? {0}, signaled? {1}, {2} breakout? {3}, confluence? {4} -- currentPrice: {5}", canPrepareForLong, hasSignaledForLong, longBreakoutPrice, str.tostring(high >= longBreakoutPrice), marketView, close))
 
 if canPrepareForLong
      and (not showSignalsUponBreakout or high >= longBreakoutPrice)
@@ -434,7 +431,7 @@ if canPrepareForLong
     if stopLoss > low
         stopLoss := low - atr
     
-    takeProfit := entryPrice + (entryPrice - stopLoss) * riskToRewardRatio
+    takeProfit := entryPrice + (entryPrice - stopLoss) * riskToRewardRatio * f_tradeDirection(inLongTrade, inShortTrade)
     
     qty := maxRiskPerPosition / (entryPrice - stopLoss)
     qtyPerExit := qty * exitPercent
@@ -454,268 +451,6 @@ if canPrepareForLong
                              yloc = yloc.belowbar,
                              text = "Long",
                              tooltip = activeTradeInfo)
-
-if (inLongTrade and not didTakeProfit and high >= takeProfit and remainingExitQty > 0)
-    shouldTakeProfit := true
-    
-    if (remainingExitQty > qtyPerExit)
-        takeProfitQty := qtyPerExit
-    else
-        takeProfitQty := remainingExitQty
-    
-    takeProfitGains := (takeProfit - entryPrice) * takeProfitQty
-    pnl := pnl + takeProfitGains
-    remainingExitQty := remainingExitQty - takeProfitQty
-    activeTradeInfo += str.format("\nTP: Sell {0} @ {1, number, currency} = {2, number, currency}/{3, number, currency}", str.tostring(takeProfitQty), takeProfit, takeProfitGains, pnl)
-    label.set_tooltip(activeTradeLabel, activeTradeInfo)
-
-//f_print("[3] inLongTrade: " + str.tostring(inLongTrade) + ", exit? = " + str.tostring(shouldExitOnKijun) + ", canPrepareForLong: " + str.tostring(canPrepareForLong) + "\n\n")
-
-if (inLongTrade and high > f_get(IDX_PriceLevelToBeginTrailingStopLoss))
-    f_set(IDX_CanExitAfterKijunOrTkCross, YES)
-
-//f_print("[L1] inLongTrade: " + str.tostring(inLongTrade) + ", high: " + str.tostring(high) + ", f_get(IDX_PriceLevelToBeginTrailingStopLoss): = " + str.tostring(f_get(IDX_PriceLevelToBeginTrailingStopLoss)) + ", condition? = " + str.tostring((inLongTrade and high > f_get(IDX_PriceLevelToBeginTrailingStopLoss))) + "\n")
-
-//
-// Since kijun is a trailing stop-loss, the old stop-loss order is valid only
-// if the trade is in nurture phase (i.e. IDX_CanExitAfterKijunOrTkCross = false)
-//
-if (inLongTrade and low <= stopLoss and not f_true(IDX_CanExitAfterKijunOrTkCross))
-    f_set(IDX_ShouldExitOnStopLoss, YES)
-    shouldExitOnStop := true
-    
-    stopLossGains := (stopLoss - entryPrice) * remainingExitQty
-    pnl := pnl + stopLossGains
-    activeTradeInfo += str.format("\nSL: Sell {0} @ {1, number, currency} = {2, number, currency}/{3, number, currency}", str.tostring(remainingExitQty), stopLoss, stopLossGains, pnl)
-    label.set_tooltip(activeTradeLabel, activeTradeInfo)
-
-if (inLongTrade and priceWrtKijun == "below" and f_true(IDX_CanExitAfterKijunOrTkCross))
-    shouldExitOnKijun := true
-    kijunExit := kijunSen
-    
-    if kijunExit < stopLoss
-        kijunExitGains := (stopLoss - entryPrice) * remainingExitQty
-        pnl := pnl + kijunExitGains
-        activeTradeInfo += str.format("\nKE~SL: Sell {0} @ {1, number, currency} = {2, number, currency}/{3, number, currency}", str.tostring(remainingExitQty), stopLoss, kijunExitGains, pnl)
-    else
-        kijunExitGains := (kijunExit - entryPrice) * remainingExitQty
-        pnl := pnl + kijunExitGains
-        activeTradeInfo += str.format("\nKE: Sell {0} @ {1, number, currency} = {2, number, currency}/{3, number, currency}", str.tostring(remainingExitQty), kijunExit, kijunExitGains, pnl)
-    label.set_tooltip(activeTradeLabel, activeTradeInfo)
-
-//f_print(str.format("shouldExitOnStop: {0}, priceWrtKijun: {1} and IDX_CanExitAfterKijunOrTkCross: {2} => sellOnKijun: {3}\n\n\n", f_getString(IDX_ShouldExitOnStopLoss), priceWrtKijun, f_getString(IDX_CanExitAfterKijunOrTkCross), str.tostring(shouldExitOnKijun)))
-
-//
-// Since a TK-cross-exit is a manually placed order it can only be placed when the other 2 limit-orders,
-// the kijun-exit (a trailing stop) or the stop-loss (automatically triggerred order) are not triggerred yet.
-//
-if (inLongTrade
-     and not shouldExitOnStop
-     and not shouldExitOnKijun
-     and recentTkCross == "bearish"
-     and tkCrossExitEnabled
-     and (allowTkCrossExitInNurturePhase 
-             or (not allowTkCrossExitInNurturePhase and f_true(IDX_CanExitAfterKijunOrTkCross))))
-    shouldExitOnTkCross := true
-    tkCrossExit := close
-    
-    if tkCrossExit < stopLoss
-        tkCrossExitGains := (stopLoss - entryPrice) * remainingExitQty
-        pnl := pnl + tkCrossExitGains
-        activeTradeInfo += str.format("\nTKCP~SL: Sell {0} @ {1, number, currency} = {2, number, currency}/{3, number, currency}", str.tostring(remainingExitQty), stopLoss, tkCrossExitGains, pnl)
-    else
-        tkCrossExitGains := (tkCrossExit - entryPrice) * remainingExitQty
-        pnl := pnl + tkCrossExitGains
-        activeTradeInfo += str.format("\nTKCP: Sell {0} @ {1, number, currency} = {2, number, currency}/{3, number, currency}", str.tostring(remainingExitQty), tkCrossExit, tkCrossExitGains, pnl)
-    label.set_tooltip(activeTradeLabel, activeTradeInfo)
-
-plotshape(inLongTrade and marketView == "bearish", title= "Stop Loss Long Exit", location=location.belowbar, color=longPrimarySignalColor, transp=0, style=shape.flag, text="", size=size.small, editable=false)
-if (inLongTrade
-     and not shouldExitOnStop
-     and not shouldExitOnKijun
-     and not shouldExitOnTkCross
-     and marketView == "bearish")
-    shouldExitPreemptively := true
-    
-    if close < stopLoss
-        preemptiveExitGains := (stopLoss - entryPrice) * remainingExitQty
-        pnl := pnl + preemptiveExitGains
-        activeTradeInfo += str.format("\nPE~SL: Sell {0} @ {1, number, currency} = {2, number, currency}/{3, number, currency}", str.tostring(remainingExitQty), stopLoss, preemptiveExitGains, pnl) // PE is Preemptive Exit
-    else
-        preemptiveExitGains := (close - entryPrice) * remainingExitQty
-        pnl := pnl + preemptiveExitGains
-        activeTradeInfo += str.format("\nPE: Sell {0} @ {1, number, currency} = {2, number, currency}/{3, number, currency}", str.tostring(remainingExitQty), close, preemptiveExitGains, pnl) // PE is Preemptive Exit
-    label.set_tooltip(activeTradeLabel, activeTradeInfo)
-
-//f_print("[L1] inLongTrade: " + str.tostring(inLongTrade) + ", exit? = " + str.tostring(shouldExitOnKijun) + ", bullishConf? = " + str.tostring(hasBullishConfluence) + "\n")
-
-//
-// Since all tenkan-exits are manually placed orders they can only be placed when the other 2 limit-orders,
-// the kijun-exit (a trailing stop) or the stop-loss (automatically triggerred order) are not triggerred yet.
-// You'll also not bother scaling out gains by placing a tenkan-exit order when a TK-cross/preemptive-exits has occurred.
-//
-if (inLongTrade
-     and not shouldExitOnStop
-     and not shouldExitOnKijun
-     and not shouldExitOnTkCross
-     and not shouldExitPreemptively
-     and close < tenkanSen and close[1] >= tenkanSen[1]
-     and remainingExitQty > 0)
-    shouldExitOnTenkan := true
-    if (tenkanExit1 == 0.0)
-        tenkanExit1 := close
-        if (remainingExitQty > qtyPerExit)
-            tenkanExitQty1 := qtyPerExit
-        else
-            tenkanExitQty1 := remainingExitQty
-        
-        tenkanExitGains1 := (tenkanExit1 - entryPrice) * tenkanExitQty1
-        pnl := pnl + tenkanExitGains1
-        remainingExitQty := remainingExitQty - tenkanExitQty1
-        activeTradeInfo += str.format("\nTE1: Sell {0} @ {1, number, currency} = {2, number, currency}/{3, number, currency}", str.tostring(tenkanExitQty1), close, tenkanExitGains1, pnl)
-    else if (tenkanExit2 == 0.0)
-        tenkanExit2 := close
-        if (remainingExitQty > qtyPerExit)
-            tenkanExitQty2 := qtyPerExit
-        else
-            tenkanExitQty2 := remainingExitQty
-        
-        tenkanExitGains2 := (tenkanExit2 - entryPrice) * tenkanExitQty2
-        pnl := pnl + tenkanExitGains2
-        remainingExitQty := remainingExitQty - tenkanExitQty2
-        activeTradeInfo += str.format("\nTE2: Sell {0} @ {1, number, currency} = {2, number, currency}/{3, number, currency}", str.tostring(tenkanExitQty2), close, tenkanExitGains2, pnl)
-    else if (tenkanExit3 == 0.0)
-        tenkanExit3 := close
-        if (remainingExitQty > qtyPerExit)
-            tenkanExitQty3 := qtyPerExit
-        else
-            tenkanExitQty3 := remainingExitQty
-        
-        tenkanExitGains3 := (tenkanExit3 - entryPrice) * tenkanExitQty3
-        pnl := pnl + tenkanExitGains3
-        remainingExitQty := remainingExitQty - tenkanExitQty3
-        activeTradeInfo += str.format("\nTE3: Sell {0} @ {1, number, currency} = {2, number, currency}/{3, number, currency}", str.tostring(tenkanExitQty3), close, tenkanExitGains3, pnl)
-    else if (tenkanExit4 == 0.0)
-        tenkanExit4 := close
-        if (remainingExitQty > qtyPerExit)
-            tenkanExitQty4 := qtyPerExit
-        else
-            tenkanExitQty4 := remainingExitQty
-        
-        tenkanExitGains4 := (tenkanExit4 - entryPrice) * tenkanExitQty4
-        pnl := pnl + tenkanExitGains4
-        remainingExitQty := remainingExitQty - tenkanExitQty4
-        activeTradeInfo += str.format("\nTE4: Sell {0} @ {1, number, currency} = {2, number, currency}/{3, number, currency}", str.tostring(tenkanExitQty4), close, tenkanExitGains4, pnl)
-    else if (tenkanExit5 == 0.0)
-        tenkanExit5 := close
-        if (remainingExitQty > qtyPerExit)
-            tenkanExitQty5 := qtyPerExit
-        else
-            tenkanExitQty5 := remainingExitQty
-        
-        tenkanExitGains5 := (tenkanExit5 - entryPrice) * tenkanExitQty5
-        pnl := pnl + tenkanExitGains5
-        remainingExitQty := remainingExitQty - tenkanExitQty5
-        activeTradeInfo += str.format("\nTE5: Sell {0} @ {1, number, currency} = {2, number, currency}/{3, number, currency}", str.tostring(tenkanExitQty5), close, tenkanExitGains5, pnl)
-    else if (tenkanExit6 == 0.0)
-        tenkanExit6 := close
-        if (remainingExitQty > qtyPerExit)
-            tenkanExitQty6 := qtyPerExit
-        else
-            tenkanExitQty6 := remainingExitQty
-        
-        tenkanExitGains6 := (tenkanExit6 - entryPrice) * tenkanExitQty6
-        pnl := pnl + tenkanExitGains6
-        remainingExitQty := remainingExitQty - tenkanExitQty6
-        activeTradeInfo += str.format("\nTE6: Sell {0} @ {1, number, currency} = {2, number, currency}/{3, number, currency}", str.tostring(tenkanExitQty6), close, tenkanExitGains6, pnl)
-    else if (tenkanExit7 == 0.0)
-        tenkanExit7 := close
-        if (remainingExitQty > qtyPerExit)
-            tenkanExitQty7 := qtyPerExit
-        else
-            tenkanExitQty7 := remainingExitQty
-        
-        tenkanExitGains7 := (tenkanExit7 - entryPrice) * tenkanExitQty7
-        pnl := pnl + tenkanExitGains7
-        remainingExitQty := remainingExitQty - tenkanExitQty7
-        activeTradeInfo += str.format("\nTE7: Sell {0} @ {1, number, currency} = {2, number, currency}/{3, number, currency}", str.tostring(tenkanExitQty7), close, tenkanExitGains7, pnl)
-    else if (tenkanExit8 == 0.0)
-        tenkanExit8 := close
-        if (remainingExitQty > qtyPerExit)
-            tenkanExitQty8 := qtyPerExit
-        else
-            tenkanExitQty8 := remainingExitQty
-        
-        tenkanExitGains8 := (tenkanExit8 - entryPrice) * tenkanExitQty8
-        pnl := pnl + tenkanExitGains8
-        remainingExitQty := remainingExitQty - tenkanExitQty8
-        activeTradeInfo += str.format("\nTE8: Sell {0} @ {1, number, currency} = {2, number, currency}/{3, number, currency}", str.tostring(tenkanExitQty8), close, tenkanExitGains8, pnl)
-    else if (tenkanExit9 == 0.0)
-        tenkanExit9 := close
-        if (remainingExitQty > qtyPerExit)
-            tenkanExitQty9 := qtyPerExit
-        else
-            tenkanExitQty9 := remainingExitQty
-        
-        tenkanExitGains9 := (tenkanExit9 - entryPrice) * tenkanExitQty9
-        pnl := pnl + tenkanExitGains9
-        remainingExitQty := remainingExitQty - tenkanExitQty9
-        activeTradeInfo += str.format("\nTE9: Sell {0} @ {1, number, currency} = {2, number, currency}/{3, number, currency}", str.tostring(tenkanExitQty9), close, tenkanExitGains9, pnl)
-    else if (tenkanExit10 == 0.0)
-        tenkanExit10 := close
-        if (remainingExitQty > qtyPerExit)
-            tenkanExitQty10 := qtyPerExit
-        else
-            tenkanExitQty10 := remainingExitQty
-        
-        tenkanExitGains10 := (tenkanExit10 - entryPrice) * tenkanExitQty10
-        pnl := pnl + tenkanExitGains10
-        remainingExitQty := remainingExitQty - tenkanExitQty10
-        activeTradeInfo += str.format("\nTE10: Sell {0} @ {1, number, currency} = {2, number, currency}/{3, number, currency}", str.tostring(tenkanExitQty10), close, tenkanExitGains10, pnl)
-    
-    label.set_tooltip(activeTradeLabel, activeTradeInfo)
-else
-    shouldExitOnTenkan := false
-
-// Plot LONG signals based on confluence
-plotshape(showSignalsUponBreakout and canPrepareForLong and not hasSignaledForLong and not shouldGoLong, title= "Prepare to go long", location=location.belowbar, color=color.teal, transp=0, style=shape.triangleup, text="", size=size.tiny, editable=false)
-if showSignalsUponBreakout and canPrepareForLong
-    canPrepareForLong := false // reset flag
-    if showSignalsUponBreakout
-        hasSignaledForLong := true
-
-//f_print(str.format("[4] PRINT BUY SIGNAL: showSignalsUponBreakout:{0}, canPrepareForLong: {1} {2}\n\n\n\n", str.tostring(showSignalsUponBreakout), str.tostring(canPrepareForLong), str.tostring(not showSignalsUponBreakout and canPrepareForLong)))
-plotshape(inLongTrade and ((showSignalsUponBreakout and shouldGoLong) or (not showSignalsUponBreakout and canPrepareForLong)), title="Long Entry A", location=location.belowbar, color=longPrimarySignalColor, transp=0, style=shape.triangleup, text="", size=size.small, editable=false)
-plotshape(inLongTrade and ((showSignalsUponBreakout and shouldGoLong) or (not showSignalsUponBreakout and canPrepareForLong)), title="Long Entry B", location=location.belowbar, color=longPrimarySignalColor, transp=0, style=shape.triangleup, text="", size=size.tiny, editable=false)
-if not showSignalsUponBreakout
-    canPrepareForLong := false
-else if shouldGoLong
-    shouldGoLong := false
-
-plotshape(inLongTrade and shouldExitOnTenkan, title= "Tenkan Long Exit", location=location.abovebar, color=longSecondarySignalColor, transp=0, style=shape.diamond, text="", size=size.tiny, editable=false)
-
-plotshape(inLongTrade and shouldExitOnKijun, title= "Kijun Long Exit", location=location.abovebar, color=longSecondarySignalColor, transp=0, style=shape.circle, text="", size=size.tiny, editable=false)
-
-plotshape(inLongTrade and shouldExitOnTkCross, title= "TK Cross Long Exit", location=location.abovebar, color=longSecondarySignalColor, transp=0, style=shape.xcross, text="", size=size.small, editable=false)
-
-plotshape(inLongTrade and (f_true(IDX_ShouldExitOnStopLoss) or shouldExitOnStop), title= "Stop Loss Long Exit", location=location.belowbar, color=longPrimarySignalColor, transp=0, style=shape.flag, text="", size=size.small, editable=false)
-
-plotshape(inLongTrade and shouldTakeProfit, title= "Fixed Long Exit", location=location.abovebar, color=longSecondarySignalColor, transp=0, style=shape.square, text="", size=size.tiny, editable=false)
-
-if shouldTakeProfit
-    didTakeProfit := true
-    shouldTakeProfit := false
-
-
-
-
-//##############################################################
-//##############################################################
-//####                                                      ####
-//####                  Play SHORT Signal                   ####
-//####                                                      ####
-//##############################################################
-//##############################################################
 
 var canPrepareForShort = false
 var shouldGoShort = false
@@ -779,109 +514,130 @@ if canPrepareForShort
                              text = "Short",
                              tooltip = activeTradeInfo)
 
-if (inShortTrade and not didTakeProfit and low <= takeProfit and remainingExitQty > 0)
-    shouldTakeProfit := true
+
+//##############################################################
+//##############################################################
+//####                                                      ####
+//####                    Exit Strategies                   ####
+//####                                                      ####
+//##############################################################
+//##############################################################
+
+
+if ((inLongTrade and high >= takeProfit and remainingExitQty > 0)
+     or (inShortTrade and low <= takeProfit and remainingExitQty > 0))
+     and not didTakeProfit
     
+    shouldTakeProfit := true
     if (remainingExitQty > qtyPerExit)
         takeProfitQty := qtyPerExit
     else
         takeProfitQty := remainingExitQty
-    
-    takeProfitGains := (entryPrice - takeProfit) * takeProfitQty
+    takeProfitGains := (takeProfit - entryPrice) * takeProfitQty * f_tradeDirection(inLongTrade, inShortTrade)
     pnl := pnl + takeProfitGains
     remainingExitQty := remainingExitQty - takeProfitQty
-    activeTradeInfo += str.format("\nLO: Buy {0} @ {1, number, currency} = {2, number, currency}/{3, number, currency}", str.tostring(takeProfitQty), takeProfitQty, takeProfitGains, pnl)
+    activeTradeInfo += str.format("\nTP {0} @ {1, number, currency} = {2, number, currency}/{3, number, currency}", str.tostring(takeProfitQty), takeProfit, takeProfitGains, pnl)
     label.set_tooltip(activeTradeLabel, activeTradeInfo)
 
-//f_print("[S2] inShortTrade: " + str.tostring(inShortTrade) + ", didTakeProfit? = " + str.tostring(didTakeProfit) + ", low: " + str.tostring(low) + ", takeProfit: = " + str.tostring(takeProfit) + ", shouldTakeProfit: = " + str.tostring(shouldTakeProfit) + "\n\n\n\n")
 
-if (inShortTrade and low < f_get(IDX_PriceLevelToBeginTrailingStopLoss))
+if (inLongTrade and high > f_get(IDX_PriceLevelToBeginTrailingStopLoss))
+     or (inShortTrade and low < f_get(IDX_PriceLevelToBeginTrailingStopLoss))
     f_set(IDX_CanExitAfterKijunOrTkCross, YES)
 
-//f_print("low: " + str.tostring(low) + ", shortSL: " + str.tostring(stopLoss) +", finalSL: " + f_getString(IDX_PriceLevelToBeginTrailingStopLoss) + ", useKijonAsSL: " + f_getString(IDX_CanExitAfterKijunOrTkCross)+ ", shouldExitOnSL: " + f_getString(IDX_ShouldExitOnStopLoss))
 
 //
 // Since kijun is a trailing stop-loss, the old stop-loss order is valid only
 // if the trade is in nurture phase (i.e. IDX_CanExitAfterKijunOrTkCross = false)
 //
-if (inShortTrade and high >= stopLoss and not f_true(IDX_CanExitAfterKijunOrTkCross))
+if ((inLongTrade and low <= stopLoss)
+     or (inShortTrade and high >= stopLoss))
+     and not f_true(IDX_CanExitAfterKijunOrTkCross)
+    
     f_set(IDX_ShouldExitOnStopLoss, YES)
     shouldExitOnStop := true
-    
-    stopLossGains := (entryPrice - stopLoss) * remainingExitQty
+    stopLossGains := (stopLoss - entryPrice) * remainingExitQty * f_tradeDirection(inLongTrade, inShortTrade)
     pnl := pnl + stopLossGains
-    activeTradeInfo += str.format("\nSL: Buy {0} @ {1, number, currency} = {2, number, currency}/{3, number, currency}", str.tostring(remainingExitQty), stopLoss, stopLossGains, pnl)
+    activeTradeInfo += str.format("\nSL {0} @ {1, number, currency} = {2, number, currency}/{3, number, currency}", str.tostring(remainingExitQty), stopLoss, stopLossGains, pnl)
     label.set_tooltip(activeTradeLabel, activeTradeInfo)
 
-if (inShortTrade and priceWrtKijun == "above" and f_true(IDX_CanExitAfterKijunOrTkCross))
+
+if ((inLongTrade and priceWrtKijun == "below")
+     or (inShortTrade and priceWrtKijun == "above"))
+     and f_true(IDX_CanExitAfterKijunOrTkCross)
+    
     shouldExitOnKijun := true
     kijunExit := kijunSen
-    
-    if kijunExit > stopLoss
-        kijunExitGains := (entryPrice - stopLoss) * remainingExitQty
+    if (inLongTrade and kijunExit < stopLoss)
+         or (inShortTrade and kijunExit > stopLoss)
+        kijunExitGains := (stopLoss - entryPrice) * remainingExitQty * f_tradeDirection(inLongTrade, inShortTrade)
         pnl := pnl + kijunExitGains
-        activeTradeInfo += str.format("\nKE~SL: Buy {0} @ {1, number, currency} = {2, number, currency}/{3, number, currency}", str.tostring(remainingExitQty), stopLoss, kijunExitGains, pnl)
+        activeTradeInfo += str.format("\nKE~SL {0} @ {1, number, currency} = {2, number, currency}/{3, number, currency}", str.tostring(remainingExitQty), stopLoss, kijunExitGains, pnl)
     else
-        kijunExitGains := (entryPrice - kijunExit) * remainingExitQty
+        kijunExitGains := (kijunExit - entryPrice) * remainingExitQty * f_tradeDirection(inLongTrade, inShortTrade)
         pnl := pnl + kijunExitGains
-        activeTradeInfo += str.format("\nKE: Buy {0} @ {1, number, currency} = {2, number, currency}/{3, number, currency}", str.tostring(remainingExitQty), kijunExit, kijunExitGains, pnl)
+        activeTradeInfo += str.format("\nKE {0} @ {1, number, currency} = {2, number, currency}/{3, number, currency}", str.tostring(remainingExitQty), kijunExit, kijunExitGains, pnl)
     label.set_tooltip(activeTradeLabel, activeTradeInfo)
+
 
 //
 // Since a TK-cross-exit is a manually placed order it can only be placed when the other 2 limit-orders,
 // the kijun-exit (a trailing stop) or the stop-loss (automatically triggerred order) are not triggerred yet.
 //
-if (inShortTrade
+if ((inLongTrade and recentTkCross == "bearish")
+     or (inShortTrade and recentTkCross == "bullish"))
      and not shouldExitOnStop
      and not shouldExitOnKijun
-     and recentTkCross == "bullish"
      and tkCrossExitEnabled
-     and (allowTkCrossExitInNurturePhase or (not allowTkCrossExitInNurturePhase and f_true(IDX_CanExitAfterKijunOrTkCross))))
+     and (allowTkCrossExitInNurturePhase 
+             or (not allowTkCrossExitInNurturePhase and f_true(IDX_CanExitAfterKijunOrTkCross)))
+    
     shouldExitOnTkCross := true
     tkCrossExit := close
-    
-    if tkCrossExit > stopLoss
-        tkCrossExitGains := (entryPrice - stopLoss) * remainingExitQty
+    if (inLongTrade and tkCrossExit < stopLoss)
+         or (inShortTrade and tkCrossExit > stopLoss)
+        tkCrossExitGains := (stopLoss - entryPrice) * remainingExitQty * f_tradeDirection(inLongTrade, inShortTrade)
         pnl := pnl + tkCrossExitGains
-        activeTradeInfo += str.format("\nTKCP~SL: Buy {0} @ {1, number, currency} = {2, number, currency}/{3, number, currency}", str.tostring(remainingExitQty), stopLoss, tkCrossExitGains, pnl)
+        activeTradeInfo += str.format("\nTKCP~SL {0} @ {1, number, currency} = {2, number, currency}/{3, number, currency}", str.tostring(remainingExitQty), stopLoss, tkCrossExitGains, pnl)
     else
-        tkCrossExitGains := (entryPrice - tkCrossExit) * remainingExitQty
+        tkCrossExitGains := (tkCrossExit - entryPrice) * remainingExitQty * f_tradeDirection(inLongTrade, inShortTrade)
         pnl := pnl + tkCrossExitGains
-        activeTradeInfo += str.format("\nTKCP: Buy {0} @ {1, number, currency} = {2, number, currency}/{3, number, currency}", str.tostring(remainingExitQty), tkCrossExit, tkCrossExitGains, pnl)
+        activeTradeInfo += str.format("\nTKCP @ {1, number, currency} = {2, number, currency}/{3, number, currency}", str.tostring(remainingExitQty), tkCrossExit, tkCrossExitGains, pnl)
     label.set_tooltip(activeTradeLabel, activeTradeInfo)
 
+
+plotshape(inLongTrade and marketView == "bearish", title= "Stop Loss Long Exit", location=location.belowbar, color=longPrimarySignalColor, transp=0, style=shape.flag, text="", size=size.small, editable=false)
 plotshape(inShortTrade and marketView == "bullish", title= "Stop Loss Short Exit", location=location.belowbar, color=shortPrimarySignalColor, transp=0, style=shape.flag, text="", size=size.small, editable=false)
-if (inShortTrade
+if ((inLongTrade and marketView == "bearish")
+     or (inShortTrade and marketView == "bullish"))
      and not shouldExitOnStop
      and not shouldExitOnKijun
      and not shouldExitOnTkCross
-     and marketView == "bullish")
     shouldExitPreemptively := true
-    
-    if close > stopLoss
-        preemptiveExitGains := (entryPrice - stopLoss) * remainingExitQty
+    if (inLongTrade and close < stopLoss)
+         or (inShortTrade and close > stopLoss)
+        preemptiveExitGains := (stopLoss - entryPrice) * remainingExitQty * f_tradeDirection(inLongTrade, inShortTrade)
         pnl := pnl + preemptiveExitGains
-        activeTradeInfo += str.format("\nPE~SL: Buy {0} @ {1, number, currency} = {2, number, currency}/{3, number, currency}", str.tostring(remainingExitQty), stopLoss, preemptiveExitGains, pnl)
+        activeTradeInfo += str.format("\nPE~SL {0} @ {1, number, currency} = {2, number, currency}/{3, number, currency}", str.tostring(remainingExitQty), stopLoss, preemptiveExitGains, pnl) // PE is Preemptive Exit
     else
-        preemptiveExitGains := (entryPrice - close) * remainingExitQty
+        preemptiveExitGains := (close - entryPrice) * remainingExitQty * f_tradeDirection(inLongTrade, inShortTrade)
         pnl := pnl + preemptiveExitGains
-        activeTradeInfo += str.format("\nPE: Buy {0} @ {1, number, currency} = {2, number, currency}/{3, number, currency}", str.tostring(remainingExitQty), close, preemptiveExitGains, pnl)
+        activeTradeInfo += str.format("\nPE {0} @ {1, number, currency} = {2, number, currency}/{3, number, currency}", str.tostring(remainingExitQty), close, preemptiveExitGains, pnl) // PE is Preemptive Exit
     label.set_tooltip(activeTradeLabel, activeTradeInfo)
 
-//f_print("[S1] inShortTrade: " + str.tostring(inShortTrade) + ", exit? = " + str.tostring(shouldExitOnKijun) + ", bearishConf? = " + str.tostring(hasBearishConfluence) + ", isPriceAboveKijunsen? = " + str.tostring(isPriceAboveKijunSen) + "\n\n\n")
 
 //
 // Since all tenkan-exits are manually placed orders they can only be placed when the other 2 limit-orders,
 // the kijun-exit (a trailing stop) or the stop-loss (automatically triggerred order) are not triggerred yet.
-// You'll also not bother scaling out gains by placing a tenkan-exit order when a TK-cross-exit has occurred.
+// You'll also not bother scaling out gains by placing a tenkan-exit order when a TK-cross/preemptive-exits has occurred.
 //
-if (inShortTrade
+if ((inLongTrade and close < tenkanSen and close[1] >= tenkanSen[1])
+     or (inShortTrade and close > tenkanSen and close[1] <= tenkanSen[1]))
      and not shouldExitOnStop
      and not shouldExitOnKijun
      and not shouldExitOnTkCross
      and not shouldExitPreemptively
-     and close > tenkanSen and close[1] <= tenkanSen[1]
-     and remainingExitQty > 0)
+     and remainingExitQty > 0
+    
     shouldExitOnTenkan := true
     if (tenkanExit1 == 0.0)
         tenkanExit1 := close
@@ -889,121 +645,141 @@ if (inShortTrade
             tenkanExitQty1 := qtyPerExit
         else
             tenkanExitQty1 := remainingExitQty
-        
-        tenkanExitGains1 := (entryPrice - tenkanExit1) * tenkanExitQty1
+        tenkanExitGains1 := (tenkanExit1 - entryPrice) * tenkanExitQty1 * f_tradeDirection(inLongTrade, inShortTrade)
         pnl := pnl + tenkanExitGains1
         remainingExitQty := remainingExitQty - tenkanExitQty1
-        activeTradeInfo += str.format("\nTE1: Buy {0} @ {1, number, currency} = {2, number, currency}/{3, number, currency}", str.tostring(tenkanExitQty1), close, tenkanExitGains1, pnl)
+        activeTradeInfo += str.format("\nTE1 {0} @ {1, number, currency} = {2, number, currency}/{3, number, currency}", str.tostring(tenkanExitQty1), close, tenkanExitGains1, pnl)
+    
     else if (tenkanExit2 == 0.0)
         tenkanExit2 := close
         if (remainingExitQty > qtyPerExit)
             tenkanExitQty2 := qtyPerExit
         else
             tenkanExitQty2 := remainingExitQty
-        
-        tenkanExitGains2 := (entryPrice - tenkanExit2) * tenkanExitQty2
+        tenkanExitGains2 := (tenkanExit2 - entryPrice) * tenkanExitQty2 * f_tradeDirection(inLongTrade, inShortTrade)
         pnl := pnl + tenkanExitGains2
         remainingExitQty := remainingExitQty - tenkanExitQty2
-        activeTradeInfo += str.format("\nTE2: Buy {0} @ {1, number, currency} = {2, number, currency}/{3, number, currency}", str.tostring(tenkanExitQty2), close, tenkanExitGains2, pnl)
+        activeTradeInfo += str.format("\nTE2 {0} @ {1, number, currency} = {2, number, currency}/{3, number, currency}", str.tostring(tenkanExitQty2), close, tenkanExitGains2, pnl)
+    
     else if (tenkanExit3 == 0.0)
         tenkanExit3 := close
         if (remainingExitQty > qtyPerExit)
             tenkanExitQty3 := qtyPerExit
         else
             tenkanExitQty3 := remainingExitQty
-        
-        tenkanExitGains3 := (entryPrice - tenkanExit3) * tenkanExitQty3
+        tenkanExitGains3 := (tenkanExit3 - entryPrice) * tenkanExitQty3 * f_tradeDirection(inLongTrade, inShortTrade)
         pnl := pnl + tenkanExitGains3
         remainingExitQty := remainingExitQty - tenkanExitQty3
-        activeTradeInfo += str.format("\nTE3: Buy {0} @ {1, number, currency} = {2, number, currency}/{3, number, currency}", str.tostring(tenkanExitQty3), close, tenkanExitGains3, pnl)
+        activeTradeInfo += str.format("\nTE3 {0} @ {1, number, currency} = {2, number, currency}/{3, number, currency}", str.tostring(tenkanExitQty3), close, tenkanExitGains3, pnl)
+    
     else if (tenkanExit4 == 0.0)
         tenkanExit4 := close
         if (remainingExitQty > qtyPerExit)
             tenkanExitQty4 := qtyPerExit
         else
             tenkanExitQty4 := remainingExitQty
-        
-        tenkanExitGains4 := (entryPrice - tenkanExit4) * tenkanExitQty4
+        tenkanExitGains4 := (tenkanExit4 - entryPrice) * tenkanExitQty4 * f_tradeDirection(inLongTrade, inShortTrade)
         pnl := pnl + tenkanExitGains4
         remainingExitQty := remainingExitQty - tenkanExitQty4
-        activeTradeInfo += str.format("\nTE4: Buy {0} @ {1, number, currency} = {2, number, currency}/{3, number, currency}", str.tostring(tenkanExitQty4), close, tenkanExitGains4, pnl)
+        activeTradeInfo += str.format("\nTE4 {0} @ {1, number, currency} = {2, number, currency}/{3, number, currency}", str.tostring(tenkanExitQty4), close, tenkanExitGains4, pnl)
+    
     else if (tenkanExit5 == 0.0)
         tenkanExit5 := close
         if (remainingExitQty > qtyPerExit)
             tenkanExitQty5 := qtyPerExit
         else
             tenkanExitQty5 := remainingExitQty
-        
-        tenkanExitGains5 := (entryPrice - tenkanExit5) * tenkanExitQty5
+        tenkanExitGains5 := (tenkanExit5 - entryPrice) * tenkanExitQty5 * f_tradeDirection(inLongTrade, inShortTrade)
         pnl := pnl + tenkanExitGains5
         remainingExitQty := remainingExitQty - tenkanExitQty5
-        activeTradeInfo += str.format("\nTE5: Buy {0} @ {1, number, currency} = {2, number, currency}/{3, number, currency}", str.tostring(tenkanExitQty5), close, tenkanExitGains5, pnl)
+        activeTradeInfo += str.format("\nTE5 {0} @ {1, number, currency} = {2, number, currency}/{3, number, currency}", str.tostring(tenkanExitQty5), close, tenkanExitGains5, pnl)
+    
     else if (tenkanExit6 == 0.0)
         tenkanExit6 := close
         if (remainingExitQty > qtyPerExit)
             tenkanExitQty6 := qtyPerExit
         else
             tenkanExitQty6 := remainingExitQty
-        
-        tenkanExitGains6 := (entryPrice - tenkanExit6) * tenkanExitQty6
+        tenkanExitGains6 := (tenkanExit6 - entryPrice) * tenkanExitQty6 * f_tradeDirection(inLongTrade, inShortTrade)
         pnl := pnl + tenkanExitGains6
         remainingExitQty := remainingExitQty - tenkanExitQty6
-        activeTradeInfo += str.format("\nTE6: Buy {0} @ {1, number, currency} = {2, number, currency}/{3, number, currency}", str.tostring(tenkanExitQty6), close, tenkanExitGains6, pnl)
+        activeTradeInfo += str.format("\nTE6 {0} @ {1, number, currency} = {2, number, currency}/{3, number, currency}", str.tostring(tenkanExitQty6), close, tenkanExitGains6, pnl)
+    
     else if (tenkanExit7 == 0.0)
         tenkanExit7 := close
         if (remainingExitQty > qtyPerExit)
             tenkanExitQty7 := qtyPerExit
         else
             tenkanExitQty7 := remainingExitQty
-        
-        tenkanExitGains7 := (entryPrice - tenkanExit7) * tenkanExitQty7
+        tenkanExitGains7 := (tenkanExit7 - entryPrice) * tenkanExitQty7 * f_tradeDirection(inLongTrade, inShortTrade)
         pnl := pnl + tenkanExitGains7
         remainingExitQty := remainingExitQty - tenkanExitQty7
-        activeTradeInfo += str.format("\nTE7: Buy {0} @ {1, number, currency} = {2, number, currency}/{3, number, currency}", str.tostring(tenkanExitQty7), close, tenkanExitGains7, pnl)
+        activeTradeInfo += str.format("\nTE7 {0} @ {1, number, currency} = {2, number, currency}/{3, number, currency}", str.tostring(tenkanExitQty7), close, tenkanExitGains7, pnl)
+    
     else if (tenkanExit8 == 0.0)
         tenkanExit8 := close
         if (remainingExitQty > qtyPerExit)
             tenkanExitQty8 := qtyPerExit
         else
             tenkanExitQty8 := remainingExitQty
-        
-        tenkanExitGains8 := (entryPrice - tenkanExit8) * tenkanExitQty8
+        tenkanExitGains8 := (tenkanExit8 - entryPrice) * tenkanExitQty8 * f_tradeDirection(inLongTrade, inShortTrade)
         pnl := pnl + tenkanExitGains8
         remainingExitQty := remainingExitQty - tenkanExitQty8
-        activeTradeInfo += str.format("\nTE8: Buy {0} @ {1, number, currency} = {2, number, currency}/{3, number, currency}", str.tostring(tenkanExitQty8), close, tenkanExitGains8, pnl)
+        activeTradeInfo += str.format("\nTE8 {0} @ {1, number, currency} = {2, number, currency}/{3, number, currency}", str.tostring(tenkanExitQty8), close, tenkanExitGains8, pnl)
+    
     else if (tenkanExit9 == 0.0)
         tenkanExit9 := close
         if (remainingExitQty > qtyPerExit)
             tenkanExitQty9 := qtyPerExit
         else
             tenkanExitQty9 := remainingExitQty
-        
-        tenkanExitGains9 := (entryPrice - tenkanExit9) * tenkanExitQty9
+        tenkanExitGains9 := (tenkanExit9 - entryPrice) * tenkanExitQty9 * f_tradeDirection(inLongTrade, inShortTrade)
         pnl := pnl + tenkanExitGains9
         remainingExitQty := remainingExitQty - tenkanExitQty9
-        activeTradeInfo += str.format("\nTE9: Buy {0} @ {1, number, currency} = {2, number, currency}/{3, number, currency}", str.tostring(tenkanExitQty9), close, tenkanExitGains9, pnl)
+        activeTradeInfo += str.format("\nTE9 {0} @ {1, number, currency} = {2, number, currency}/{3, number, currency}", str.tostring(tenkanExitQty9), close, tenkanExitGains9, pnl)
+    
     else if (tenkanExit10 == 0.0)
         tenkanExit10 := close
         if (remainingExitQty > qtyPerExit)
             tenkanExitQty10 := qtyPerExit
         else
             tenkanExitQty10 := remainingExitQty
-        
-        tenkanExitGains10 := (entryPrice - tenkanExit10) * tenkanExitQty10
+        tenkanExitGains10 := (tenkanExit10 - entryPrice) * tenkanExitQty10 * f_tradeDirection(inLongTrade, inShortTrade)
         pnl := pnl + tenkanExitGains10
         remainingExitQty := remainingExitQty - tenkanExitQty10
-        activeTradeInfo += str.format("\nTE10: Buy {0} @ {1, number, currency} = {2, number, currency}/{3, number, currency}", str.tostring(tenkanExitQty10), close, tenkanExitGains10, pnl)
+        activeTradeInfo += str.format("\nTE10 {0} @ {1, number, currency} = {2, number, currency}/{3, number, currency}", str.tostring(tenkanExitQty10), close, tenkanExitGains10, pnl)
     
     label.set_tooltip(activeTradeLabel, activeTradeInfo)
 else
     shouldExitOnTenkan := false
-    
-// Plot SHORT signals based on confluence
+
+
+//################################################################
+//################################################################
+//####                                                        ####
+//####                      Draw Signals                      ####
+//####                                                        ####
+//################################################################
+//################################################################
+
+plotshape(showSignalsUponBreakout and canPrepareForLong and not hasSignaledForLong and not shouldGoLong, title= "Prepare to go long", location=location.belowbar, color=color.teal, transp=0, style=shape.triangleup, text="", size=size.tiny, editable=false)
+if showSignalsUponBreakout and canPrepareForLong
+    canPrepareForLong := false // reset flag
+    if showSignalsUponBreakout
+        hasSignaledForLong := true
+
 plotshape(showSignalsUponBreakout and canPrepareForShort and not hasSignaledForShort and not shouldGoShort, title= "Prepare to go short", location=location.abovebar, color=color.red, transp=0, style=shape.triangledown, text="", size=size.tiny, editable=false)
 if showSignalsUponBreakout and canPrepareForShort
     canPrepareForShort := false // reset flag
     if showSignalsUponBreakout
         hasSignaledForShort := true
+
+plotshape(inLongTrade and ((showSignalsUponBreakout and shouldGoLong) or (not showSignalsUponBreakout and canPrepareForLong)), title="Long Entry A", location=location.belowbar, color=longPrimarySignalColor, transp=0, style=shape.triangleup, text="", size=size.small, editable=false)
+plotshape(inLongTrade and ((showSignalsUponBreakout and shouldGoLong) or (not showSignalsUponBreakout and canPrepareForLong)), title="Long Entry B", location=location.belowbar, color=longPrimarySignalColor, transp=0, style=shape.triangleup, text="", size=size.tiny, editable=false)
+if not showSignalsUponBreakout
+    canPrepareForLong := false
+else if shouldGoLong
+    shouldGoLong := false
 
 plotshape(inShortTrade and ((showSignalsUponBreakout and shouldGoShort) or (not showSignalsUponBreakout and canPrepareForShort)), title= "Short Entry A", location=location.abovebar, color=shortPrimarySignalColor, transp=0, style=shape.triangledown, text="", size=size.small, editable=false)
 plotshape(inShortTrade and ((showSignalsUponBreakout and shouldGoShort) or (not showSignalsUponBreakout and canPrepareForShort)), title= "Short Entry B", location=location.abovebar, color=shortPrimarySignalColor, transp=0, style=shape.triangledown, text="", size=size.tiny, editable=false)
@@ -1012,30 +788,33 @@ if not showSignalsUponBreakout
 else if shouldGoShort
     shouldGoShort := false
 
+plotshape(inLongTrade and shouldExitOnTenkan, title= "Tenkan Long Exit", location=location.abovebar, color=longSecondarySignalColor, transp=0, style=shape.diamond, text="", size=size.tiny, editable=false)
 plotshape(inShortTrade and shouldExitOnTenkan, title= "Tenkan Short Exit", location=location.belowbar, color=shortSecondarySignalColor, transp=0, style=shape.diamond, text="", size=size.tiny, editable=false)
 
+plotshape(inLongTrade and shouldExitOnKijun, title= "Kijun Long Exit", location=location.abovebar, color=longSecondarySignalColor, transp=0, style=shape.circle, text="", size=size.tiny, editable=false)
 plotshape(inShortTrade and shouldExitOnKijun, title= "Kijun Short Exit", location=location.belowbar, color=shortSecondarySignalColor, transp=0, style=shape.circle, text="", size=size.tiny, editable=false)
 
+plotshape(inLongTrade and shouldExitOnTkCross, title= "TK Cross Long Exit", location=location.abovebar, color=longSecondarySignalColor, transp=0, style=shape.xcross, text="", size=size.small, editable=false)
 plotshape(inShortTrade and shouldExitOnTkCross, title= "TK Cross Short Exit", location=location.belowbar, color=shortSecondarySignalColor, transp=0, style=shape.xcross, text="", size=size.small, editable=false)
 
+plotshape(inLongTrade and (f_true(IDX_ShouldExitOnStopLoss) or shouldExitOnStop), title= "Stop Loss Long Exit", location=location.belowbar, color=longPrimarySignalColor, transp=0, style=shape.flag, text="", size=size.small, editable=false)
 plotshape(inShortTrade and inShortTrade and (f_true(IDX_ShouldExitOnStopLoss) or shouldExitOnStop), title= "Stop Loss Short Exit", location=location.abovebar, color=shortPrimarySignalColor, transp=0, style=shape.flag, text="", size=size.small, editable=false)
 
+plotshape(inLongTrade and shouldTakeProfit, title= "Fixed Long Exit", location=location.abovebar, color=longSecondarySignalColor, transp=0, style=shape.square, text="", size=size.tiny, editable=false)
 plotshape(inShortTrade and shouldTakeProfit, title= "Fixed Short Exit", location=location.belowbar, color=shortSecondarySignalColor, transp=0, style=shape.square, text="", size=size.tiny, editable=false)
 
 if shouldTakeProfit
     didTakeProfit := true
     shouldTakeProfit := false
-    
 
 
-
-//################################################################
-//################################################################
-//####                                                        ####
-//####                  Close Open Positions                  ####
-//####                                                        ####
-//################################################################
-//################################################################
+//###################################################################
+//###################################################################
+//####                                                           ####
+//####                  Flag variables for exit                  ####
+//####                                                           ####
+//###################################################################
+//###################################################################
 
 if (inLongTrade and (shouldExitOnKijun or f_true(IDX_ShouldExitOnStopLoss) or shouldExitOnTkCross or shouldExitPreemptively))
     inLongTrade := false
@@ -1066,8 +845,6 @@ else if withinTestRange
 bgcolor(sessionColor, editable=false)
 
 
-
-
 //###############################################################
 //###############################################################
 //####                                                       ####
@@ -1091,11 +868,8 @@ var float maxProfit = 0.0
 var float maxLoss = 0.0
 
 float realtime = 0.0
-
-if inLongTrade
-    realtime := (close - entryPrice) * remainingExitQty
-else if inShortTrade
-    realtime := (entryPrice - close) * remainingExitQty
+if inLongTrade or inShortTrade
+    realtime := (close - entryPrice) * remainingExitQty * f_tradeDirection(inLongTrade, inShortTrade)
 
 if (activeTradeLabel != na
      and (inLongTrade or inShortTrade))
