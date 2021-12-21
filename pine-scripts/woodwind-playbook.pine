@@ -2,7 +2,7 @@
 // @ govindthange
 
 //@version=5
-indicator("Thange Piccolo Playbook (v2.0)", shorttitle="Thange/Piccolo", overlay=true, max_labels_count=250)
+indicator("Thange Piccolo Playbook (v2.1)", shorttitle="Thange/Piccolo+", overlay=true, max_labels_count=250)
 
 //
 // Collect configuration parameters

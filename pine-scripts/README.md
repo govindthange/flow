@@ -1,8 +1,6 @@
-# Piccolo v2.0
+# Piccolo+
 
-Piccolo is a successor (v2.0) to "Thange Playbook v1.0" code named Penny-Whistle to facilitate a superior proactive entry & exit advatage to a trader.
-
-In this upgrade the algorithm will not only be improved for high profitability trades but will also support a number of visual cues that would help trader become proactive and help fine tune a tamed trading style. It will guide in timely placing of limit orders, help in visually differentiate a winning trade from a losing one, gracefully show the analysis date range etc.
+Piccolo+ (v2.1) is a step function improvement from the earlier Piccolo (v2.0) for better placement of stop-losses and to strategically signaling various exit points at profitable levels.
 
 This folder contains proprietary code written using pine script language to backtest strategies based on technical analysis.
 
