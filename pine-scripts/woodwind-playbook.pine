@@ -524,9 +524,10 @@ if canPrepareForShort
 //##############################################################
 
 
-if ((inLongTrade and high >= takeProfit and remainingExitQty > 0)
-     or (inShortTrade and low <= takeProfit and remainingExitQty > 0))
+if ((inLongTrade and high >= takeProfit)
+     or (inShortTrade and low <= takeProfit))
      and not didTakeProfit
+     and remainingExitQty > 0
     
     shouldTakeProfit := true
     if (remainingExitQty > qtyPerExit)
@@ -559,6 +560,7 @@ if ((inLongTrade and low <= stopLoss)
     pnl := pnl + stopLossGains
     activeTradeInfo += str.format("\nSL {0} @ {1, number, currency} = {2, number, currency}/{3, number, currency}", str.tostring(remainingExitQty), stopLoss, stopLossGains, pnl)
     label.set_tooltip(activeTradeLabel, activeTradeInfo)
+    remainingExitQty := 0
 
 
 if ((inLongTrade and priceWrtKijun == "below")
@@ -577,6 +579,7 @@ if ((inLongTrade and priceWrtKijun == "below")
         pnl := pnl + kijunExitGains
         activeTradeInfo += str.format("\nKE {0} @ {1, number, currency} = {2, number, currency}/{3, number, currency}", str.tostring(remainingExitQty), kijunExit, kijunExitGains, pnl)
     label.set_tooltip(activeTradeLabel, activeTradeInfo)
+    remainingExitQty := 0
 
 
 //
@@ -603,6 +606,7 @@ if ((inLongTrade and recentTkCross == "bearish")
         pnl := pnl + tkCrossExitGains
         activeTradeInfo += str.format("\nTKCP @ {1, number, currency} = {2, number, currency}/{3, number, currency}", str.tostring(remainingExitQty), tkCrossExit, tkCrossExitGains, pnl)
     label.set_tooltip(activeTradeLabel, activeTradeInfo)
+    remainingExitQty := 0
 
 
 plotshape(inLongTrade and marketView == "bearish", title= "Stop Loss Long Exit", location=location.belowbar, color=longPrimarySignalColor, transp=0, style=shape.flag, text="", size=size.small, editable=false)
@@ -623,6 +627,7 @@ if ((inLongTrade and marketView == "bearish")
         pnl := pnl + preemptiveExitGains
         activeTradeInfo += str.format("\nPE {0} @ {1, number, currency} = {2, number, currency}/{3, number, currency}", str.tostring(remainingExitQty), close, preemptiveExitGains, pnl) // PE is Preemptive Exit
     label.set_tooltip(activeTradeLabel, activeTradeInfo)
+    remainingExitQty := 0
 
 
 //
