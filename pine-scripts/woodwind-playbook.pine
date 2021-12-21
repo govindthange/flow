@@ -2,7 +2,7 @@
 // @ govindthange
 
 //@version=5
-indicator("Thange Piccolo Playbook (v2.1)", shorttitle="Thange/Piccolo+", overlay=true, max_labels_count=250)
+indicator("Thange Piccolo Playbook (v2.1)", shorttitle="Thange/Piccolo+", overlay=true, max_labels_count=250, max_lines_count=500)
 
 //
 // Collect configuration parameters
@@ -11,7 +11,7 @@ indicator("Thange Piccolo Playbook (v2.1)", shorttitle="Thange/Piccolo+", overla
 fromDateInput = input.time(timestamp("1 Apr 2021 05:30 +0300"), title="Backtest From Date")
 toDateInput = input.time(timestamp("31 Dec 2021 05:30 +0300"), title="Backtest To Date")
 
-int riskToRewardRatio = input.int(1, minval=1, title="Risk:Reward Ratio")
+float riskToRewardRatio = input.float(1.0, minval=1.0, title="Risk:Reward Ratio")
 float ratioWrtRiskToBeginTrailingSL = input.float (1, minval=0, title="Nurture Phase", tooltip="It is a ratio w.r.t R/R. Until this level the programme will not show any exit signals. You should start trailing stop-loss only after the price crosses this level. This level shown by a red/green dotted line above/below the entry signal.")
 int congestionProximity = input.int(10, minval=1, title="Congestion Span", tooltip="How many bars far should the lagging-span be and called safe before it bumps into the price?")
 float congestionTolerance = input.float(0, minval=0.0, title="Congestion Tolerance", tooltip="What percent of the highest-high/lowest-low of candles in congestion-span be treated as noise for determining congestion for the lagging-span?")
@@ -38,6 +38,7 @@ bool allowTkCrossExitInNurturePhase = input.bool(true, title="Allow TK cross exi
 
 bool allowEntryUponGaps = input.bool(false, "Show entry signals even on gap-up/down candles.", tooltip="This is not recommended!. This setting is only for study purposes.")
 bool includeCurrentBarFor9PeriodHighLow = input.bool(false, title="Include current bar to show 9-period highs/lows", tooltip="This is not recommended!. This setting is only for study purposes.")
+float breakevenRatio = input.float(0, minval = 0, title="Stop-Loss Breakeven Ratio", tooltip="It is a ratio w.r.t the risk. When price reaches this level in nurture phase the stop-loss should be shifted to breakeven. 0 means no breakeven concept to be used. This setting is for study purpose and performance drops drastically for values greater than 0.")
 
 
 //########################################################
@@ -297,7 +298,9 @@ else if (marketView == "bearish" and chikouWrtKumo == "above")
 var inLongTrade = false
 var inShortTrade = false
 
+//
 // Where is price w.r.t kijun?
+//
 string priceWrtKijun = "unknown"
 if inLongTrade // for exiting in a long position
     priceWrtKijun := low < kijunSen ? "below" : (low > kijunSen ? "above" : "at")
@@ -342,6 +345,7 @@ var shouldExitPreemptively = false
 var entryPrice = 0.0
 
 var stopLoss = 0.0
+var breakevenTrigger = 0.0
 var takeProfit = 0.0
 var tenkanExit1 = 0.0
 var tenkanExit2 = 0.0
@@ -448,11 +452,12 @@ if canPrepareForLong
     remainingExitQty := qty
     tradeSize := qty * entryPrice
     
+    breakevenTrigger := entryPrice + (entryPrice - stopLoss) * breakevenRatio
     array.set(context, IDX_PriceLevelToBeginTrailingStopLoss, entryPrice + (entryPrice - stopLoss) * ratioWrtRiskToBeginTrailingSL)
     line.new(bar_index, f_get(IDX_PriceLevelToBeginTrailingStopLoss), bar_index+10, f_get(IDX_PriceLevelToBeginTrailingStopLoss), width=2, color=longLineColor, style=line.style_dotted)
     line.new(bar_index, stopLoss, bar_index+10, stopLoss, width=2, color=longLineColor, style=line.style_solid)
     
-    activeTradeInfo := str.format("#{0}. Buy {1} w/ {2, number, currency}\nEntry @ {3, number, currency}\nStop @ {4, number, currency}\nProfit @ {5, number, currency} ({6} R/R) " + str.tostring(atr), totalTrades+1, str.tostring(qty), tradeSize, entryPrice, stopLoss, takeProfit, riskToRewardRatio)
+    activeTradeInfo := str.format("#{0}. Buy {1} w/ {2, number, currency}\nEntry @ {3, number, currency}\nStop @ {4, number, currency}\nProfit @ {5, number, currency} ({6} R/R)", totalTrades+1, str.tostring(qty), tradeSize, entryPrice, stopLoss, takeProfit, riskToRewardRatio)
     activeTradeLabel := label.new(x = bar_index,
                              y = low,
                              style = label.style_label_up,
@@ -510,7 +515,8 @@ if canPrepareForShort
     remainingExitQty := qty
     tradeSize := qty * entryPrice
     
-    array.set(context, IDX_PriceLevelToBeginTrailingStopLoss, entryPrice + (entryPrice - stopLoss) * ratioWrtRiskToBeginTrailingSL)
+    breakevenTrigger := entryPrice - (stopLoss - entryPrice) * breakevenRatio
+    array.set(context, IDX_PriceLevelToBeginTrailingStopLoss, entryPrice - (stopLoss - entryPrice) * ratioWrtRiskToBeginTrailingSL)
     line.new(bar_index, f_get(IDX_PriceLevelToBeginTrailingStopLoss), bar_index+10, f_get(IDX_PriceLevelToBeginTrailingStopLoss), width=2, color=shortLineColor, style=line.style_dotted)
     line.new(bar_index, stopLoss, bar_index+10, stopLoss, width=2, color=shortLineColor, style=line.style_solid)
     
@@ -554,6 +560,15 @@ if ((inLongTrade and high >= takeProfit)
 if (inLongTrade and high > f_get(IDX_PriceLevelToBeginTrailingStopLoss))
      or (inShortTrade and low < f_get(IDX_PriceLevelToBeginTrailingStopLoss))
     f_set(IDX_CanExitAfterKijunOrTkCross, YES)
+
+
+if ((inLongTrade and high >= breakevenTrigger)
+         or (inShortTrade and low <= breakevenTrigger))
+     and breakevenRatio != 0.0
+     and not f_true(IDX_CanExitAfterKijunOrTkCross)
+    
+    stopLoss := entryPrice
+    line.new(bar_index, breakevenTrigger, bar_index+5, breakevenTrigger, width=2, color=color.white, style=line.style_solid)
 
 
 //
@@ -940,6 +955,7 @@ if withinTestRange
     entryPrice := 0.0
     
     stopLoss := 0.0
+    breakevenTrigger := 0.0
     takeProfit := 0.0
     tenkanExit1 := 0.0
     tenkanExit2 := 0.0
