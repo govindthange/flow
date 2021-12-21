@@ -525,7 +525,7 @@ if canPrepareForShort
 
 
 if ((inLongTrade and high >= takeProfit)
-     or (inShortTrade and low <= takeProfit))
+         or (inShortTrade and low <= takeProfit))
      and not didTakeProfit
      and remainingExitQty > 0
     
@@ -551,7 +551,7 @@ if (inLongTrade and high > f_get(IDX_PriceLevelToBeginTrailingStopLoss))
 // if the trade is in nurture phase (i.e. IDX_CanExitAfterKijunOrTkCross = false)
 //
 if ((inLongTrade and low <= stopLoss)
-     or (inShortTrade and high >= stopLoss))
+         or (inShortTrade and high >= stopLoss))
      and not f_true(IDX_CanExitAfterKijunOrTkCross)
     
     f_set(IDX_ShouldExitOnStopLoss, YES)
@@ -563,7 +563,7 @@ if ((inLongTrade and low <= stopLoss)
     remainingExitQty := 0
 
 else if ((inLongTrade and priceWrtKijun == "below")
-     or (inShortTrade and priceWrtKijun == "above"))
+         or (inShortTrade and priceWrtKijun == "above"))
      and f_true(IDX_CanExitAfterKijunOrTkCross)
     
     shouldExitOnKijun := true
@@ -584,7 +584,7 @@ else if ((inLongTrade and priceWrtKijun == "below")
 // the kijun-exit (a trailing stop) or the stop-loss (automatically triggerred order) are not triggerred yet.
 //
 else if ((inLongTrade and recentTkCross == "bearish")
-     or (inShortTrade and recentTkCross == "bullish"))
+         or (inShortTrade and recentTkCross == "bullish"))
      and tkCrossExitEnabled
      and (allowTkCrossExitInNurturePhase 
              or (not allowTkCrossExitInNurturePhase and f_true(IDX_CanExitAfterKijunOrTkCross)))
@@ -604,7 +604,7 @@ else if ((inLongTrade and recentTkCross == "bearish")
     remainingExitQty := 0
 
 else if ((inLongTrade and marketView == "bearish")
-     or (inShortTrade and marketView == "bullish"))
+         or (inShortTrade and marketView == "bullish"))
     
     shouldExitPreemptively := true
     if (inLongTrade and close < stopLoss)
@@ -624,7 +624,7 @@ else if ((inLongTrade and marketView == "bearish")
 // You'll also not bother scaling out gains by placing a tenkan-exit order when a TK-cross/preemptive-exits has occurred.
 //
 else if ((inLongTrade and close < tenkanSen and close[1] >= tenkanSen[1])
-     or (inShortTrade and close > tenkanSen and close[1] <= tenkanSen[1]))
+         or (inShortTrade and close > tenkanSen and close[1] <= tenkanSen[1]))
      and remainingExitQty > 0
     
     shouldExitOnTenkan := true
