@@ -999,7 +999,7 @@ if (barstate.islast and showPnl)
     table.cell(pnlTable, 0, 1, str.tostring(winners), text_color = color.green, text_halign = text.align_center, text_size = size.small)
     table.cell(pnlTable, 0, 2, str.format("{0, number, currency}", maxProfit), text_halign = text.align_center, text_color = color.rgb(182, 209, 186), text_size = size.small)
     table.cell(pnlTable, 1, 0, "Loosers", text_halign = text.align_center, text_color = color.white, text_size = size.small)
-    table.cell(pnlTable, 1, 1, str.tostring(loosers), text_color = color.red, text_halign = text.align_center), text_size = size.small
+    table.cell(pnlTable, 1, 1, str.tostring(loosers), text_color = color.red, text_halign = text.align_center, text_size = size.small)
     table.cell(pnlTable, 1, 2, str.format("{0, number, currency}", maxLoss), text_halign = text.align_center, text_color = color.rgb(182, 153, 153), text_size = size.small)
     table.cell(pnlTable, 2, 0, "Total", text_halign = text.align_center, text_color = color.white, text_size = size.small)
     table.cell(pnlTable, 2, 1, str.tostring(totalTrades), text_halign = text.align_center, text_color = color.silver, text_size = size.small)
