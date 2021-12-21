@@ -1,6 +1,6 @@
-# Piccolo
+# Piccolo v2.0
 
-A Piccolo is a successor of Penny-Whistle release to facilitate a superior proactive entry & exit advatage to a trader.
+A Piccolo is a successor (v2.0) to "Thange Playbook v1.0" code named Penny-Whistle to facilitate a superior proactive entry & exit advatage to a trader.
 
 In this upgrade the algorithm will not only be improved for high profitability trades but will also support a number of visual cues that would help trader become proactive and help fine tune a tamed trading style. It will guide in timely placing of limit orders, help in visually differentiate a winning trade from a losing one, gracefully show the analysis date range etc.
 
