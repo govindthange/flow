@@ -167,6 +167,14 @@ string priceWrtTenkan = close > tenkanSen ? "above" : (close < tenkanSen ? "belo
 
 // Where tenkan w.r.t kijun?
 string tenkanWrtKijun = tenkanSen > kijunSen ? "above" : ( tenkanSen < kijunSen ? "below" : "at")
+// Where is price w.r.t kumo?
+string priceWrtKumo = "within"
+if ((kumoView == "bullish" or kumoView == "neutral") and close > senkouSpanA[displacement-1])
+     or ((kumoView == "bearish" or kumoView == "neutral") and close > senkouSpanB[displacement-1])
+    priceWrtKumo := "above"
+else if ((kumoView == "bullish" or kumoView == "neutral") and close < senkouSpanB[displacement-1])
+     or ((kumoView == "bearish" or kumoView == "neutral") and close < senkouSpanA[displacement-1])
+    priceWrtKumo := "below"
 
 // Where is TK cross w.r.t kumo? <--- This is not a filter. Ignore!
 var string recentTkCross = "unknown"
