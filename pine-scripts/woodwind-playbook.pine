@@ -234,7 +234,11 @@ else if (laggingKumoView == "bullish" and close < senkouSpanB[2*displacement-1])
 //
 highestForChikou = (1-congestionTolerance/100) * ta.highest(high[displacement-congestionProximity], congestionProximity)
 lowestForChikou = (1-congestionTolerance/100) * ta.lowest(low[displacement-congestionProximity], congestionProximity)
-isChikouSpanFree = chikouWrtPrice == "above" ? (close > highestForChikou) : chikouWrtPrice == "below" ? (close < lowestForChikou) : false
+isChikouSpanFree = recentTkCross == "bullish" ?
+                                         (close > highestForChikou)
+                                         : recentTkCross == "bearish" ?
+                                                 (close < lowestForChikou)
+                                                 : chikouWrtPrice == "above" ? (close > highestForChikou) : chikouWrtPrice == "below" ? (close < lowestForChikou) : true
 
 
 //
