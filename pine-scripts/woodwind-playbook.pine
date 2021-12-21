@@ -23,7 +23,7 @@ float exitPercent = input.float(10, title="Scale out percent") / 100
 int atrLength = input.int(30, minval=0, title="ATR Length", tooltip="Choose higher values for lower timeframes. Following works best for BTC: [30 for 5m/1H], [9 for 4H/12H]")
 float atrStopMultiplier = input.float(3.0, minval=0.0, title="ATR x ?", tooltip="Following works best for BTC: [5 for 5m], [4-5 for 15m/1H], [4 for 4H/6H], [6 for 12H] ")
 bool useKumoAsStop = input.bool(true, title="Use kumo as stop loss")
-bool useTenkanPeriodFarthestPointAsStop = input.bool(true, title="Use Tenkan-Sen period's farthest point as SL", tooltip="This is for study purpose. Enabling this gives mixed performance.")
+bool useTenkanPeriodFarthestPointAsStop = input.bool(false, title="Use Tenkan-Sen period's farthest point as SL", tooltip="This is for study purpose. Enabling this gives mixed performance.")
 
 bool showPnl = input.bool(true, title="Show profit & loss summary")
 bool showTradePlan = input.bool(false, title="Show all entry & exits")
