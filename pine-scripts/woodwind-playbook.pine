@@ -1009,7 +1009,7 @@ if (barstate.islast and showPnl)
     table.cell(pnlTable, 5, 2, str.format("{0, number, #0.00%}", totalPnl/maxCapital), text_halign = text.align_center, text_color =   (totalPnl > 0 ? color.green : color.red))
     table.cell(pnlTable, 6, 0, "Total Bars", text_halign = text.align_center, text_color = color.white)
     table.cell(pnlTable, 6, 1, str.tostring(totalCandles), text_halign = text.align_center, text_color = color.silver)
-    table.cell(pnlTable, 6, 2, "-", text_halign = text.align_center, text_color = color.gray)
+    table.cell(pnlTable, 6, 2, str.format("{0, number} Days", (toDateInput - fromDateInput)/ (24 * 60 * 60 * 1000)), text_halign = text.align_center, text_color = color.gray)
 
 // Display trade information
 if horizontalTradePlan
