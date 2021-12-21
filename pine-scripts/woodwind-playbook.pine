@@ -562,8 +562,7 @@ if ((inLongTrade and low <= stopLoss)
     label.set_tooltip(activeTradeLabel, activeTradeInfo)
     remainingExitQty := 0
 
-
-if ((inLongTrade and priceWrtKijun == "below")
+else if ((inLongTrade and priceWrtKijun == "below")
      or (inShortTrade and priceWrtKijun == "above"))
      and f_true(IDX_CanExitAfterKijunOrTkCross)
     
@@ -580,16 +579,12 @@ if ((inLongTrade and priceWrtKijun == "below")
         activeTradeInfo += str.format("\nKE {0} @ {1, number, currency} = {2, number, currency}/{3, number, currency}", str.tostring(remainingExitQty), kijunExit, kijunExitGains, pnl)
     label.set_tooltip(activeTradeLabel, activeTradeInfo)
     remainingExitQty := 0
-
-
 //
 // Since a TK-cross-exit is a manually placed order it can only be placed when the other 2 limit-orders,
 // the kijun-exit (a trailing stop) or the stop-loss (automatically triggerred order) are not triggerred yet.
 //
-if ((inLongTrade and recentTkCross == "bearish")
+else if ((inLongTrade and recentTkCross == "bearish")
      or (inShortTrade and recentTkCross == "bullish"))
-     and not shouldExitOnStop
-     and not shouldExitOnKijun
      and tkCrossExitEnabled
      and (allowTkCrossExitInNurturePhase 
              or (not allowTkCrossExitInNurturePhase and f_true(IDX_CanExitAfterKijunOrTkCross)))
@@ -608,14 +603,9 @@ if ((inLongTrade and recentTkCross == "bearish")
     label.set_tooltip(activeTradeLabel, activeTradeInfo)
     remainingExitQty := 0
 
-
-plotshape(inLongTrade and marketView == "bearish", title= "Stop Loss Long Exit", location=location.belowbar, color=longPrimarySignalColor, transp=0, style=shape.flag, text="", size=size.small, editable=false)
-plotshape(inShortTrade and marketView == "bullish", title= "Stop Loss Short Exit", location=location.belowbar, color=shortPrimarySignalColor, transp=0, style=shape.flag, text="", size=size.small, editable=false)
-if ((inLongTrade and marketView == "bearish")
+else if ((inLongTrade and marketView == "bearish")
      or (inShortTrade and marketView == "bullish"))
-     and not shouldExitOnStop
-     and not shouldExitOnKijun
-     and not shouldExitOnTkCross
+    
     shouldExitPreemptively := true
     if (inLongTrade and close < stopLoss)
          or (inShortTrade and close > stopLoss)
@@ -628,19 +618,13 @@ if ((inLongTrade and marketView == "bearish")
         activeTradeInfo += str.format("\nPE {0} @ {1, number, currency} = {2, number, currency}/{3, number, currency}", str.tostring(remainingExitQty), close, preemptiveExitGains, pnl) // PE is Preemptive Exit
     label.set_tooltip(activeTradeLabel, activeTradeInfo)
     remainingExitQty := 0
-
-
 //
 // Since all tenkan-exits are manually placed orders they can only be placed when the other 2 limit-orders,
 // the kijun-exit (a trailing stop) or the stop-loss (automatically triggerred order) are not triggerred yet.
 // You'll also not bother scaling out gains by placing a tenkan-exit order when a TK-cross/preemptive-exits has occurred.
 //
-if ((inLongTrade and close < tenkanSen and close[1] >= tenkanSen[1])
+else if ((inLongTrade and close < tenkanSen and close[1] >= tenkanSen[1])
      or (inShortTrade and close > tenkanSen and close[1] <= tenkanSen[1]))
-     and not shouldExitOnStop
-     and not shouldExitOnKijun
-     and not shouldExitOnTkCross
-     and not shouldExitPreemptively
      and remainingExitQty > 0
     
     shouldExitOnTenkan := true
@@ -766,6 +750,9 @@ else
 //####                                                        ####
 //################################################################
 //################################################################
+
+plotshape(inLongTrade and marketView == "bearish" and shouldExitPreemptively, title= "Preeemptive Long Exit", location=location.belowbar, color=longPrimarySignalColor, transp=0, style=shape.flag, text="", size=size.small, editable=false)
+plotshape(inShortTrade and marketView == "bullish" and shouldExitPreemptively, title= "Preeemptive Short Exit", location=location.belowbar, color=shortPrimarySignalColor, transp=0, style=shape.flag, text="", size=size.small, editable=false)
 
 plotshape(showSignalsUponBreakout and canPrepareForLong and not hasSignaledForLong and not shouldGoLong, title= "Prepare to go long", location=location.belowbar, color=color.teal, transp=0, style=shape.triangleup, text="", size=size.tiny, editable=false)
 if showSignalsUponBreakout and canPrepareForLong
