@@ -648,8 +648,8 @@ else if ((inLongTrade and marketView == "bearish")
 // the kijun-exit (a trailing stop) or the stop-loss (automatically triggerred order) are not triggerred yet.
 // You'll also not bother scaling out gains by placing a tenkan-exit order when a TK-cross/preemptive-exits has occurred.
 //
-else if ((inLongTrade and close < tenkanSen and close[1] >= tenkanSen[1])
-         or (inShortTrade and close > tenkanSen and close[1] <= tenkanSen[1]))
+else if ((inLongTrade and open < tenkanSen and high <= tenkanSen)
+         or (inShortTrade and open > tenkanSen and low <= tenkanSen))
      and remainingExitQty > 0
     
     shouldExitOnTenkan := true
