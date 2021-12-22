@@ -1,4 +1,11 @@
-# Piccolo+
+██████╗░██╗░█████╗░░█████╗░░█████╗░██╗░░░░░░█████╗░  ░░░░░░░
+██╔══██╗██║██╔══██╗██╔══██╗██╔══██╗██║░░░░░██╔══██╗  ░░██╗░░
+██████╔╝██║██║░░╚═╝██║░░╚═╝██║░░██║██║░░░░░██║░░██║  ██████╗
+██╔═══╝░██║██║░░██╗██║░░██╗██║░░██║██║░░░░░██║░░██║  ╚═██╔═╝
+██║░░░░░██║╚█████╔╝╚█████╔╝╚█████╔╝███████╗╚█████╔╝  ░░╚═╝░░
+╚═╝░░░░░╚═╝░╚════╝░░╚════╝░░╚════╝░╚══════╝░╚════╝░  ░░░░░░░
+
+# Thange Woodwind Playbook v2.1
 
 Piccolo+ (v2.1) is a step function improvement from the earlier Piccolo (v2.0) for better placement of stop-losses and to strategically signaling various exit points at profitable levels.
 
