@@ -253,11 +253,11 @@ var inShortTrade = false
 //
 string priceWrtKijun = "unknown"
 if inLongTrade // for exiting in a long position
-    priceWrtKijun := low < kijunSen ? "below" : (low > kijunSen ? "above" : "at")
+    priceWrtKijun := woodwind.positionRelativeToLevel(low, kijunSen)
 else if inShortTrade // for exiting in a short position
-    priceWrtKijun := high < kijunSen ? "below" : (high > kijunSen ? "above" : "at")
+    priceWrtKijun := woodwind.positionRelativeToLevel(high, kijunSen)
 else // for confluence to enter position
-    priceWrtKijun := close < kijunSen ? "below" : (close > kijunSen ? "above" : "at")
+    priceWrtKijun := woodwind.positionRelativeToLevel(close, kijunSen)
 
 atr = ta.atr(atrLength) * atrStopMultiplier
 
