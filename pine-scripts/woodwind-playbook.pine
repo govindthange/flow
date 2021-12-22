@@ -51,6 +51,7 @@ int displacement = input.int(26, minval=1, title="Displacement")
 bool tkCrossExitEnabled = input.bool(true, title="Enable TK Cross Exits")
 bool allowTkCrossExitInNurturePhase = input.bool(true, title="Allow TK cross exits in nurture phase")
 bool allowPrematureTkCrossForTrade = input.bool(true, title="Allow premature TK cross for signals", tooltip="Premature TK cross occurs when tenkan just overlaps kijun but does not cross it.")
+bool allowNeutralFutureKumoValidForTrade = input.bool(true, title="Allow neutral future kumo valid for signals")
 
 bool allowEntryUponGaps = input.bool(false, "Show entry signals even on gap-up/down candles.", tooltip="This is not recommended!. This setting is only for study purposes.")
 bool includeCurrentBarFor9PeriodHighLow = input.bool(false, title="Include current bar to show 9-period highs/lows", tooltip="This is not recommended!. This setting is only for study purposes.")
@@ -162,6 +163,10 @@ if (tenkanSen[1] <= kijunSen[1] and tenkanSen > kijunSen)
 else if (tenkanSen[1] >= kijunSen[1] and tenkanSen < kijunSen)
     recentTkCross := "bearish"
     didNewTkCrossOccur := true
+else if (allowPrematureTkCrossForTrade
+         and tenkanSen[1] == kijunSen[1] and tenkanSen == kijunSen)
+    recentTkCross := "neutral"
+    didNewTkCrossOccur := true
 
 
 var string tkCrossWrtKumo = "within"
@@ -223,7 +228,8 @@ if priceWrtKumo == "above"
      and priceWrtTenkan == "above"
      and (tenkanWrtKijun == "above"
              or (allowPrematureTkCrossForTrade and tenkanWrtKijun == "at"))
-     and leadingKumoView == "bullish"
+     and (leadingKumoView == "bullish"
+             or (allowNeutralFutureKumoValidForTrade and leadingKumoView == "neutral"))
      and chikouWrtPrice == "above"
      and isChikouSpanFree
     marketView := "bullish"
@@ -231,7 +237,8 @@ else if priceWrtKumo == "below"
      and priceWrtTenkan == "below"
      and (tenkanWrtKijun == "below"
              or (allowPrematureTkCrossForTrade and tenkanWrtKijun == "at"))
-     and leadingKumoView == "bearish"
+     and (leadingKumoView == "bearish"
+             or (allowNeutralFutureKumoValidForTrade and leadingKumoView == "neutral"))
      and chikouWrtPrice == "below"
      and isChikouSpanFree
     marketView := "bearish"
