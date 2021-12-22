@@ -56,9 +56,9 @@ export getGlance(float fast, float slow) =>
 
 
 //
-// @function determines first point's position w.r.t second.
-// @param point float, the first point (typically a fast moving point).
-// @param level float, the second point acting as a level (typically a slow moving point).
+// @function determines first point's position w.r.t a specified level.
+// @param point float, the first point (typically a fast moving average).
+// @param level float, the second point acting as a level (typically a slow moving average).
 // @returns string, the above/below/at position w.r.t level. 
 //
 export positionRelativeToLevel(float point, float level) =>
@@ -88,4 +88,4 @@ export positionRelativeToRange(float point, float fromLevel, float toLevel) =>
     else
         position := "within"
     position
-    
+
