@@ -1,0 +1,91 @@
+// █████   ███   █████                       █████                  ███                 █████    █████   █████                      ████   █████   
+//░░███   ░███  ░░███                       ░░███                  ░░░                 ░░███    ░░███   ░░███                      ░░███  ░░███    
+// ░███   ░███   ░███   ██████   ██████   ███████  █████ ███ █████ ████  ████████    ███████     ░███    ░███   ██████   █████ ████ ░███  ███████  
+// ░███   ░███   ░███  ███░░███ ███░░███ ███░░███ ░░███ ░███░░███ ░░███ ░░███░░███  ███░░███     ░███    ░███  ░░░░░███ ░░███ ░███  ░███ ░░░███░   
+// ░░███  █████  ███  ░███ ░███░███ ░███░███ ░███  ░███ ░███ ░███  ░███  ░███ ░███ ░███ ░███     ░░███   ███    ███████  ░███ ░███  ░███   ░███    
+//  ░░░█████░█████░   ░███ ░███░███ ░███░███ ░███  ░░███████████   ░███  ░███ ░███ ░███ ░███      ░░░█████░    ███░░███  ░███ ░███  ░███   ░███ ███
+//    ░░███ ░░███     ░░██████ ░░██████ ░░████████  ░░████░████    █████ ████ █████░░████████       ░░███     ░░████████ ░░████████ █████  ░░█████ 
+//     ░░░   ░░░       ░░░░░░   ░░░░░░   ░░░░░░░░    ░░░░ ░░░░    ░░░░░ ░░░░ ░░░░░  ░░░░░░░░         ░░░       ░░░░░░░░   ░░░░░░░░ ░░░░░    ░░░░░  
+//                                                                                                                                                 
+// © 2021
+// @ govindthange
+//
+// @version=5
+
+//
+// @description Woodwind Vault provides reusable functions to support Thange Woodwind Playbook execution.
+//
+library("WoodwindVault")
+
+//
+// @function determines the highest-high and lowest-low for the specified time interval.
+// @param period int, the time interval for finding the highest-high and lowest-low.
+// @returns float, the highest-high and lowest-low of the candles in the specified period.
+//
+export getHighestHighAndLowestLow(int period) => math.avg(ta.lowest(period), ta.highest(period))
+
+
+//
+// @function projects a one glance view of the entire resistance net faced by the price. It does so by computing different equilibrium points for the price.
+// @param shortTermPeriod, the period for computing the short-term equilibrium point.
+// @param midTermPeriod, the period for computing the intermediate-term equilibrium point.
+// @param longTermPeriod, the period for computing the 2 additional long-term equilibrium points.
+// @returns shortTermEquilibrium float, the midpoint of highest-high and lowest-low of the candles in last shortTermPeriod.
+// @returns mideTermEquilibrium float, the midpoint of highest-high and lowest-low of the candles in last midTermPeriod.
+// @returns longTermEquilibriumA float, the midpoint of the shortTermEquilibrium and mideTermEquilibrium points.
+// @returns longTermEquilibriumB float, the midpoint of highest-high and lowest-low of the candles in last longTermPeriod.
+//
+export findEquilibrium(int shortTermPeriod, int midTermPeriod, int longTermPeriod) =>
+    shortTermEquilirium = getHighestHighAndLowestLow(shortTermPeriod)
+    mideTermEquilibrium = getHighestHighAndLowestLow(midTermPeriod)
+    longTermEquilibriumA = math.avg(shortTermEquilirium, mideTermEquilibrium)
+    longTermEquilibriumB = getHighestHighAndLowestLow(longTermPeriod)
+    [shortTermEquilirium, mideTermEquilibrium, longTermEquilibriumA, longTermEquilibriumB]
+
+
+//
+// @function glances over the 2 equilibrium points from moving averages and establishes whether its bullish or bearish.
+// @param fast float, the fast moving point.
+// @param slow float, the slow moving point.
+// @returns string, it is "bullish" if fast moving point is over the slow moving point o/w returns "bearish".
+//
+export getGlance(float fast, float slow) =>
+    float diff = fast - slow
+    string view = diff > 0 ? "bullish" : (diff < 0 ? "bearish" : "neutral")
+    view
+
+
+//
+// @function determines first point's position w.r.t second.
+// @param point float, the first point (typically a fast moving point).
+// @param level float, the second point acting as a level (typically a slow moving point).
+// @returns string, the above/below/at position w.r.t level. 
+//
+export positionRelativeToLevel(float point, float level) =>
+    string position = point > level ? "above" : (point < level ? "below" : "at")
+    position
+
+//
+// @function determines first point's position w.r.t a range (typically a resistance band).
+// @param point float, the first point.
+// @param fromLevel float, the from-range which is typically a fast moving line.
+// @param toLevel float, the to-range which is typically a slow moving line.
+// @returns string, the above/below/within range. 
+//
+export positionRelativeToRange(float point, float fromLevel, float toLevel) =>
+    string view = getGlance(fromLevel, toLevel)
+    string position = "within"
+    if (view == "bullish" and point > fromLevel)
+         or (view == "bearish" and point > toLevel)
+        position := "above"
+    else if (view == "bullish" and point < toLevel)
+         or (view == "bearish" and point < fromLevel)
+        position := "below"
+    else if (view == "neutral" and point > fromLevel)
+        position := "above"
+    else if (view == "neutral" and point < toLevel)
+        position := "below"
+    else
+        position := "within"
+    position
+    

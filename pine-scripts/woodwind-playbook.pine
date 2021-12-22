@@ -14,6 +14,7 @@
 
 // @description Thange Woodwind Playbook is a strategy based trading program.
 indicator("Thange Woodwind Playbook v2.1", shorttitle="Thange/Piccolo+", overlay=true, max_labels_count=250, max_lines_count=500)
+import govindthange/WoodwindVault/1 as woodwind
 import govindthange/ThangeVault/1 as tv
 
 //
@@ -104,20 +105,15 @@ f_getString(_key) => str.tostring(array.get(context, _key))
 f_true(_key) => f_get(_key) == YES
 
 
-//###############################################
-//###############################################
-//####                                       ####
-//####    Ichimoku Cloud - The Core Logic    ####
-//####                                       ####
-//###############################################
-//#####33########################################
+//░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░
+//░░░██████╗████████╗██████╗░░█████╗░████████╗███████╗░██████╗░██╗░░░██╗░░
+//░░██╔════╝╚══██╔══╝██╔══██╗██╔══██╗╚══██╔══╝██╔════╝██╔════╝░╚██╗░██╔╝░░
+//░░╚█████╗░░░░██║░░░██████╔╝███████║░░░██║░░░█████╗░░██║░░██╗░░╚████╔╝░░░
+//░░░╚═══██╗░░░██║░░░██╔══██╗██╔══██║░░░██║░░░██╔══╝░░██║░░╚██╗░░╚██╔╝░░░░
+//░░██████╔╝░░░██║░░░██║░░██║██║░░██║░░░██║░░░███████╗╚██████╔╝░░░██║░░░░░
+//░░╚═════╝░░░░╚═╝░░░╚═╝░░╚═╝╚═╝░░╚═╝░░░╚═╝░░░╚══════╝░╚═════╝░░░░╚═╝░░░░░
 
-donchian(len) => math.avg(ta.lowest(len), ta.highest(len))
-
-tenkanSen = donchian(tenkanSenPeriod)
-kijunSen = donchian(kijunSenPeriod)
-senkouSpanA = math.avg(tenkanSen, kijunSen)
-senkouSpanB = donchian(senkouSpanBPeriod)
+[tenkanSen, kijunSen, senkouSpanA, senkouSpanB] = woodwind.findEquilibrium(tenkanSenPeriod, kijunSenPeriod, senkouSpanBPeriod)
 
 barIndex = includeCurrentBarFor9PeriodHighLow ? 0 : 1
 highestTenkanSenBar = ta.highestbars(high[barIndex], tenkanSenPeriod)
@@ -130,52 +126,28 @@ highestKijunValue = ta.highest(kijunSenPeriod)
 lowestKijunSenBar = ta.lowestbars(kijunSenPeriod)
 lowestKijunValue = ta.lowest(kijunSenPeriod)
 
+//########################################################################
+//########################################################################
+//###                                                                  ###
+//###    Assess for high probability setup on the trading timeframe    ###
+//###                                                                  ###
+//########################################################################
+//########################################################################
 
-//##########################################################################
-//##########################################################################
-//####                                                                  ####
-//####    Assess for high probability setup on the trading timeframe    ####
-//####                                                                  ####
-//##########################################################################
-//##########################################################################
-
-//
 // How is current kumo?
-//
-float temp = senkouSpanA[displacement-1] - senkouSpanB[displacement-1]
-string kumoView = temp > 0 ? "bullish" : (temp < 0 ? "bearish" : "neutral")
+string kumoView = woodwind.getGlance(senkouSpanA[displacement-1], senkouSpanB[displacement-1])
 
-
-//
 // How is future kumo?
-//
-temp := senkouSpanA - senkouSpanB
-string leadingKumoView = temp > 0 ? "bullish" : (temp < 0 ? "bearish" : "neutral")
+string leadingKumoView = woodwind.getGlance(senkouSpanA, senkouSpanB)
 
-
-//
 // Where is price w.r.t kumo?
-//
-string priceWrtKumo = "within"
-if ((kumoView == "bullish" or kumoView == "neutral") and close > senkouSpanA[displacement-1])
-     or ((kumoView == "bearish" or kumoView == "neutral") and close > senkouSpanB[displacement-1])
-    priceWrtKumo := "above"
-else if ((kumoView == "bullish" or kumoView == "neutral") and close < senkouSpanB[displacement-1])
-     or ((kumoView == "bearish" or kumoView == "neutral") and close < senkouSpanA[displacement-1])
-    priceWrtKumo := "below"
+string priceWrtKumo = woodwind.positionRelativeToRange(close, senkouSpanA[displacement-1], senkouSpanB[displacement-1])
 
-
-//
 // Where is price w.r.t tenkan?
-//
-string priceWrtTenkan = close > tenkanSen ? "above" : (close < tenkanSen ? "below" : "at")
+string priceWrtTenkan = woodwind.positionRelativeToLevel(close, tenkanSen)
 
-
-//
 // Where tenkan w.r.t kijun?
-//
-string tenkanWrtKijun = tenkanSen > kijunSen ? "above" : ( tenkanSen < kijunSen ? "below" : "at")
-
+string tenkanWrtKijun = woodwind.positionRelativeToLevel(tenkanSen, kijunSen)
 
 //
 // Where is TK cross w.r.t kumo? <--- This is not a filter. Ignore!
@@ -190,41 +162,17 @@ else if (tenkanSen[1] >= kijunSen[1] and tenkanSen < kijunSen)
     recentTkCross := "bearish"
     didNewTkCrossOccur := true
 
+
 var string tkCrossWrtKumo = "within"
-if (didNewTkCrossOccur
-     and kumoView == "bullish"
-     and kijunSen > senkouSpanA[displacement-1])
-     or (kumoView == "bearish" and kijunSen > senkouSpanB[displacement-1])
-    tkCrossWrtKumo := "above"
-else if (didNewTkCrossOccur
-     and ((kumoView == "bullish" and kijunSen < senkouSpanB[displacement-1])
-     or (kumoView == "bearish" and kijunSen < senkouSpanA[displacement-1])))
-    tkCrossWrtKumo := "below"
+if didNewTkCrossOccur
+    tkCrossWrtKumo := woodwind.positionRelativeToRange(kijunSen, senkouSpanA[displacement-1], senkouSpanB[displacement-1])
 
-
-//
 // Where is chikou w.r.t price?
-//
-string chikouWrtPrice = "at"
-if (close > high[displacement-1])
-    chikouWrtPrice := "above"
-else if (close < low[displacement-1])
-    chikouWrtPrice := "below"
+string chikouWrtPrice = woodwind.positionRelativeToLevel(close, high[displacement-1])
 
-
-//
 // Where is chikou w.r.t kumo?
-//
-temp := senkouSpanA[2*displacement-1] - senkouSpanB[2*displacement-1]
-string laggingKumoView = temp > 0 ? "bullish" : (temp < 0 ? "bearish" : "neutral")
-
-string chikouWrtKumo = "within"
-if (laggingKumoView == "bullish" and close > senkouSpanA[2*displacement-1])
-     or (kumoView == "bearish" and close > senkouSpanB[2*displacement-1])
-    chikouWrtKumo := "above"
-else if (laggingKumoView == "bullish" and close < senkouSpanB[2*displacement-1])
-     or (laggingKumoView == "bearish" and close < senkouSpanA[2*displacement-1])
-    chikouWrtKumo := "below"
+string laggingKumoView = woodwind.getGlance(senkouSpanA[2*displacement-1], senkouSpanB[2*displacement-1])
+string chikouWrtKumo = woodwind.positionRelativeToRange(close, senkouSpanA[2*displacement-1], senkouSpanA[2*displacement-1])
 
 
 //
