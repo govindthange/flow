@@ -13,7 +13,7 @@
 // @version=5
 
 //
-// @description Woodwind Vault provides reusable functions to support Thange Woodwind Playbook execution.
+// @description Woodwind Vault provides reusable functions to support Thange Woodwind Playbook.
 //
 library("WoodwindVault")
 
@@ -76,14 +76,18 @@ export positionRelativeToRange(float point, float fromLevel, float toLevel) =>
     string view = getGlance(fromLevel, toLevel)
     string position = "within"
     if (view == "bullish" and point > fromLevel)
-         or (view == "bearish" and point > toLevel)
+        or (view == "bearish" and point > toLevel)
         position := "above"
     else if (view == "bullish" and point < toLevel)
-         or (view == "bearish" and point < fromLevel)
+        or (view == "bearish" and point < fromLevel)
         position := "below"
     else if (view == "neutral" and point > fromLevel)
         position := "above"
+    else if (view == "neutral" and point > toLevel)
+        position := "above"
     else if (view == "neutral" and point < toLevel)
+        position := "below"
+    else if (view == "neutral" and point < fromLevel)
         position := "below"
     else
         position := "within"

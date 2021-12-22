@@ -14,7 +14,7 @@
 
 // @description Thange Woodwind Playbook is a strategy based trading program.
 indicator("Thange Woodwind Playbook v2.1", shorttitle="Thange/Piccolo+", overlay=true, max_labels_count=250, max_lines_count=500)
-import govindthange/WoodwindVault/1 as woodwind
+import govindthange/WoodwindVault/2 as woodwind
 import govindthange/ThangeVault/1 as tv
 
 //
@@ -172,7 +172,7 @@ string chikouWrtPrice = woodwind.positionRelativeToLevel(close, high[displacemen
 
 // Where is chikou w.r.t kumo?
 string laggingKumoView = woodwind.getGlance(senkouSpanA[2*displacement-1], senkouSpanB[2*displacement-1])
-string chikouWrtKumo = woodwind.positionRelativeToRange(close, senkouSpanA[2*displacement-1], senkouSpanA[2*displacement-1])
+string chikouWrtKumo = woodwind.positionRelativeToRange(close, senkouSpanA[2*displacement-1], senkouSpanB[2*displacement-1])
 
 
 //
