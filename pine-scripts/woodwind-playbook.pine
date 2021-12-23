@@ -33,6 +33,7 @@ bool showSignalsUponBreakout = input.bool(true, "Show entry signals upon 9-perio
 float accountSize = input.float(1000, title="Account Size")
 float maxRisk = input.float(25, title="Maximum risk per position") / 100
 float exitPercent = input.float(10, title="Scale out percent") / 100
+float takeProfitPercent = input.float(20, minVal=0.0, title="Take profit percent") / 100
 int atrLength = input.int(30, minval=0, title="ATR Length", tooltip="Choose higher values for lower timeframes. Following works best for BTC: [30 for 5m/1H], [9 for 4H/12H]")
 float atrStopMultiplier = input.float(4, minval=0.0, title="ATR x ?", tooltip="Following works best for BTC: [5 for 5m], [4-5 for 15m/1H], [4 for 4H/6H], [6 for 12H] ")
 bool useKumoAsStop = input.bool(true, title="Use kumo as stop loss")
@@ -305,6 +306,7 @@ var color maxCapitalLabelTextColor = na
 float maxRiskPerPosition = accountSize * maxRisk
 var float qty = 0.0
 var float qtyPerExit = 0.0
+var float qtyPerTakeProfit = 0.0
 var float remainingExitQty = 0.0
 var int totalTrades = 0
 var float tradeSize = 0.0
@@ -432,6 +434,7 @@ if canPrepareForLong
     
     qty := maxRiskPerPosition / (entryPrice - stopLoss)
     qtyPerExit := qty * exitPercent
+    qtyPerTakeProfit := qty * takeProfitPercent
     remainingExitQty := qty
     tradeSize := qty * entryPrice
     
@@ -502,6 +505,7 @@ if canPrepareForShort
     
     qty := maxRiskPerPosition / (stopLoss - entryPrice)
     qtyPerExit := qty * exitPercent
+    qtyPerTakeProfit := qty * takeProfitPercent
     remainingExitQty := qty
     tradeSize := qty * entryPrice
     
@@ -536,8 +540,8 @@ if ((inLongTrade and high >= takeProfit)
      and remainingExitQty > 0
     
     shouldTakeProfit := true
-    if (remainingExitQty > qtyPerExit)
-        takeProfitQty := qtyPerExit
+    if (remainingExitQty > takeProfitPercent)
+        takeProfitQty := qtyPerTakeProfit
     else
         takeProfitQty := remainingExitQty
     takeProfitGains := (takeProfit - entryPrice) * takeProfitQty * f_tradeDirection(inLongTrade, inShortTrade)
@@ -930,6 +934,7 @@ if withinTestRange
     activeTradeInfo := na
     qty := 0.0
     qtyPerExit := 0.0
+    qtyPerTakeProfit := 0.0
     remainingExitQty := 0.0
     pnl := 0.0
     tradeSize := 0.0
