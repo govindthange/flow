@@ -538,7 +538,7 @@ if ((inLongTrade and high >= takeProfit)
      and remainingExitQty > 0
     
     shouldTakeProfit := true
-    if (remainingExitQty > takeProfitPercent)
+    if (remainingExitQty > qtyPerTakeProfit)
         takeProfitQty := qtyPerTakeProfit
     else
         takeProfitQty := remainingExitQty
