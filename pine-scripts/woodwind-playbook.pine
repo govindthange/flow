@@ -37,6 +37,7 @@ bool tkCrossExitEnabled = input.bool(true, title="Enable TK cross Exits")
 bool allowTkCrossExitInNurturePhase = input.bool(true, title="Allow TK cross exits in nurture phase")
 bool allowPrematureTkCrossForTrade = input.bool(true, title="Allow premature TK cross for signals", tooltip="Premature TK cross occurs when conversion line just overlaps baseline but does not cross it.")
 bool allowNeutralFutureKumoValidForTrade = input.bool(false, title="Allow neutral future kumo valid for signals")
+bool requireChikouBeyondKumo = input.bool(true, title="Lagging span required beyond kumo for signals", tooltip="When enabled works very well on BTC 1H charts.")
 
 bool showSignalsUponBreakout = input.bool(true, "Show entry signals upon 9-period high/low breakout", tooltip="Do not disable it! When enabled you should place a limit order for entry right at the price dipicted by the gray/green/red line.")
 bool allowEntryUponGaps = input.bool(false, "Show entry signals even on gap-up/down candles ( ! )", tooltip="This is not recommended!. This setting is only for study purposes.")
@@ -231,6 +232,8 @@ if priceWrtKumo == "above"
      and (leadingKumoView == "bullish"
              or (allowNeutralFutureKumoValidForTrade and leadingKumoView == "neutral"))
      and chikouWrtPrice == "above"
+     and (not requireChikouBeyondKumo
+             or (requireChikouBeyondKumo and chikouWrtKumo == "above"))
      and isChikouSpanFree
     marketView := "bullish"
 else if priceWrtKumo == "below"
@@ -240,6 +243,8 @@ else if priceWrtKumo == "below"
      and (leadingKumoView == "bearish"
              or (allowNeutralFutureKumoValidForTrade and leadingKumoView == "neutral"))
      and chikouWrtPrice == "below"
+     and (not requireChikouBeyondKumo
+             or (requireChikouBeyondKumo and chikouWrtKumo == "below"))
      and isChikouSpanFree
     marketView := "bearish"
 
@@ -1141,7 +1146,7 @@ if (barstate.islast and showConfluenceInfo)
     table.cell(confluenceTable, 0, 3, "4. Tenkan is " + tenkanWrtKijun + " kijun.", text_color = (tenkanWrtKijun == "above" ? color.green : (tenkanWrtKijun == "below" ? color.red : color.white)), text_halign = text.align_left, text_size = size.small)
     table.cell(confluenceTable, 0, 4, "5. TK cross was " + recentTkCross + " and " + tkCrossWrtKumo + " kumo.", text_color = (tkCrossWrtKumo == "above" ? (recentTkCross == "bullish" ? color.green : (recentTkCross == "bearish" ? color.rgb(255, 153, 153) : color.white)) : (tkCrossWrtKumo == "below" ? (recentTkCross == "bullish" ? color.rgb(182, 209, 186) : (recentTkCross == "bearish" ? color.red : color.white)) : color.gray)), text_halign = text.align_left, text_size = size.small)
     table.cell(confluenceTable, 0, 5, "6. Chikou is " + chikouWrtPrice + " price.", text_color = (chikouWrtPrice == "above" ? color.green : (chikouWrtPrice == "below" ? color.red : color.white)), text_halign = text.align_left, text_size = size.small)
-    table.cell(confluenceTable, 0, 6, "7. Chikou is " + chikouWrtKumo + " kumo.", text_color = (chikouWrtKumo == "above" ? color.rgb(182, 209, 186) : (chikouWrtKumo == "below" ? color.rgb(255, 153, 153) : color.gray)), text_halign = text.align_left, text_size = size.small)
+    table.cell(confluenceTable, 0, 6, "7. Chikou is " + chikouWrtKumo + " kumo.", text_color = (chikouWrtKumo == "above" ? color.green : (chikouWrtKumo == "below" ? color.red : color.gray)), text_halign = text.align_left, text_size = size.small)
     table.cell(confluenceTable, 0, 7, "8. SSB " + (ssbProximityToChikou < 0 ? " may not block Chikou" : " might block Chikou at " + str.tostring(ssbProximityToChikou) + "%") + " for " + (chikouWrtKumo == "above" ? "long" : "short"  )+ " trade.", text_color = ( ssbProximityToChikou < 0 and marketView == "bullish" ? color.green : ( ssbProximityToChikou < 0 and marketView == "bearish" ? color.red : color.gray)), text_halign = text.align_left, text_size = size.small)
     table.cell(confluenceTable, 0, 8, "9. Chikou " + (isChikouSpanFree ? "clear from congestion." : " heading into " + str.tostring(congestionProximity) + " candles!"), text_color = (isChikouSpanFree ? (marketView == "bullish" ? color.green : (marketView == "bearish" ? color.red : color.gray)) : color.white), text_halign = text.align_left, text_size = size.small)
     
