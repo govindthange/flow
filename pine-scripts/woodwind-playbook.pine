@@ -16,6 +16,7 @@
 indicator("Thange Woodwind Playbook v2.1", shorttitle="Thange/Piccolo+", overlay=true, max_labels_count=250, max_lines_count=500)
 import govindthange/WoodwindVault/3 as woodwind
 import govindthange/ThangeVault/1 as tv
+import ed56/debugger/2 as debug
 
 //
 // Collect configuration parameters
@@ -98,6 +99,7 @@ pnlLabelMaxCapitalColor =  color.new(color.blue, 45)
 pnlLabelMaxCapitalTextColor =  color.yellow
 
 // Initialize an empty array to store trading parameters
+
 var context = array.new_float(15)
 
 f_set(_key, _val) => array.set(context, _key, _val)
@@ -107,6 +109,17 @@ f_get(_key) => array.get(context, _key)
 f_getString(_key) => str.tostring(array.get(context, _key))
 
 f_true(_key) => f_get(_key) == YES
+
+//
+// Debug utility
+//
+[console, frame] = debug.debugger(5)
+
+log(string msg) =>
+    debug.print(console, frame, msg, barstate.islast)
+
+
+
 
 
 //░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░
@@ -961,7 +974,7 @@ if withinTestRange
 //##################################################################
 
 // Display PnL summary
-var table pnlTable = table.new(position.bottom_left, 7, 3, bgcolor = color.rgb(0, 0, 0, 30), frame_color = color.black)
+var table pnlTable = table.new(position.top_center, 7, 3, bgcolor = color.rgb(0, 0, 0, 30), frame_color = color.black)
 if (barstate.islast and showPnl)
     table.cell(pnlTable, 0, 0, "Winners", text_halign = text.align_center, text_color = color.white, text_size = size.small)
     table.cell(pnlTable, 0, 1, str.tostring(winners), text_color = color.green, text_halign = text.align_center, text_size = size.small)
