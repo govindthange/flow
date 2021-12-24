@@ -29,7 +29,7 @@ float maxRisk = input.float(25, minval=0.0, title="Maximum risk per position") /
 float riskToRewardRatio = input.float(2.0, minval=1.0, title="Risk:Reward Ratio")
 float ratioWrtRiskToBeginTrailingSL = input.float (3.0, minval=0.0, title="Nurture Phase", tooltip="It is a ratio w.r.t R/R. Until this level the programme will not show any exit signals. You should start trailing stop-loss only after the price crosses this level. This level shown by a red/green dotted line above/below the entry signal.")
 float exitPercent = input.float(10, minval=0.0, title="Scale out percent") / 100
-float takeProfitPercent = input.float(20, minval=0.0, title="Take profit percent") / 100
+float takeProfitPercent = input.float(10, minval=0.0, title="Take profit percent") / 100
 int atrLength = input.int(30, minval=0, title="ATR Length", tooltip="Choose higher values for lower timeframes. Following works best for BTC: [30 for 5m/15m/1H/4H], [9 for 4H/12H]")
 float atrStopMultiplier = input.float(5, minval=0.0, title="ATR x ?", tooltip="Following works best for BTC: [5 for 5m/15m/1H/4H/6H], [3 for 12H], [3 or 1 for D/2D] ")
 
