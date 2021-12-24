@@ -18,14 +18,14 @@
 library("WoodwindVault")
 
 //
-// @function determines the highest-high and lowest-low for the specified time interval.
-// @param period int, the time interval for finding the highest-high and lowest-low.
-// @returns float, the highest-high and lowest-low of the candles in the specified period.
+// @function determines the highest-high and the lowest-low value for the specified interval.
+// @param period int, the time interval.
+// @returns float, the highest-high and lowest-low value.
 //
 export getHighestHighAndLowestLow(int period) => math.avg(ta.lowest(period), ta.highest(period))
 
 //
-// @function gets a best suited combination of equilibrium periods for the specified scheme.
+// @function gets a suitable combination of equilibrium periods for the specified scheme.
 // @param scheme string, the name of the scheme.
 // @returns 4 float values, a best suited combination of equilibrium periods.
 //
@@ -51,7 +51,7 @@ export getEquilibriumPeriods(string scheme) =>
 // @param longTermPeriod, the period for computing the 2 additional long-term equilibrium points.
 // @returns shortTermEquilibrium float, the midpoint of highest-high and lowest-low of the candles in last shortTermPeriod.
 // @returns mideTermEquilibrium float, the midpoint of highest-high and lowest-low of the candles in last midTermPeriod.
-// @returns longTermEquilibriumA float, the midpoint of the shortTermEquilibrium and mideTermEquilibrium points.
+// @returns longTermEquilibriumA float, the midpoint of the shortTermEquilibrium and midTermEquilibrium points.
 // @returns longTermEquilibriumB float, the midpoint of highest-high and lowest-low of the candles in last longTermPeriod.
 //
 export findEquilibrium(int shortTermPeriod, int midTermPeriod, int longTermPeriod) =>
@@ -75,9 +75,9 @@ export getGlance(float fast, float slow) =>
 
 
 //
-// @function determines first point's position w.r.t a specified level.
-// @param point float, the first point (typically a fast moving average).
-// @param level float, the second point acting as a level (typically a slow moving average).
+// @function determines the placement of price w.r.t the specified resistance/support level.
+// @param point float, the price (typically a fast moving average).
+// @param level float, the dynamic support/resistance (typically a slow moving average).
 // @returns string, the above/below/at position w.r.t level. 
 //
 export positionRelativeToLevel(float point, float level) =>
@@ -85,28 +85,28 @@ export positionRelativeToLevel(float point, float level) =>
     position
 
 //
-// @function determines first point's position w.r.t a range (typically a resistance band).
-// @param point float, the first point.
+// @function determines the placement of price w.r.t a range (i.e. a dynamic resistance band).
+// @param point float, the price.
 // @param fromLevel float, the from-range which is typically a fast moving line.
 // @param toLevel float, the to-range which is typically a slow moving line.
 // @returns string, the above/below/within range. 
 //
-export positionRelativeToRange(float point, float fromLevel, float toLevel) =>
+export positionRelativeToRange(float price, float fromLevel, float toLevel) =>
     string view = getGlance(fromLevel, toLevel)
     string position = "within"
-    if (view == "bullish" and point > fromLevel)
-         or (view == "bearish" and point > toLevel)
+    if (view == "bullish" and price > fromLevel)
+         or (view == "bearish" and price > toLevel)
         position := "above"
-    else if (view == "bullish" and point < toLevel)
-         or (view == "bearish" and point < fromLevel)
+    else if (view == "bullish" and price < toLevel)
+         or (view == "bearish" and price < fromLevel)
         position := "below"
-    else if (view == "neutral" and point > fromLevel)
+    else if (view == "neutral" and price > fromLevel)
         position := "above"
-    else if (view == "neutral" and point > toLevel)
+    else if (view == "neutral" and price > toLevel)
         position := "above"
-    else if (view == "neutral" and point < toLevel)
+    else if (view == "neutral" and price < toLevel)
         position := "below"
-    else if (view == "neutral" and point < fromLevel)
+    else if (view == "neutral" and price < fromLevel)
         position := "below"
     else
         position := "within"
