@@ -14,7 +14,7 @@
 
 // @description Thange Woodwind Playbook is a strategy based trading program.
 indicator("Thange Woodwind Playbook v2.1", shorttitle="Thange/Piccolo+", overlay=true, max_labels_count=250, max_lines_count=500)
-import govindthange/WoodwindVaultDev/1 as woodwind
+import govindthange/WoodwindVaultDev/5 as woodwind
 import govindthange/ThangeVault/1 as tv
 
 //
@@ -551,14 +551,11 @@ if ((inLongTrade and high >= takeProfit)
      and remainingExitQty > 0
     
     shouldTakeProfit := true
-    if (remainingExitQty > qtyPerTakeProfit)
-        takeProfitQty := qtyPerTakeProfit
-    else
-        takeProfitQty := remainingExitQty
-    takeProfitGains := (takeProfit - entryPrice) * takeProfitQty * f_tradeDirection(inLongTrade, inShortTrade)
-    pnl := pnl + takeProfitGains
-    remainingExitQty := remainingExitQty - takeProfitQty
-    activeTradeInfo += str.format("\nTP {0} @ {1, number, currency} = {2, number, currency}/{3, number, currency}", str.tostring(takeProfitQty), takeProfit, takeProfitGains, pnl)
+    
+    [_qty, _remainingQty, _gains] = woodwind.computeExitGains(entryPrice, takeProfit, qtyPerTakeProfit, remainingExitQty, f_tradeDirection(inLongTrade, inShortTrade))
+    pnl := pnl + _gains
+    remainingExitQty := _remainingQty
+    activeTradeInfo += str.format("\nTP {0, number} @ {1, number, currency} = {2, number, currency}/{3, number, currency}", _qty, takeProfit, _gains, pnl)
     label.set_tooltip(activeTradeLabel, activeTradeInfo)
 
 
@@ -658,115 +655,60 @@ else if ((inLongTrade and open < tenkanSen and high <= tenkanSen)
      and remainingExitQty > 0
     
     shouldExitOnTenkan := true
+    [_qty, _remainingQty, _gains] = woodwind.computeExitGains(entryPrice, close, qtyPerExit, remainingExitQty, f_tradeDirection(inLongTrade, inShortTrade))
+    pnl := pnl + _gains
+    remainingExitQty := _remainingQty
+    activeTradeInfo += str.format("\nTE {0, number} @ {1, number, currency} = {2, number, currency}/{3, number, currency}", _qty, close, _gains, pnl)
+        
     if (tenkanExit1 == 0.0)
         tenkanExit1 := close
-        if (remainingExitQty > qtyPerExit)
-            tenkanExitQty1 := qtyPerExit
-        else
-            tenkanExitQty1 := remainingExitQty
-        tenkanExitGains1 := (tenkanExit1 - entryPrice) * tenkanExitQty1 * f_tradeDirection(inLongTrade, inShortTrade)
-        pnl := pnl + tenkanExitGains1
-        remainingExitQty := remainingExitQty - tenkanExitQty1
-        activeTradeInfo += str.format("\nTE1 {0} @ {1, number, currency} = {2, number, currency}/{3, number, currency}", str.tostring(tenkanExitQty1), close, tenkanExitGains1, pnl)
+        tenkanExitQty1 := _qty
+        tenkanExitGains1 := _gains
     
     else if (tenkanExit2 == 0.0)
         tenkanExit2 := close
-        if (remainingExitQty > qtyPerExit)
-            tenkanExitQty2 := qtyPerExit
-        else
-            tenkanExitQty2 := remainingExitQty
-        tenkanExitGains2 := (tenkanExit2 - entryPrice) * tenkanExitQty2 * f_tradeDirection(inLongTrade, inShortTrade)
-        pnl := pnl + tenkanExitGains2
-        remainingExitQty := remainingExitQty - tenkanExitQty2
-        activeTradeInfo += str.format("\nTE2 {0} @ {1, number, currency} = {2, number, currency}/{3, number, currency}", str.tostring(tenkanExitQty2), close, tenkanExitGains2, pnl)
+        tenkanExitQty2 := _qty
+        tenkanExitGains2 := _gains
     
     else if (tenkanExit3 == 0.0)
         tenkanExit3 := close
-        if (remainingExitQty > qtyPerExit)
-            tenkanExitQty3 := qtyPerExit
-        else
-            tenkanExitQty3 := remainingExitQty
-        tenkanExitGains3 := (tenkanExit3 - entryPrice) * tenkanExitQty3 * f_tradeDirection(inLongTrade, inShortTrade)
-        pnl := pnl + tenkanExitGains3
-        remainingExitQty := remainingExitQty - tenkanExitQty3
-        activeTradeInfo += str.format("\nTE3 {0} @ {1, number, currency} = {2, number, currency}/{3, number, currency}", str.tostring(tenkanExitQty3), close, tenkanExitGains3, pnl)
+        tenkanExitQty3 := _qty
+        tenkanExitGains3 := _gains
     
     else if (tenkanExit4 == 0.0)
         tenkanExit4 := close
-        if (remainingExitQty > qtyPerExit)
-            tenkanExitQty4 := qtyPerExit
-        else
-            tenkanExitQty4 := remainingExitQty
-        tenkanExitGains4 := (tenkanExit4 - entryPrice) * tenkanExitQty4 * f_tradeDirection(inLongTrade, inShortTrade)
-        pnl := pnl + tenkanExitGains4
-        remainingExitQty := remainingExitQty - tenkanExitQty4
-        activeTradeInfo += str.format("\nTE4 {0} @ {1, number, currency} = {2, number, currency}/{3, number, currency}", str.tostring(tenkanExitQty4), close, tenkanExitGains4, pnl)
+        tenkanExitQty4 := _qty
+        tenkanExitGains4 := _gains
     
     else if (tenkanExit5 == 0.0)
         tenkanExit5 := close
-        if (remainingExitQty > qtyPerExit)
-            tenkanExitQty5 := qtyPerExit
-        else
-            tenkanExitQty5 := remainingExitQty
-        tenkanExitGains5 := (tenkanExit5 - entryPrice) * tenkanExitQty5 * f_tradeDirection(inLongTrade, inShortTrade)
-        pnl := pnl + tenkanExitGains5
-        remainingExitQty := remainingExitQty - tenkanExitQty5
-        activeTradeInfo += str.format("\nTE5 {0} @ {1, number, currency} = {2, number, currency}/{3, number, currency}", str.tostring(tenkanExitQty5), close, tenkanExitGains5, pnl)
+        tenkanExitQty5 := _qty
+        tenkanExitGains5 := _gains
     
     else if (tenkanExit6 == 0.0)
         tenkanExit6 := close
-        if (remainingExitQty > qtyPerExit)
-            tenkanExitQty6 := qtyPerExit
-        else
-            tenkanExitQty6 := remainingExitQty
-        tenkanExitGains6 := (tenkanExit6 - entryPrice) * tenkanExitQty6 * f_tradeDirection(inLongTrade, inShortTrade)
-        pnl := pnl + tenkanExitGains6
-        remainingExitQty := remainingExitQty - tenkanExitQty6
-        activeTradeInfo += str.format("\nTE6 {0} @ {1, number, currency} = {2, number, currency}/{3, number, currency}", str.tostring(tenkanExitQty6), close, tenkanExitGains6, pnl)
+        tenkanExitQty6 := _qty
+        tenkanExitGains6 := _gains
     
     else if (tenkanExit7 == 0.0)
         tenkanExit7 := close
-        if (remainingExitQty > qtyPerExit)
-            tenkanExitQty7 := qtyPerExit
-        else
-            tenkanExitQty7 := remainingExitQty
-        tenkanExitGains7 := (tenkanExit7 - entryPrice) * tenkanExitQty7 * f_tradeDirection(inLongTrade, inShortTrade)
-        pnl := pnl + tenkanExitGains7
-        remainingExitQty := remainingExitQty - tenkanExitQty7
-        activeTradeInfo += str.format("\nTE7 {0} @ {1, number, currency} = {2, number, currency}/{3, number, currency}", str.tostring(tenkanExitQty7), close, tenkanExitGains7, pnl)
+        tenkanExitQty7 := _qty
+        tenkanExitGains7 := _gains
     
     else if (tenkanExit8 == 0.0)
         tenkanExit8 := close
-        if (remainingExitQty > qtyPerExit)
-            tenkanExitQty8 := qtyPerExit
-        else
-            tenkanExitQty8 := remainingExitQty
-        tenkanExitGains8 := (tenkanExit8 - entryPrice) * tenkanExitQty8 * f_tradeDirection(inLongTrade, inShortTrade)
-        pnl := pnl + tenkanExitGains8
-        remainingExitQty := remainingExitQty - tenkanExitQty8
-        activeTradeInfo += str.format("\nTE8 {0} @ {1, number, currency} = {2, number, currency}/{3, number, currency}", str.tostring(tenkanExitQty8), close, tenkanExitGains8, pnl)
+        tenkanExitQty8 := _qty
+        tenkanExitGains8 := _gains
     
     else if (tenkanExit9 == 0.0)
         tenkanExit9 := close
-        if (remainingExitQty > qtyPerExit)
-            tenkanExitQty9 := qtyPerExit
-        else
-            tenkanExitQty9 := remainingExitQty
-        tenkanExitGains9 := (tenkanExit9 - entryPrice) * tenkanExitQty9 * f_tradeDirection(inLongTrade, inShortTrade)
-        pnl := pnl + tenkanExitGains9
-        remainingExitQty := remainingExitQty - tenkanExitQty9
-        activeTradeInfo += str.format("\nTE9 {0} @ {1, number, currency} = {2, number, currency}/{3, number, currency}", str.tostring(tenkanExitQty9), close, tenkanExitGains9, pnl)
+        tenkanExitQty9 := _qty
+        tenkanExitGains9 := _gains
     
     else if (tenkanExit10 == 0.0)
         tenkanExit10 := close
-        if (remainingExitQty > qtyPerExit)
-            tenkanExitQty10 := qtyPerExit
-        else
-            tenkanExitQty10 := remainingExitQty
-        tenkanExitGains10 := (tenkanExit10 - entryPrice) * tenkanExitQty10 * f_tradeDirection(inLongTrade, inShortTrade)
-        pnl := pnl + tenkanExitGains10
-        remainingExitQty := remainingExitQty - tenkanExitQty10
-        activeTradeInfo += str.format("\nTE10 {0} @ {1, number, currency} = {2, number, currency}/{3, number, currency}", str.tostring(tenkanExitQty10), close, tenkanExitGains10, pnl)
+        tenkanExitQty10 := _qty
+        tenkanExitGains10 := _gains
     
     label.set_tooltip(activeTradeLabel, activeTradeInfo)
 else
