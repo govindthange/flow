@@ -14,7 +14,7 @@
 
 // @description Thange Woodwind Playbook is a strategy based trading program.
 indicator("Thange Woodwind Playbook v2.1", shorttitle="Thange/Piccolo+", overlay=true, max_labels_count=250, max_lines_count=500)
-import govindthange/WoodwindVault/2 as woodwind
+import govindthange/WoodwindVaultDev/1 as woodwind
 import govindthange/ThangeVault/1 as tv
 
 //
@@ -48,9 +48,10 @@ float breakevenRatio = input.float(0, minval = 0, title="Stop-Loss Breakeven Rat
 int congestionProximity = input.int(10, minval=1, title="Congestion Span", tooltip="How many bars far should the lagging-span be and called safe before it bumps into the price?")
 float congestionTolerance = input.float(0, minval=0.0, title="Congestion Tolerance", tooltip="What percent of the highest-high/lowest-low of candles in congestion-span be treated as noise for determining congestion for the lagging-span?")
 
+string equilibriumScheme = input.string("Scalper", title="Equilirbium Scheme", options=["Custom", "Standard", "Scalper", "5 Day Week", "Popular", "Ideal", "Trend Finder", "Forflies"])
 int tenkanSenPeriod = input.int(9, minval=1, title="Short-term period")
 int kijunSenPeriod = input.int(26, minval=1, title="Mid-term period")
-int senkouSpanBPeriod = input.int(52, minval=1, title="Long-term period")
+int senkouSpanPeriod = input.int(52, minval=1, title="Long-term period")
 int displacement = input.int(26, minval=1, title="Displacement")
 
 bool showPnl = input.bool(true, title="Show profit & loss summary")
@@ -116,7 +117,14 @@ f_true(_key) => f_get(_key) == YES
 //░░██████╔╝░░░██║░░░██║░░██║██║░░██║░░░██║░░░███████╗╚██████╔╝░░░██║░░░░░
 //░░╚═════╝░░░░╚═╝░░░╚═╝░░╚═╝╚═╝░░╚═╝░░░╚═╝░░░╚══════╝░╚═════╝░░░░╚═╝░░░░░
 
-[tenkanSen, kijunSen, senkouSpanA, senkouSpanB] = woodwind.findEquilibrium(tenkanSenPeriod, kijunSenPeriod, senkouSpanBPeriod)
+if equilibriumScheme != "Custom"
+    [tp, kp, sp, d] = woodwind.getEquilibriumPeriods(equilibriumScheme)
+    tenkanSenPeriod := tp
+    kijunSenPeriod := kp
+    senkouSpanPeriod := sp
+    displacement := d
+
+[tenkanSen, kijunSen, senkouSpanA, senkouSpanB] = woodwind.findEquilibrium(tenkanSenPeriod, kijunSenPeriod, senkouSpanPeriod)
 
 barIndex = includeCurrentBarFor9PeriodHighLow ? 0 : 1
 highestTenkanSenBar = ta.highestbars(high[barIndex], tenkanSenPeriod)

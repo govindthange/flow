@@ -24,6 +24,25 @@ library("WoodwindVault")
 //
 export getHighestHighAndLowestLow(int period) => math.avg(ta.lowest(period), ta.highest(period))
 
+//
+// @function gets a best suited combination of equilibrium periods for the specified scheme.
+// @param scheme string, the name of the scheme.
+// @returns 4 float values, a best suited combination of equilibrium periods.
+//
+export getEquilibriumPeriods(string scheme) =>
+    switch scheme
+        "Custom" => [0, 0, 0, 0]
+        "Standard" => [9, 26, 52, 26]
+        "Scalper" => [7, 22, 44, 22]
+        "5 Day Week" => [8, 22, 44, 22]
+        "Popular" => [9, 30, 60, 30]
+        "Ideal" => [10, 30, 60, 30]
+        "Trend Finder" => [12, 24, 120, 24]
+        "Forflies" => [20, 60, 120, 30]
+        =>
+            runtime.error("Scheme not supported!")
+            [int(na), int(na), int(na), int(na)]
+
 
 //
 // @function projects a one glance view of the entire resistance net faced by the price. It does so by computing different equilibrium points for the price.
@@ -76,10 +95,10 @@ export positionRelativeToRange(float point, float fromLevel, float toLevel) =>
     string view = getGlance(fromLevel, toLevel)
     string position = "within"
     if (view == "bullish" and point > fromLevel)
-        or (view == "bearish" and point > toLevel)
+         or (view == "bearish" and point > toLevel)
         position := "above"
     else if (view == "bullish" and point < toLevel)
-        or (view == "bearish" and point < fromLevel)
+         or (view == "bearish" and point < fromLevel)
         position := "below"
     else if (view == "neutral" and point > fromLevel)
         position := "above"
