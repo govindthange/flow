@@ -83,6 +83,7 @@ NO = 0.0
 // Color definitions
 //
 sessionColor = color.rgb(0, 0, 0, 100)
+exitSignalColor = color.orange
 
 longBgColor = color.rgb(0,255,0,94)
 longLineColor = color.rgb(29, 176, 12, 0)
@@ -796,8 +797,8 @@ if not showSignalsUponBreakout
 else if shouldGoShort
     shouldGoShort := false
 
-plotshape(inLongTrade and shouldExitOnTenkan, title= "Tenkan Long Exit", location=location.abovebar, color=longSecondarySignalColor, transp=0, style=shape.diamond, text="", size=size.tiny, editable=false)
-plotshape(inShortTrade and shouldExitOnTenkan, title= "Tenkan Short Exit", location=location.belowbar, color=shortSecondarySignalColor, transp=0, style=shape.diamond, text="", size=size.tiny, editable=false)
+plotshape(inLongTrade and shouldExitOnTenkan, title= "Tenkan Long Exit", location=location.abovebar, color= (remainingExitQty <= 0 ? exitSignalColor : longSecondarySignalColor), transp=0, style=shape.diamond, text="", size=size.tiny, editable=false)
+plotshape(inShortTrade and shouldExitOnTenkan, title= "Tenkan Short Exit", location=location.belowbar, color= (remainingExitQty <= 0 ? exitSignalColor : shortSecondarySignalColor), transp=0, style=shape.diamond, text="", size=size.tiny, editable=false)
 
 plotshape(inLongTrade and shouldExitOnKijun, title= "Kijun Long Exit", location=location.abovebar, color=longSecondarySignalColor, transp=0, style=shape.circle, text="", size=size.tiny, editable=false)
 plotshape(inShortTrade and shouldExitOnKijun, title= "Kijun Short Exit", location=location.belowbar, color=shortSecondarySignalColor, transp=0, style=shape.circle, text="", size=size.tiny, editable=false)
@@ -808,11 +809,11 @@ plotshape(inShortTrade and shouldExitOnTkCross, title= "TK Cross Short Exit", lo
 plotshape(inLongTrade and (f_true(IDX_ShouldExitOnStopLoss) or shouldExitOnStop), title= "Stop Loss Long Exit", location=location.belowbar, color=longPrimarySignalColor, transp=0, style=shape.flag, text="", size=size.small, editable=false)
 plotshape(inShortTrade and inShortTrade and (f_true(IDX_ShouldExitOnStopLoss) or shouldExitOnStop), title= "Stop Loss Short Exit", location=location.abovebar, color=shortPrimarySignalColor, transp=0, style=shape.flag, text="", size=size.small, editable=false)
 
-plotshape(inLongTrade and shouldTakeProfit, title= "Fixed Long Exit", location=location.abovebar, color=longSecondarySignalColor, transp=0, style=shape.square, text="", size=size.tiny, editable=false)
-plotshape(inShortTrade and shouldTakeProfit, title= "Fixed Short Exit", location=location.belowbar, color=shortSecondarySignalColor, transp=0, style=shape.square, text="", size=size.tiny, editable=false)
+plotshape(inLongTrade and shouldTakeProfit, title= "Fixed Long Exit", location=location.abovebar, color= (remainingExitQty <= 0 ? exitSignalColor : longSecondarySignalColor), transp=0, style=shape.square, text="", size=size.tiny, editable=false)
+plotshape(inShortTrade and shouldTakeProfit, title= "Fixed Short Exit", location=location.belowbar, color= (remainingExitQty <= 0 ? exitSignalColor : shortSecondarySignalColor), transp=0, style=shape.square, text="", size=size.tiny, editable=false)
 
-plotshape(inLongTrade and shouldExitOnChikou, title= "Chikou Long Exit", location=location.abovebar, color=color.white, transp=0, style=shape.diamond, text="", size=size.tiny, editable=false)
-plotshape(inShortTrade and shouldExitOnChikou, title= "Chikou Short Exit", location=location.belowbar, color=color.white, transp=0, style=shape.diamond, text="", size=size.tiny, editable=false)
+plotshape(inLongTrade and shouldExitOnChikou, title= "Chikou Long Exit", location=location.abovebar, color= (remainingExitQty <= 0 ? exitSignalColor : color.white), transp=0, style=shape.diamond, text="", size=size.tiny, editable=false)
+plotshape(inShortTrade and shouldExitOnChikou, title= "Chikou Short Exit", location=location.belowbar, color= (remainingExitQty <= 0 ? exitSignalColor : color.white), transp=0, style=shape.diamond, text="", size=size.tiny, editable=false)
 
 if shouldTakeProfit
     didTakeProfit := true
@@ -830,7 +831,7 @@ if shouldExitOnChikou
 //###################################################################
 //###################################################################
 
-if (inLongTrade and (shouldExitOnKijun or f_true(IDX_ShouldExitOnStopLoss) or shouldExitOnTkCross or shouldExitPreemptively))
+if (inLongTrade and (shouldExitOnKijun or f_true(IDX_ShouldExitOnStopLoss) or shouldExitOnTkCross or shouldExitPreemptively or remainingExitQty <= 0))
     inLongTrade := false
     f_reset()
     didLongPositionClose := true
@@ -838,7 +839,7 @@ if (inLongTrade and (shouldExitOnKijun or f_true(IDX_ShouldExitOnStopLoss) or sh
         hasSignaledForLong := false
         canPrepareForLong := false
 
-if (inShortTrade and (shouldExitOnKijun or f_true(IDX_ShouldExitOnStopLoss) or shouldExitOnTkCross or shouldExitPreemptively))
+if (inShortTrade and (shouldExitOnKijun or f_true(IDX_ShouldExitOnStopLoss) or shouldExitOnTkCross or shouldExitPreemptively or remainingExitQty <= 0))
     inShortTrade := false
     f_reset()
     didShortPositionClose := true
