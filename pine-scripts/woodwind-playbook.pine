@@ -199,7 +199,7 @@ if didNewTkCrossOccur
     tkCrossWrtKumo := woodwind.positionRelativeToRange(kijunSen, senkouSpanA[displacement-1], senkouSpanB[displacement-1])
 
 // Where is chikou w.r.t price?
-string chikouWrtPrice = woodwind.positionRelativeToLevel(close, high[displacement-1])
+string chikouWrtPrice = woodwind.positionRelativeToRange(close, high[displacement-1], low[displacement-1])
 
 // Where is chikou w.r.t kumo?
 string laggingKumoView = woodwind.getGlance(senkouSpanA[2*displacement-1], senkouSpanB[2*displacement-1])
