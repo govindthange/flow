@@ -876,6 +876,7 @@ var int loosers = 0
 var float cumulativeCapital = 0.0
 var float maxCapital = 0.0
 var float totalPnl = 0.0
+var float totalPnlPercent = 0.0
 var float totalProfit = 0.0
 var float totalLoss = 0.0
 var float prevPnl = 0.0
@@ -891,7 +892,7 @@ if (activeTradeLabel != na
      and (inLongTrade or inShortTrade))
     label.set_color(activeTradeLabel, ((pnl+realtime) > 0 ? pnlLabelProfitBgColor : pnlLabelLossBgColor))
     label.set_textcolor(activeTradeLabel, ((pnl+realtime) > 0 ? pnlLabelProfitColor : pnlLabelLossColor))
-    label.set_text(activeTradeLabel, str.format("{0, number, currency}", pnl+realtime))
+    label.set_text(activeTradeLabel, str.format("{0, number, currency}\n{1, number, #0.00%}", pnl+realtime, (pnl+realtime)/tradeSize))
     label.set_tooltip(activeTradeLabel, str.format("{0}\n{1}⟶ {2, number, #0.00%} RoI", activeTradeInfo, (remainingExitQty > 0 ? str.format("{0} Balance Units\n", remainingExitQty) : ""), (pnl + realtime)/tradeSize))
 
 if withinTestRange
@@ -901,12 +902,13 @@ if withinTestRange
     
     label.set_color(activeTradeLabel, (pnl > 0 ? pnlLabelProfitBgColor : pnlLabelLossBgColor))
     label.set_textcolor(activeTradeLabel, (pnl > 0 ? pnlLabelProfitColor : pnlLabelLossColor))
-    label.set_text(activeTradeLabel, str.format("{0, number, currency}", pnl))
+    label.set_text(activeTradeLabel, str.format("{0, number, currency}\n{1, number, #0.00%}", pnl, pnl/tradeSize))
     label.set_tooltip(activeTradeLabel, str.format("{0}\n⟶ {1, number, #0.00%} RoI", activeTradeInfo, pnl/tradeSize))
     
     totalTrades := totalTrades + 1
     
     totalPnl := totalPnl + pnl
+    totalPnlPercent := totalPnlPercent + (pnl/tradeSize)
     if pnl > 0
         winners := winners + 1
         maxProfit := maxProfit < pnl ? pnl : maxProfit
@@ -1036,7 +1038,7 @@ if (barstate.islast and showPnl)
     table.cell(pnlTable, 4, 2, str.format("{0, number, currency}", cumulativeCapital/totalTrades), text_halign = text.align_center, text_color = color.gray, text_size = size.small)
     table.cell(pnlTable, 5, 0, "Total PnL", text_halign = text.align_center, text_color = color.white, text_size = size.small)
     table.cell(pnlTable, 5, 1, str.format("{0, number, currency}", totalPnl), text_halign = text.align_center, text_color =  (totalPnl > 0 ? color.rgb(182, 209, 186) : color.rgb(182, 153, 153)), text_size = size.small)
-    table.cell(pnlTable, 5, 2, str.format("{0, number, #0.00%}", totalPnl/maxCapital), text_halign = text.align_center, text_color =   (totalPnl > 0 ? color.green : color.red), text_size = size.small)
+    table.cell(pnlTable, 5, 2, str.format("{0, number, #0.00%} | {1, number, #0.00%}", totalPnlPercent, totalPnl/maxCapital), text_halign = text.align_center, text_color =   (totalPnl > 0 ? color.green : color.red), text_size = size.small)
     table.cell(pnlTable, 6, 0, "Days", text_halign = text.align_center, text_color = color.white, text_size = size.small, text_size = size.small)
     table.cell(pnlTable, 6, 1, str.format("{0, number}", (toDateInput - fromDateInput)/ (24 * 60 * 60 * 1000)), text_halign = text.align_center, text_color = color.silver, text_size = size.small)
     table.cell(pnlTable, 6, 2, str.tostring(totalCandles), text_halign = text.align_center, text_color = color.gray, text_size = size.small)
