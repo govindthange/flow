@@ -214,10 +214,10 @@ highestSSB = ta.highest(senkouSpanB[2*displacement - 1 - congestionProximity], c
 
 float ssbProximityToChikou = -1.0
 if ((recentTkCross == "bullish" or priceWrtKumo == "above")
-     and chikouWrtKumo == "below")
+     and (chikouWrtKumo == "below" or chikouWrtKumo == "within"))
     ssbProximityToChikou := (lowestSSB - close)/close
 else if ((recentTkCross == "bearish" or priceWrtKumo == "below")
-     and chikouWrtKumo == "above")
+     and (chikouWrtKumo == "above" or chikouWrtKumo == "within"))
     ssbProximityToChikou := (close - lowestSSB)/close
 
 // Is chikou free from congestion ahead? Is it heading into price?
