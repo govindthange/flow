@@ -21,6 +21,15 @@ import govindthange/ThangeVault/1 as util
 import ed56/debugger/2 as debug
 
 //
+// Debug utility
+//
+[console, frame] = debug.debugger(5)
+
+log(string msg) =>
+    debug.print(console, frame, msg, barstate.islast)
+
+
+//
 // Collect configuration parameters
 //
 
@@ -117,95 +126,7 @@ f_getString(_key) => str.tostring(array.get(context, _key))
 
 f_true(_key) => f_get(_key) == YES
 
-//
-// Debug utility
-//
-[console, frame] = debug.debugger(5)
-
-log(string msg) =>
-    debug.print(console, frame, msg, barstate.islast)
-
-
-
-
-
-//░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░
-//░░░██████╗████████╗██████╗░░█████╗░████████╗███████╗░██████╗░██╗░░░██╗░░
-//░░██╔════╝╚══██╔══╝██╔══██╗██╔══██╗╚══██╔══╝██╔════╝██╔════╝░╚██╗░██╔╝░░
-//░░╚█████╗░░░░██║░░░██████╔╝███████║░░░██║░░░█████╗░░██║░░██╗░░╚████╔╝░░░
-//░░░╚═══██╗░░░██║░░░██╔══██╗██╔══██║░░░██║░░░██╔══╝░░██║░░╚██╗░░╚██╔╝░░░░
-//░░██████╔╝░░░██║░░░██║░░██║██║░░██║░░░██║░░░███████╗╚██████╔╝░░░██║░░░░░
-//░░╚═════╝░░░░╚═╝░░░╚═╝░░╚═╝╚═╝░░╚═╝░░░╚═╝░░░╚══════╝░╚═════╝░░░░╚═╝░░░░░
-
-if equilibriumScheme != "Custom"
-    [tp, kp, sp, d] = yard.getEquilibriumPeriods(equilibriumScheme)
-    tenkanSenPeriod := tp
-    kijunSenPeriod := kp
-    senkouSpanPeriod := sp
-    displacement := d
-
-[tenkanSen, kijunSen, senkouSpanA, senkouSpanB] = yard.findEquilibrium(tenkanSenPeriod, kijunSenPeriod, senkouSpanPeriod)
-
-barIndex = includeCurrentBarFor9PeriodHighLow ? 0 : 1
-highestTenkanSenBar = ta.highestbars(high[barIndex], tenkanSenPeriod)
-highestTenkanValue = ta.highest(high[barIndex], tenkanSenPeriod)
-lowestTenkanSenBar = ta.lowestbars(low[barIndex], tenkanSenPeriod)
-lowestTenkanValue = ta.lowest(low[barIndex], tenkanSenPeriod)
-
-highestKijunSenBar = ta.highestbars(kijunSenPeriod)
-highestKijunValue = ta.highest(kijunSenPeriod)
-lowestKijunSenBar = ta.lowestbars(kijunSenPeriod)
-lowestKijunValue = ta.lowest(kijunSenPeriod)
-
-//########################################################################
-//########################################################################
-//###                                                                  ###
-//###    Assess for high probability setup on the trading timeframe    ###
-//###                                                                  ###
-//########################################################################
-//########################################################################
-
-// How is current kumo?
-string kumoView = yard.getStrength(senkouSpanA[displacement-1], senkouSpanB[displacement-1])
-
-// How is future kumo?
-string leadingKumoView = yard.getStrength(senkouSpanA, senkouSpanB)
-
-// Where is price w.r.t kumo?
-string priceWrtKumo = yard.getPositionRelativeToRange(close, senkouSpanA[displacement-1], senkouSpanB[displacement-1])
-
-// Where is price w.r.t tenkan?
-string priceWrtTenkan = yard.getPositionRelativeToLevel(close, tenkanSen)
-
-// Where is tenkan w.r.t kijun?
-string tenkanWrtKijun = yard.getPositionRelativeToLevel(tenkanSen, kijunSen)
-
-// Did TK cross occur?
-var string recentTkCross = na
-recentTkCross := yard.getCrossoverStrength(tenkanSen, kijunSen, allowPrematureTkCrossForTrade)
-
-// Where is TK cross w.r.t kumo? <--- This is not a filter. Ignore!
-var string tkCrossWrtKumo = "within"
-if recentTkCross != na
-    tkCrossWrtKumo := yard.getPositionRelativeToRange(kijunSen, senkouSpanA[displacement-1], senkouSpanB[displacement-1])
-
-// Where is chikou w.r.t price?
-string chikouWrtPrice = yard.getPositionRelativeToRange(close, high[displacement-1], low[displacement-1])
-
-// Where is chikou w.r.t kumo?
-string laggingKumoView = yard.getStrength(senkouSpanA[2*displacement-1], senkouSpanB[2*displacement-1])
-string chikouWrtKumo = yard.getPositionRelativeToRange(close, senkouSpanA[2*displacement-1], senkouSpanB[2*displacement-1])
-
-// Where is chikou w.r.t a flat Senkou-Span-B ahead?
-float ssbProximityToChikou = yard.getProximityRelativeToLevel(close, senkouSpanB, recentTkCross, priceWrtKumo, chikouWrtKumo, displacement*2, congestionProximity)
-
-// Is chikou free from congestion ahead? Is it heading into price?
-bool isChikouSpanFree = yard.isLaggingSpanCongestionFree(close, displacement, congestionProximity, congestionTolerance, recentTkCross, chikouWrtPrice)
-
-
-//
 // Declare constants to access global variables
-//
 IDX_PriceLevelToBeginTrailingStopLoss = 0
 IDX_ShouldExitOnStopLoss = 1
 IDX_CanExitAfterKijunOrTkCross = 2
@@ -218,83 +139,6 @@ f_reset() =>
     f_set(IDX_CanExitAfterKijunOrTkCross, NO)
     f_set(IDX_ShouldExitOnTkCross, NO)
     f_set(IDX_TxCrossPrice, -1)
-    
-
-//##########################################################################
-//##########################################################################
-//####                                                                  ####
-//####             Establish market view through confluence             ####
-//####                                                                  ####
-//##########################################################################
-//##########################################################################
-
-string marketView = "conslidating"
-if priceWrtKumo == "above"
-     and priceWrtTenkan == "above"
-     and (tenkanWrtKijun == "above"
-             or (allowPrematureTkCrossForTrade and tenkanWrtKijun == "at"))
-     and (leadingKumoView == "bullish"
-             or (allowNeutralFutureKumoValidForTrade and leadingKumoView == "neutral"))
-     and chikouWrtPrice == "above"
-     and ((not requireChikouBeyondKumo and ssbProximityToChikou <= senkouSpanBSafeProximity)
-             or (requireChikouBeyondKumo and chikouWrtKumo == "above"))
-     and isChikouSpanFree
-    marketView := "bullish"
-else if priceWrtKumo == "below"
-     and priceWrtTenkan == "below"
-     and (tenkanWrtKijun == "below"
-             or (allowPrematureTkCrossForTrade and tenkanWrtKijun == "at"))
-     and (leadingKumoView == "bearish"
-             or (allowNeutralFutureKumoValidForTrade and leadingKumoView == "neutral"))
-     and chikouWrtPrice == "below"
-     and ((not requireChikouBeyondKumo and ssbProximityToChikou <= senkouSpanBSafeProximity)
-             or (requireChikouBeyondKumo and chikouWrtKumo == "below"))
-     and isChikouSpanFree
-    marketView := "bearish"
-
-
-//
-// Asssess exit scenarios
-//
-var inLongTrade = false
-var inShortTrade = false
-
-//
-// Where is price w.r.t kijun?
-//
-string priceWrtKijun = "unknown"
-if inLongTrade // for exiting in a long position
-    priceWrtKijun := yard.getPositionRelativeToLevel(low, kijunSen)
-else if inShortTrade // for exiting in a short position
-    priceWrtKijun := yard.getPositionRelativeToLevel(high, kijunSen)
-else // for confluence to enter position
-    priceWrtKijun := yard.getPositionRelativeToLevel(close, kijunSen)
-
-atr = ta.atr(atrLength) * atrStopMultiplier
-
-//
-// Prepare for signaling long/short entries
-//
-
-float kumoStopLoss = -1
-if not na(senkouSpanA[displacement-1])
-     and not na(senkouSpanB[displacement-1])
-    if priceWrtKumo == "above" or priceWrtKumo == "within"
-        if kumoView == "bullish" or kumoView == "neutral"
-            kumoStopLoss := senkouSpanB[displacement-1]
-        else if kumoView == "bearish" or kumoView == "neutral"
-            kumoStopLoss := senkouSpanA[displacement-1]
-    else if priceWrtKumo == "below"
-        if kumoView == "bullish" or kumoView == "neutral"
-            kumoStopLoss := senkouSpanA[displacement-1]
-        else if kumoView == "bearish" or kumoView == "neutral"
-            kumoStopLoss := senkouSpanB[displacement-1]
-
-
-bool didCandleGap = (open > high[1] and low > high[1]) or (open < low[1] and high < low[1])
-//plotshape(not allowEntryUponGaps and didCandleGap, title= "Candle Gap Up/Down", location=location.belowbar, color=color.gray, transp=0, style=shape.arrowup, text="", size=size.normal, editable=false)
-
-bool withinTestRange = (time >= fromDateInput and time <= toDateInput)
 
 var label activeTradeLabel = na
 var string activeTradeInfo = na
@@ -311,6 +155,9 @@ var float remainingExitQty = 0.0
 var int totalTrades = 0
 var float tradeSize = 0.0
 var float pnl = 0.0
+
+var inLongTrade = false
+var inShortTrade = false
 
 var shouldExitOnTenkan = false
 var shouldExitOnKijun = false
@@ -375,6 +222,129 @@ var kijunExitGains = 0.0
 var tkCrossExitGains = 0.0
 var preemptiveExitGains = 0.0
 var chikouExitGains = 0.0
+
+
+//░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░
+//░░░██████╗████████╗██████╗░░█████╗░████████╗███████╗░██████╗░██╗░░░██╗░░
+//░░██╔════╝╚══██╔══╝██╔══██╗██╔══██╗╚══██╔══╝██╔════╝██╔════╝░╚██╗░██╔╝░░
+//░░╚█████╗░░░░██║░░░██████╔╝███████║░░░██║░░░█████╗░░██║░░██╗░░╚████╔╝░░░
+//░░░╚═══██╗░░░██║░░░██╔══██╗██╔══██║░░░██║░░░██╔══╝░░██║░░╚██╗░░╚██╔╝░░░░
+//░░██████╔╝░░░██║░░░██║░░██║██║░░██║░░░██║░░░███████╗╚██████╔╝░░░██║░░░░░
+//░░╚═════╝░░░░╚═╝░░░╚═╝░░╚═╝╚═╝░░╚═╝░░░╚═╝░░░╚══════╝░╚═════╝░░░░╚═╝░░░░░
+
+
+if equilibriumScheme != "Custom"
+    [tp, kp, sp, d] = yard.getEquilibriumPeriods(equilibriumScheme)
+    tenkanSenPeriod := tp
+    kijunSenPeriod := kp
+    senkouSpanPeriod := sp
+    displacement := d
+
+[tenkanSen, kijunSen, senkouSpanA, senkouSpanB] = yard.findEquilibrium(tenkanSenPeriod, kijunSenPeriod, senkouSpanPeriod)
+
+// How is current kumo?
+string kumoView = yard.getStrength(senkouSpanA[displacement-1], senkouSpanB[displacement-1])
+
+// How is future kumo?
+string leadingKumoView = yard.getStrength(senkouSpanA, senkouSpanB)
+
+// Where is price w.r.t kumo?
+string priceWrtKumo = yard.getPositionRelativeToRange(close, senkouSpanA[displacement-1], senkouSpanB[displacement-1])
+
+// Where is price w.r.t tenkan?
+string priceWrtTenkan = yard.getPositionRelativeToLevel(close, tenkanSen)
+
+// Where is tenkan w.r.t kijun?
+string tenkanWrtKijun = yard.getPositionRelativeToLevel(tenkanSen, kijunSen)
+
+// Did TK cross occur?
+var string recentTkCross = na
+recentTkCross := yard.getCrossoverStrength(tenkanSen, kijunSen, allowPrematureTkCrossForTrade)
+
+// Where is TK cross w.r.t kumo? <--- This is not a filter. Ignore!
+var string tkCrossWrtKumo = "within"
+if recentTkCross != na
+    tkCrossWrtKumo := yard.getPositionRelativeToRange(kijunSen, senkouSpanA[displacement-1], senkouSpanB[displacement-1])
+
+// Where is chikou w.r.t price?
+string chikouWrtPrice = yard.getPositionRelativeToRange(close, high[displacement-1], low[displacement-1])
+
+// Where is chikou w.r.t kumo?
+string laggingKumoView = yard.getStrength(senkouSpanA[2*displacement-1], senkouSpanB[2*displacement-1])
+string chikouWrtKumo = yard.getPositionRelativeToRange(close, senkouSpanA[2*displacement-1], senkouSpanB[2*displacement-1])
+
+// Where is chikou w.r.t a flat Senkou-Span-B ahead?
+float ssbProximityToChikou = yard.getProximityRelativeToLevel(close, senkouSpanB, recentTkCross, priceWrtKumo, chikouWrtKumo, displacement*2, congestionProximity)
+
+// Is chikou free from congestion ahead? Is it heading into price?
+bool isChikouSpanFree = yard.isLaggingSpanCongestionFree(close, displacement, congestionProximity, congestionTolerance, recentTkCross, chikouWrtPrice)
+
+// Establish market view through confluence 
+string marketView = "conslidating"
+if priceWrtKumo == "above"
+     and priceWrtTenkan == "above"
+     and (tenkanWrtKijun == "above"
+             or (allowPrematureTkCrossForTrade and tenkanWrtKijun == "at"))
+     and (leadingKumoView == "bullish"
+             or (allowNeutralFutureKumoValidForTrade and leadingKumoView == "neutral"))
+     and chikouWrtPrice == "above"
+     and ((not requireChikouBeyondKumo and ssbProximityToChikou <= senkouSpanBSafeProximity)
+             or (requireChikouBeyondKumo and chikouWrtKumo == "above"))
+     and isChikouSpanFree
+    marketView := "bullish"
+else if priceWrtKumo == "below"
+     and priceWrtTenkan == "below"
+     and (tenkanWrtKijun == "below"
+             or (allowPrematureTkCrossForTrade and tenkanWrtKijun == "at"))
+     and (leadingKumoView == "bearish"
+             or (allowNeutralFutureKumoValidForTrade and leadingKumoView == "neutral"))
+     and chikouWrtPrice == "below"
+     and ((not requireChikouBeyondKumo and ssbProximityToChikou <= senkouSpanBSafeProximity)
+             or (requireChikouBeyondKumo and chikouWrtKumo == "below"))
+     and isChikouSpanFree
+    marketView := "bearish"
+
+
+// Where is price w.r.t kijun?
+string priceWrtKijun = "unknown"
+if inLongTrade // for exiting in a long position
+    priceWrtKijun := yard.getPositionRelativeToLevel(low, kijunSen)
+else if inShortTrade // for exiting in a short position
+    priceWrtKijun := yard.getPositionRelativeToLevel(high, kijunSen)
+else // for confluence to enter position
+    priceWrtKijun := yard.getPositionRelativeToLevel(close, kijunSen)
+
+bool didCandleGap = (open > high[1] and low > high[1]) or (open < low[1] and high < low[1])
+//plotshape(not allowEntryUponGaps and didCandleGap, title= "Candle Gap Up/Down", location=location.belowbar, color=color.gray, transp=0, style=shape.arrowup, text="", size=size.normal, editable=false)
+
+bool withinTestRange = (time >= fromDateInput and time <= toDateInput)
+
+float atr = ta.atr(atrLength) * atrStopMultiplier
+
+barIndex = includeCurrentBarFor9PeriodHighLow ? 0 : 1
+highestTenkanSenBar = ta.highestbars(high[barIndex], tenkanSenPeriod)
+highestTenkanValue = ta.highest(high[barIndex], tenkanSenPeriod)
+lowestTenkanSenBar = ta.lowestbars(low[barIndex], tenkanSenPeriod)
+lowestTenkanValue = ta.lowest(low[barIndex], tenkanSenPeriod)
+highestKijunSenBar = ta.highestbars(kijunSenPeriod)
+highestKijunValue = ta.highest(kijunSenPeriod)
+lowestKijunSenBar = ta.lowestbars(kijunSenPeriod)
+lowestKijunValue = ta.lowest(kijunSenPeriod)
+
+// Determine stop-loss w.r.t kumo
+float kumoStopLoss = -1
+if not na(senkouSpanA[displacement-1])
+     and not na(senkouSpanB[displacement-1])
+    if priceWrtKumo == "above" or priceWrtKumo == "within"
+        if kumoView == "bullish" or kumoView == "neutral"
+            kumoStopLoss := senkouSpanB[displacement-1]
+        else if kumoView == "bearish" or kumoView == "neutral"
+            kumoStopLoss := senkouSpanA[displacement-1]
+    else if priceWrtKumo == "below"
+        if kumoView == "bullish" or kumoView == "neutral"
+            kumoStopLoss := senkouSpanA[displacement-1]
+        else if kumoView == "bearish" or kumoView == "neutral"
+            kumoStopLoss := senkouSpanB[displacement-1]
 
 
 //################################################################
