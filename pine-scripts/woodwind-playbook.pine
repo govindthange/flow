@@ -166,70 +166,42 @@ lowestKijunValue = ta.lowest(kijunSenPeriod)
 //########################################################################
 
 // How is current kumo?
-string kumoView = yard.getGlance(senkouSpanA[displacement-1], senkouSpanB[displacement-1])
+string kumoView = yard.getStrength(senkouSpanA[displacement-1], senkouSpanB[displacement-1])
 
 // How is future kumo?
-string leadingKumoView = yard.getGlance(senkouSpanA, senkouSpanB)
+string leadingKumoView = yard.getStrength(senkouSpanA, senkouSpanB)
 
 // Where is price w.r.t kumo?
-string priceWrtKumo = yard.positionRelativeToRange(close, senkouSpanA[displacement-1], senkouSpanB[displacement-1])
+string priceWrtKumo = yard.getPositionRelativeToRange(close, senkouSpanA[displacement-1], senkouSpanB[displacement-1])
 
 // Where is price w.r.t tenkan?
-string priceWrtTenkan = yard.positionRelativeToLevel(close, tenkanSen)
+string priceWrtTenkan = yard.getPositionRelativeToLevel(close, tenkanSen)
 
 // Where is tenkan w.r.t kijun?
-string tenkanWrtKijun = yard.positionRelativeToLevel(tenkanSen, kijunSen)
+string tenkanWrtKijun = yard.getPositionRelativeToLevel(tenkanSen, kijunSen)
 
-//
+// Did TK cross occur?
+var string recentTkCross = na
+recentTkCross := yard.getCrossoverStrength(tenkanSen, kijunSen, allowPrematureTkCrossForTrade)
+
 // Where is TK cross w.r.t kumo? <--- This is not a filter. Ignore!
-//
-var string recentTkCross = "unknown"
-
-bool didNewTkCrossOccur = false
-if (tenkanSen[1] <= kijunSen[1] and tenkanSen > kijunSen)
-    recentTkCross := "bullish"
-    didNewTkCrossOccur := true
-else if (tenkanSen[1] >= kijunSen[1] and tenkanSen < kijunSen)
-    recentTkCross := "bearish"
-    didNewTkCrossOccur := true
-else if (allowPrematureTkCrossForTrade
-         and tenkanSen[1] == kijunSen[1] and tenkanSen == kijunSen)
-    recentTkCross := "neutral"
-    didNewTkCrossOccur := true
-
 var string tkCrossWrtKumo = "within"
-if didNewTkCrossOccur
-    tkCrossWrtKumo := yard.positionRelativeToRange(kijunSen, senkouSpanA[displacement-1], senkouSpanB[displacement-1])
+if recentTkCross != na
+    tkCrossWrtKumo := yard.getPositionRelativeToRange(kijunSen, senkouSpanA[displacement-1], senkouSpanB[displacement-1])
 
 // Where is chikou w.r.t price?
-string chikouWrtPrice = yard.positionRelativeToRange(close, high[displacement-1], low[displacement-1])
+string chikouWrtPrice = yard.getPositionRelativeToRange(close, high[displacement-1], low[displacement-1])
 
 // Where is chikou w.r.t kumo?
-string laggingKumoView = yard.getGlance(senkouSpanA[2*displacement-1], senkouSpanB[2*displacement-1])
-string chikouWrtKumo = yard.positionRelativeToRange(close, senkouSpanA[2*displacement-1], senkouSpanB[2*displacement-1])
+string laggingKumoView = yard.getStrength(senkouSpanA[2*displacement-1], senkouSpanB[2*displacement-1])
+string chikouWrtKumo = yard.getPositionRelativeToRange(close, senkouSpanA[2*displacement-1], senkouSpanB[2*displacement-1])
 
-//
 // Where is chikou w.r.t a flat Senkou-Span-B ahead?
-//
-lowestSSB = ta.lowest(senkouSpanB[2*displacement - 1 - congestionProximity], congestionProximity)
-highestSSB = ta.highest(senkouSpanB[2*displacement - 1 - congestionProximity], congestionProximity)
-
-float ssbProximityToChikou = -1.0
-if ((recentTkCross == "bullish" or priceWrtKumo == "above")
-     and (chikouWrtKumo == "below" or chikouWrtKumo == "within"))
-    ssbProximityToChikou := (lowestSSB - close)/close
-else if ((recentTkCross == "bearish" or priceWrtKumo == "below")
-     and (chikouWrtKumo == "above" or chikouWrtKumo == "within"))
-    ssbProximityToChikou := (close - lowestSSB)/close
+float ssbProximityToChikou = yard.getProximityRelativeToLevel(close, senkouSpanB, recentTkCross, priceWrtKumo, chikouWrtKumo, displacement*2, congestionProximity)
 
 // Is chikou free from congestion ahead? Is it heading into price?
-highestForChikou = (1-congestionTolerance/100) * ta.highest(high[displacement-congestionProximity], congestionProximity)
-lowestForChikou = (1-congestionTolerance/100) * ta.lowest(low[displacement-congestionProximity], congestionProximity)
-isChikouSpanFree = recentTkCross == "bullish" ?
-                                         (close > highestForChikou)
-                                         : recentTkCross == "bearish" ?
-                                                 (close < lowestForChikou)
-                                                 : chikouWrtPrice == "above" ? (close > highestForChikou) : chikouWrtPrice == "below" ? (close < lowestForChikou) : true
+bool isChikouSpanFree = yard.isLaggingSpanCongestionFree(close, displacement, congestionProximity, congestionTolerance, recentTkCross, chikouWrtPrice)
+
 
 //
 // Declare constants to access global variables
@@ -292,11 +264,11 @@ var inShortTrade = false
 //
 string priceWrtKijun = "unknown"
 if inLongTrade // for exiting in a long position
-    priceWrtKijun := yard.positionRelativeToLevel(low, kijunSen)
+    priceWrtKijun := yard.getPositionRelativeToLevel(low, kijunSen)
 else if inShortTrade // for exiting in a short position
-    priceWrtKijun := yard.positionRelativeToLevel(high, kijunSen)
+    priceWrtKijun := yard.getPositionRelativeToLevel(high, kijunSen)
 else // for confluence to enter position
-    priceWrtKijun := yard.positionRelativeToLevel(close, kijunSen)
+    priceWrtKijun := yard.getPositionRelativeToLevel(close, kijunSen)
 
 atr = ta.atr(atrLength) * atrStopMultiplier
 

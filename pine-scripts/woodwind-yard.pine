@@ -62,37 +62,56 @@ export findEquilibrium(int shortTermPeriod, int midTermPeriod, int longTermPerio
 
 
 //
-// @function glances over the 2 equilibrium points from moving averages and establishes whether its bullish or bearish.
+// @function checks the 2 moving averages and establishes whether its bullish or bearish.
 // @param fast float, the fast moving point.
 // @param slow float, the slow moving point.
 // @returns string, it is "bullish" if fast moving point is over the slow moving point o/w returns "bearish".
 //
-export getGlance(float fast, float slow) =>
+export getStrength(float fast, float slow) =>
     float diff = fast - slow
     string view = diff > 0 ? "bullish" : (diff < 0 ? "bearish" : "neutral")
     view
 
 
 //
+// @function checks crossover of 2 moving averages and establishes whether its bullish or bearish cross.
+// @param fast float, the fast moving line.
+// @param slow float, the slow moving lline.
+// @returns string, it is "bullish" if fast moving line cosses above the slow moving line o/w bearish.
+//
+export getCrossoverStrength(float fast, float slow, bool allowPrematureCross) =>
+    string view = na
+    if (fast[1] <= slow[1] and fast > slow)
+        view := "bullish"
+    else if (fast[1] >= slow[1] and fast < slow)
+        view := "bearish"
+    else if (allowPrematureCross
+             and fast[1] == slow[1] and fast == slow)
+        view := "neutral"
+    
+    view
+
+
+//
 // @function determines the placement of price w.r.t the specified resistance/support level.
-// @param point float, the price (typically a fast moving average).
+// @param price float, the price (typically a fast moving average).
 // @param level float, the dynamic support/resistance (typically a slow moving average).
 // @returns string, the above/below/at position w.r.t level.
 //
-export positionRelativeToLevel(float point, float level) =>
-    string position = point > level ? "above" : (point < level ? "below" : "at")
+export getPositionRelativeToLevel(float price, float level) =>
+    string position = price > level ? "above" : (price < level ? "below" : "at")
     position
 
 
 //
 // @function determines the placement of price w.r.t a range (i.e. a dynamic resistance band).
-// @param point float, the price.
+// @param price float, the price.
 // @param fromLevel float, the from-range which is typically a fast moving line.
 // @param toLevel float, the to-range which is typically a slow moving line.
 // @returns string, the above/below/within range.
 //
-export positionRelativeToRange(float price, float fromLevel, float toLevel) =>
-    string view = getGlance(fromLevel, toLevel)
+export getPositionRelativeToRange(float price, float fromLevel, float toLevel) =>
+    string view = getStrength(fromLevel, toLevel)
     string position = "within"
     if (view == "bullish" and price > fromLevel)
          or (view == "bearish" and price > toLevel)
@@ -110,5 +129,51 @@ export positionRelativeToRange(float price, float fromLevel, float toLevel) =>
         position := "below"
     else
         position := "within"
+    
     position
+
+
+//
+// @function determines how far the lagging-span is from the long-term signficant support/resistance.
+// @param price float, the price.
+// @param level float, the long-term support or resistance.
+// @param strength string, the market direction i.e. the strength of the short-term moving-average and mid-term moving-average crossover.
+// @param priceWrtResistanceBand string, whether the price is above/below the long-term resistance net.
+// @param laggingSpanWrtResistanceBand string, whether lagging-span is above/below the lagging long-term resistance net.
+// @returns float, the proximity of the level.
+//
+export getProximityRelativeToLevel(float price, float level, string strength, string priceWrtResistanceBand, string laggingSpanWrtResistanceBand, float displacement, int congestionProximity) =>
+
+    lowest = ta.lowest(level[displacement - 1 - congestionProximity], congestionProximity)
+    highest = ta.highest(level[displacement - 1 - congestionProximity], congestionProximity)
+    
+    float proximity = -1.0
+    if ((strength == "bullish" or priceWrtResistanceBand == "above")
+         and (laggingSpanWrtResistanceBand == "below" or laggingSpanWrtResistanceBand == "within"))
+        proximity := (lowest - price)/price
+    else if ((strength == "bearish" or priceWrtResistanceBand == "below")
+         and (laggingSpanWrtResistanceBand == "above" or laggingSpanWrtResistanceBand == "within"))
+        proximity := (price - highest)/price
+    
+    proximity
+
+
+//
+// @function determines whether the lagging-span is heading into congestion zone.
+// @param price float, the price.
+// @param price displacement int, the look-back period.
+// @param proximity float, the number of candles which are exepected to not block the laggging-span.
+// @param laggingSpanInRelationToPrice string, the position of lagging-span w.r.t price in the look-back period.
+// @returns bool, whether the price would face congestion or not.
+//
+export isLaggingSpanCongestionFree(float price, int displacement, float proximity, float scale, string strength, string laggingSpanInRelationToPrice) =>
+    highest = (1-scale/100) * ta.highest(high[displacement-proximity], proximity)
+    lowest = (1-scale/100) * ta.lowest(low[displacement-proximity], proximity)
+    strength == "bullish" ?
+                         (price > highest)
+                         : strength == "bearish" ?
+                                                 (price < lowest)
+                                                 : laggingSpanInRelationToPrice == "above" ?
+                                                                 (price > highest)
+                                                                 : laggingSpanInRelationToPrice == "below" ? (price < lowest) : true
 
