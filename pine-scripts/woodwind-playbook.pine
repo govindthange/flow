@@ -10,12 +10,14 @@
 // © 2021                                                                                                                      ░░██████                                         
 // @ govindthange                                                                                                               ░░░░░░                                          
 
-//@version=5
-
-// @description Thange Woodwind Playbook is a strategy based trading program.
+//
+// @version=5
+// @description is a strategy based trading program.
+//
 indicator("Thange Woodwind Playbook v2.1", shorttitle="Thange/Piccolo+", overlay=true, max_labels_count=250, max_lines_count=500)
-import govindthange/WoodwindVault/3 as woodwind
-import govindthange/ThangeVault/1 as tv
+import govindthange/WoodwindYard/1 as yard
+import govindthange/WoodwindVault/3 as vault
+import govindthange/ThangeVault/1 as util
 import ed56/debugger/2 as debug
 
 //
@@ -136,13 +138,13 @@ log(string msg) =>
 //░░╚═════╝░░░░╚═╝░░░╚═╝░░╚═╝╚═╝░░╚═╝░░░╚═╝░░░╚══════╝░╚═════╝░░░░╚═╝░░░░░
 
 if equilibriumScheme != "Custom"
-    [tp, kp, sp, d] = woodwind.getEquilibriumPeriods(equilibriumScheme)
+    [tp, kp, sp, d] = yard.getEquilibriumPeriods(equilibriumScheme)
     tenkanSenPeriod := tp
     kijunSenPeriod := kp
     senkouSpanPeriod := sp
     displacement := d
 
-[tenkanSen, kijunSen, senkouSpanA, senkouSpanB] = woodwind.findEquilibrium(tenkanSenPeriod, kijunSenPeriod, senkouSpanPeriod)
+[tenkanSen, kijunSen, senkouSpanA, senkouSpanB] = yard.findEquilibrium(tenkanSenPeriod, kijunSenPeriod, senkouSpanPeriod)
 
 barIndex = includeCurrentBarFor9PeriodHighLow ? 0 : 1
 highestTenkanSenBar = ta.highestbars(high[barIndex], tenkanSenPeriod)
@@ -164,19 +166,19 @@ lowestKijunValue = ta.lowest(kijunSenPeriod)
 //########################################################################
 
 // How is current kumo?
-string kumoView = woodwind.getGlance(senkouSpanA[displacement-1], senkouSpanB[displacement-1])
+string kumoView = yard.getGlance(senkouSpanA[displacement-1], senkouSpanB[displacement-1])
 
 // How is future kumo?
-string leadingKumoView = woodwind.getGlance(senkouSpanA, senkouSpanB)
+string leadingKumoView = yard.getGlance(senkouSpanA, senkouSpanB)
 
 // Where is price w.r.t kumo?
-string priceWrtKumo = woodwind.positionRelativeToRange(close, senkouSpanA[displacement-1], senkouSpanB[displacement-1])
+string priceWrtKumo = yard.positionRelativeToRange(close, senkouSpanA[displacement-1], senkouSpanB[displacement-1])
 
 // Where is price w.r.t tenkan?
-string priceWrtTenkan = woodwind.positionRelativeToLevel(close, tenkanSen)
+string priceWrtTenkan = yard.positionRelativeToLevel(close, tenkanSen)
 
 // Where is tenkan w.r.t kijun?
-string tenkanWrtKijun = woodwind.positionRelativeToLevel(tenkanSen, kijunSen)
+string tenkanWrtKijun = yard.positionRelativeToLevel(tenkanSen, kijunSen)
 
 //
 // Where is TK cross w.r.t kumo? <--- This is not a filter. Ignore!
@@ -197,14 +199,14 @@ else if (allowPrematureTkCrossForTrade
 
 var string tkCrossWrtKumo = "within"
 if didNewTkCrossOccur
-    tkCrossWrtKumo := woodwind.positionRelativeToRange(kijunSen, senkouSpanA[displacement-1], senkouSpanB[displacement-1])
+    tkCrossWrtKumo := yard.positionRelativeToRange(kijunSen, senkouSpanA[displacement-1], senkouSpanB[displacement-1])
 
 // Where is chikou w.r.t price?
-string chikouWrtPrice = woodwind.positionRelativeToRange(close, high[displacement-1], low[displacement-1])
+string chikouWrtPrice = yard.positionRelativeToRange(close, high[displacement-1], low[displacement-1])
 
 // Where is chikou w.r.t kumo?
-string laggingKumoView = woodwind.getGlance(senkouSpanA[2*displacement-1], senkouSpanB[2*displacement-1])
-string chikouWrtKumo = woodwind.positionRelativeToRange(close, senkouSpanA[2*displacement-1], senkouSpanB[2*displacement-1])
+string laggingKumoView = yard.getGlance(senkouSpanA[2*displacement-1], senkouSpanB[2*displacement-1])
+string chikouWrtKumo = yard.positionRelativeToRange(close, senkouSpanA[2*displacement-1], senkouSpanB[2*displacement-1])
 
 //
 // Where is chikou w.r.t a flat Senkou-Span-B ahead?
@@ -290,11 +292,11 @@ var inShortTrade = false
 //
 string priceWrtKijun = "unknown"
 if inLongTrade // for exiting in a long position
-    priceWrtKijun := woodwind.positionRelativeToLevel(low, kijunSen)
+    priceWrtKijun := yard.positionRelativeToLevel(low, kijunSen)
 else if inShortTrade // for exiting in a short position
-    priceWrtKijun := woodwind.positionRelativeToLevel(high, kijunSen)
+    priceWrtKijun := yard.positionRelativeToLevel(high, kijunSen)
 else // for confluence to enter position
-    priceWrtKijun := woodwind.positionRelativeToLevel(close, kijunSen)
+    priceWrtKijun := yard.positionRelativeToLevel(close, kijunSen)
 
 atr = ta.atr(atrLength) * atrStopMultiplier
 
@@ -574,7 +576,7 @@ if ((inLongTrade and high >= takeProfit)
     
     shouldTakeProfit := true
     
-    [_qty, _remainingQty, _gains] = woodwind.computeExitGains(entryPrice, takeProfit, qtyPerTakeProfit, remainingExitQty, f_tradeDirection(inLongTrade, inShortTrade))
+    [_qty, _remainingQty, _gains] = vault.computeExitGains(entryPrice, takeProfit, qtyPerTakeProfit, remainingExitQty, f_tradeDirection(inLongTrade, inShortTrade))
     takeProfitQty := _qty
     takeProfitGains := _gains
     pnl := pnl + _gains
@@ -591,7 +593,7 @@ if ((inLongTrade and chikouWrtPrice == "below" and high < low[displacement-1] an
     
     shouldExitOnChikou := true
     chikouExit := close
-    [_qty, _remainingQty, _gains] = woodwind.computeExitGains(entryPrice, close, qtyPerChikouExit, remainingExitQty, f_tradeDirection(inLongTrade, inShortTrade))
+    [_qty, _remainingQty, _gains] = vault.computeExitGains(entryPrice, close, qtyPerChikouExit, remainingExitQty, f_tradeDirection(inLongTrade, inShortTrade))
     chikouExitQty := _qty
     chikouExitGains := _gains
     pnl := pnl + _gains
@@ -700,7 +702,7 @@ else if ((allowTenkanExitToCascade
      and remainingExitQty > 0
     
     shouldExitOnTenkan := true
-    [_qty, _remainingQty, _gains] = woodwind.computeExitGains(entryPrice, close, qtyPerExit, remainingExitQty, f_tradeDirection(inLongTrade, inShortTrade))
+    [_qty, _remainingQty, _gains] = vault.computeExitGains(entryPrice, close, qtyPerExit, remainingExitQty, f_tradeDirection(inLongTrade, inShortTrade))
     pnl := pnl + _gains
     remainingExitQty := _remainingQty
     activeTradeInfo += str.format("\nTE {0, number} @ {1, number, currency} = {2, number, currency}/{3, number, currency}", _qty, close, _gains, pnl)
@@ -1065,37 +1067,37 @@ if horizontalTradePlan
         table.cell(tradeTable, 15, 0, "SL/PnL", text_color = color.white, text_size = size.small)
         table.cell(tradeTable, 16, 0, "Qty/%", text_color = color.white, text_size = size.small)
         table.cell(tradeTable, 0, 1, (inLongTrade ? "Buy" : ( inShortTrade ? "Sell" : "-")), text_color = color.white, text_size = size.small)
-        table.cell(tradeTable, 1, 1, str.tostring(entryPrice, str.tostring(tv.tickFormat())), text_color = color.blue, text_size = size.small)
-        table.cell(tradeTable, 2, 1, str.tostring(inLongTrade ? takeProfit : takeProfit, str.tostring(tv.tickFormat())), text_color = color.gray, text_size = size.small)
-        table.cell(tradeTable, 3, 1, str.tostring(tenkanExit1, str.tostring(tv.tickFormat())), text_color = color.gray, text_size = size.small)
-        table.cell(tradeTable, 4, 1, str.tostring(tenkanExit2, str.tostring(tv.tickFormat())), text_color = color.gray, text_size = size.small)
-        table.cell(tradeTable, 5, 1, str.tostring(tenkanExit3, str.tostring(tv.tickFormat())), text_color = color.gray, text_size = size.small)
-        table.cell(tradeTable, 6, 1, str.tostring(tenkanExit4, str.tostring(tv.tickFormat())), text_color = color.gray, text_size = size.small)
-        table.cell(tradeTable, 7, 1, str.tostring(tenkanExit5, str.tostring(tv.tickFormat())), text_color = color.gray, text_size = size.small)
-        table.cell(tradeTable, 8, 1, str.tostring(tenkanExit6, str.tostring(tv.tickFormat())), text_color = color.gray, text_size = size.small)
-        table.cell(tradeTable, 9, 1, str.tostring(tenkanExit7, str.tostring(tv.tickFormat())), text_color = color.gray, text_size = size.small)
-        table.cell(tradeTable, 10, 1, str.tostring(tenkanExit8, str.tostring(tv.tickFormat())), text_color = color.gray, text_size = size.small)
-        table.cell(tradeTable, 11, 1, str.tostring(tenkanExit9, str.tostring(tv.tickFormat())), text_color = color.gray, text_size = size.small)
-        table.cell(tradeTable, 12, 1, str.tostring(tenkanExit10, str.tostring(tv.tickFormat())), text_color = color.gray, text_size = size.small)
-        table.cell(tradeTable, 13, 1, str.tostring(chikouExit, str.tostring(tv.tickFormat())), text_color = color.gray, text_size = size.small)
-        table.cell(tradeTable, 14, 1, str.tostring(kijunExit, str.tostring(tv.tickFormat())), text_color = color.gray, text_size = size.small)
+        table.cell(tradeTable, 1, 1, str.tostring(entryPrice, str.tostring(util.tickFormat())), text_color = color.blue, text_size = size.small)
+        table.cell(tradeTable, 2, 1, str.tostring(inLongTrade ? takeProfit : takeProfit, str.tostring(util.tickFormat())), text_color = color.gray, text_size = size.small)
+        table.cell(tradeTable, 3, 1, str.tostring(tenkanExit1, str.tostring(util.tickFormat())), text_color = color.gray, text_size = size.small)
+        table.cell(tradeTable, 4, 1, str.tostring(tenkanExit2, str.tostring(util.tickFormat())), text_color = color.gray, text_size = size.small)
+        table.cell(tradeTable, 5, 1, str.tostring(tenkanExit3, str.tostring(util.tickFormat())), text_color = color.gray, text_size = size.small)
+        table.cell(tradeTable, 6, 1, str.tostring(tenkanExit4, str.tostring(util.tickFormat())), text_color = color.gray, text_size = size.small)
+        table.cell(tradeTable, 7, 1, str.tostring(tenkanExit5, str.tostring(util.tickFormat())), text_color = color.gray, text_size = size.small)
+        table.cell(tradeTable, 8, 1, str.tostring(tenkanExit6, str.tostring(util.tickFormat())), text_color = color.gray, text_size = size.small)
+        table.cell(tradeTable, 9, 1, str.tostring(tenkanExit7, str.tostring(util.tickFormat())), text_color = color.gray, text_size = size.small)
+        table.cell(tradeTable, 10, 1, str.tostring(tenkanExit8, str.tostring(util.tickFormat())), text_color = color.gray, text_size = size.small)
+        table.cell(tradeTable, 11, 1, str.tostring(tenkanExit9, str.tostring(util.tickFormat())), text_color = color.gray, text_size = size.small)
+        table.cell(tradeTable, 12, 1, str.tostring(tenkanExit10, str.tostring(util.tickFormat())), text_color = color.gray, text_size = size.small)
+        table.cell(tradeTable, 13, 1, str.tostring(chikouExit, str.tostring(util.tickFormat())), text_color = color.gray, text_size = size.small)
+        table.cell(tradeTable, 14, 1, str.tostring(kijunExit, str.tostring(util.tickFormat())), text_color = color.gray, text_size = size.small)
         table.cell(tradeTable, 15, 1, str.format("{0, number, currency}", stopLoss), text_color = color.orange, text_size = size.small)
         table.cell(tradeTable, 16, 1, str.format("{0, number, #0.0000}", qty), text_color = color.gray, text_size = size.small)
         table.cell(tradeTable, 0, 2, "+/-", text_color = color.white, text_size = size.small)
         table.cell(tradeTable, 1, 2, str.format("{0,number,currency}", tradeSize), text_color = color.aqua, text_size = size.small)
-        table.cell(tradeTable, 2, 2, str.tostring(takeProfitGains, str.tostring(tv.tickFormat())), text_color = (takeProfitGains > 0 ? color.rgb(182, 209, 186) : color.rgb(182, 153, 153)), text_size = size.small)
-        table.cell(tradeTable, 3, 2, str.tostring(tenkanExitGains1, str.tostring(tv.tickFormat())), text_color = (tenkanExitGains1 > 0 ? color.rgb(182, 209, 186) : color.rgb(182, 153, 153)), text_size = size.small)
-        table.cell(tradeTable, 4, 2, str.tostring(tenkanExitGains2, str.tostring(tv.tickFormat())), text_color = (tenkanExitGains2 > 0 ? color.rgb(182, 209, 186) : color.rgb(182, 153, 153)), text_size = size.small)
-        table.cell(tradeTable, 5, 2, str.tostring(tenkanExitGains3, str.tostring(tv.tickFormat())), text_color = (tenkanExitGains3 > 0 ? color.rgb(182, 209, 186) : color.rgb(182, 153, 153)), text_size = size.small)
-        table.cell(tradeTable, 6, 2, str.tostring(tenkanExitGains4, str.tostring(tv.tickFormat())), text_color = (tenkanExitGains4 > 0 ? color.rgb(182, 209, 186) : color.rgb(182, 153, 153)), text_size = size.small)
-        table.cell(tradeTable, 7, 2, str.tostring(tenkanExitGains5, str.tostring(tv.tickFormat())), text_color = (tenkanExitGains5 > 0 ? color.rgb(182, 209, 186) : color.rgb(182, 153, 153)), text_size = size.small)
-        table.cell(tradeTable, 8, 2, str.tostring(tenkanExitGains6, str.tostring(tv.tickFormat())), text_color = (tenkanExitGains6 > 0 ? color.rgb(182, 209, 186) : color.rgb(182, 153, 153)), text_size = size.small)
-        table.cell(tradeTable, 9, 2, str.tostring(tenkanExitGains7, str.tostring(tv.tickFormat())), text_color = (tenkanExitGains7 > 0 ? color.rgb(182, 209, 186) : color.rgb(182, 153, 153)), text_size = size.small)
-        table.cell(tradeTable, 10, 2, str.tostring(tenkanExitGains8, str.tostring(tv.tickFormat())), text_color = (tenkanExitGains8 > 0 ? color.rgb(182, 209, 186) : color.rgb(182, 153, 153)), text_size = size.small)
-        table.cell(tradeTable, 11, 2, str.tostring(tenkanExitGains9, str.tostring(tv.tickFormat())), text_color = (tenkanExitGains9 > 0 ? color.rgb(182, 209, 186) : color.rgb(182, 153, 153)), text_size = size.small)
-        table.cell(tradeTable, 12, 2, str.tostring(tenkanExitGains10, str.tostring(tv.tickFormat())), text_color = (tenkanExitGains10 > 0 ? color.rgb(182, 209, 186) : color.rgb(182, 153, 153)), text_size = size.small)
-        table.cell(tradeTable, 13, 2, str.tostring(chikouExitGains, str.tostring(tv.tickFormat())), text_color = (kijunExitGains > 0 ? color.rgb(182, 209, 186) : color.rgb(182, 153, 153)), text_size = size.small)
-        table.cell(tradeTable, 14, 2, str.tostring(kijunExitGains, str.tostring(tv.tickFormat())), text_color = (kijunExitGains > 0 ? color.rgb(182, 209, 186) : color.rgb(182, 153, 153)), text_size = size.small)
+        table.cell(tradeTable, 2, 2, str.tostring(takeProfitGains, str.tostring(util.tickFormat())), text_color = (takeProfitGains > 0 ? color.rgb(182, 209, 186) : color.rgb(182, 153, 153)), text_size = size.small)
+        table.cell(tradeTable, 3, 2, str.tostring(tenkanExitGains1, str.tostring(util.tickFormat())), text_color = (tenkanExitGains1 > 0 ? color.rgb(182, 209, 186) : color.rgb(182, 153, 153)), text_size = size.small)
+        table.cell(tradeTable, 4, 2, str.tostring(tenkanExitGains2, str.tostring(util.tickFormat())), text_color = (tenkanExitGains2 > 0 ? color.rgb(182, 209, 186) : color.rgb(182, 153, 153)), text_size = size.small)
+        table.cell(tradeTable, 5, 2, str.tostring(tenkanExitGains3, str.tostring(util.tickFormat())), text_color = (tenkanExitGains3 > 0 ? color.rgb(182, 209, 186) : color.rgb(182, 153, 153)), text_size = size.small)
+        table.cell(tradeTable, 6, 2, str.tostring(tenkanExitGains4, str.tostring(util.tickFormat())), text_color = (tenkanExitGains4 > 0 ? color.rgb(182, 209, 186) : color.rgb(182, 153, 153)), text_size = size.small)
+        table.cell(tradeTable, 7, 2, str.tostring(tenkanExitGains5, str.tostring(util.tickFormat())), text_color = (tenkanExitGains5 > 0 ? color.rgb(182, 209, 186) : color.rgb(182, 153, 153)), text_size = size.small)
+        table.cell(tradeTable, 8, 2, str.tostring(tenkanExitGains6, str.tostring(util.tickFormat())), text_color = (tenkanExitGains6 > 0 ? color.rgb(182, 209, 186) : color.rgb(182, 153, 153)), text_size = size.small)
+        table.cell(tradeTable, 9, 2, str.tostring(tenkanExitGains7, str.tostring(util.tickFormat())), text_color = (tenkanExitGains7 > 0 ? color.rgb(182, 209, 186) : color.rgb(182, 153, 153)), text_size = size.small)
+        table.cell(tradeTable, 10, 2, str.tostring(tenkanExitGains8, str.tostring(util.tickFormat())), text_color = (tenkanExitGains8 > 0 ? color.rgb(182, 209, 186) : color.rgb(182, 153, 153)), text_size = size.small)
+        table.cell(tradeTable, 11, 2, str.tostring(tenkanExitGains9, str.tostring(util.tickFormat())), text_color = (tenkanExitGains9 > 0 ? color.rgb(182, 209, 186) : color.rgb(182, 153, 153)), text_size = size.small)
+        table.cell(tradeTable, 12, 2, str.tostring(tenkanExitGains10, str.tostring(util.tickFormat())), text_color = (tenkanExitGains10 > 0 ? color.rgb(182, 209, 186) : color.rgb(182, 153, 153)), text_size = size.small)
+        table.cell(tradeTable, 13, 2, str.tostring(chikouExitGains, str.tostring(util.tickFormat())), text_color = (kijunExitGains > 0 ? color.rgb(182, 209, 186) : color.rgb(182, 153, 153)), text_size = size.small)
+        table.cell(tradeTable, 14, 2, str.tostring(kijunExitGains, str.tostring(util.tickFormat())), text_color = (kijunExitGains > 0 ? color.rgb(182, 209, 186) : color.rgb(182, 153, 153)), text_size = size.small)
         table.cell(tradeTable, 15, 2, str.format("{0, number, currency}", pnl+realtime), text_color = (pnl+realtime > 0 ? color.green : color.red), text_size = size.small)
         table.cell(tradeTable, 16, 2, str.format("{0, number, #0.00%}", (pnl+realtime)/tradeSize), text_color = (pnl+realtime > 0 ? color.green : color.red), text_size = size.small)
 else
@@ -1118,37 +1120,37 @@ else
         table.cell(tradeTable, 0, 15, "SL/PnL", text_color = color.white, text_size = size.small)
         table.cell(tradeTable, 0, 16, "Qty/%", text_color = color.white, text_size = size.small)
         table.cell(tradeTable, 1, 0, (inLongTrade ? "Buy" : ( inShortTrade ? "Sell" : "-")), text_color = color.white, text_size = size.small)
-        table.cell(tradeTable, 1, 1, str.tostring(entryPrice, str.tostring(tv.tickFormat())), text_color = color.blue, text_size = size.small)
-        table.cell(tradeTable, 1, 2, str.tostring(inLongTrade ? takeProfit : takeProfit, str.tostring(tv.tickFormat())), text_color = color.gray, text_size = size.small)
-        table.cell(tradeTable, 1, 3, str.tostring(tenkanExit1, str.tostring(tv.tickFormat())), text_color = color.gray, text_size = size.small)
-        table.cell(tradeTable, 1, 4, str.tostring(tenkanExit2, str.tostring(tv.tickFormat())), text_color = color.gray, text_size = size.small)
-        table.cell(tradeTable, 1, 5, str.tostring(tenkanExit3, str.tostring(tv.tickFormat())), text_color = color.gray, text_size = size.small)
-        table.cell(tradeTable, 1, 6, str.tostring(tenkanExit4, str.tostring(tv.tickFormat())), text_color = color.gray, text_size = size.small)
-        table.cell(tradeTable, 1, 7, str.tostring(tenkanExit5, str.tostring(tv.tickFormat())), text_color = color.gray, text_size = size.small)
-        table.cell(tradeTable, 1, 8, str.tostring(tenkanExit6, str.tostring(tv.tickFormat())), text_color = color.gray, text_size = size.small)
-        table.cell(tradeTable, 1, 9, str.tostring(tenkanExit7, str.tostring(tv.tickFormat())), text_color = color.gray, text_size = size.small)
-        table.cell(tradeTable, 1, 10, str.tostring(tenkanExit8, str.tostring(tv.tickFormat())), text_color = color.gray, text_size = size.small)
-        table.cell(tradeTable, 1, 11, str.tostring(tenkanExit9, str.tostring(tv.tickFormat())), text_color = color.gray, text_size = size.small)
-        table.cell(tradeTable, 1, 12, str.tostring(tenkanExit10, str.tostring(tv.tickFormat())), text_color = color.gray, text_size = size.small)
-        table.cell(tradeTable, 1, 13, str.tostring(chikouExit, str.tostring(tv.tickFormat())), text_color = color.gray, text_size = size.small)
-        table.cell(tradeTable, 1, 14, str.tostring(kijunExit, str.tostring(tv.tickFormat())), text_color = color.gray, text_size = size.small)
+        table.cell(tradeTable, 1, 1, str.tostring(entryPrice, str.tostring(util.tickFormat())), text_color = color.blue, text_size = size.small)
+        table.cell(tradeTable, 1, 2, str.tostring(inLongTrade ? takeProfit : takeProfit, str.tostring(util.tickFormat())), text_color = color.gray, text_size = size.small)
+        table.cell(tradeTable, 1, 3, str.tostring(tenkanExit1, str.tostring(util.tickFormat())), text_color = color.gray, text_size = size.small)
+        table.cell(tradeTable, 1, 4, str.tostring(tenkanExit2, str.tostring(util.tickFormat())), text_color = color.gray, text_size = size.small)
+        table.cell(tradeTable, 1, 5, str.tostring(tenkanExit3, str.tostring(util.tickFormat())), text_color = color.gray, text_size = size.small)
+        table.cell(tradeTable, 1, 6, str.tostring(tenkanExit4, str.tostring(util.tickFormat())), text_color = color.gray, text_size = size.small)
+        table.cell(tradeTable, 1, 7, str.tostring(tenkanExit5, str.tostring(util.tickFormat())), text_color = color.gray, text_size = size.small)
+        table.cell(tradeTable, 1, 8, str.tostring(tenkanExit6, str.tostring(util.tickFormat())), text_color = color.gray, text_size = size.small)
+        table.cell(tradeTable, 1, 9, str.tostring(tenkanExit7, str.tostring(util.tickFormat())), text_color = color.gray, text_size = size.small)
+        table.cell(tradeTable, 1, 10, str.tostring(tenkanExit8, str.tostring(util.tickFormat())), text_color = color.gray, text_size = size.small)
+        table.cell(tradeTable, 1, 11, str.tostring(tenkanExit9, str.tostring(util.tickFormat())), text_color = color.gray, text_size = size.small)
+        table.cell(tradeTable, 1, 12, str.tostring(tenkanExit10, str.tostring(util.tickFormat())), text_color = color.gray, text_size = size.small)
+        table.cell(tradeTable, 1, 13, str.tostring(chikouExit, str.tostring(util.tickFormat())), text_color = color.gray, text_size = size.small)
+        table.cell(tradeTable, 1, 14, str.tostring(kijunExit, str.tostring(util.tickFormat())), text_color = color.gray, text_size = size.small)
         table.cell(tradeTable, 1, 15, str.format("{0, number, currency}", stopLoss), text_color = color.orange, text_size = size.small)
         table.cell(tradeTable, 1, 16, str.format("{0, number, #0.0000}", qty), text_color = color.gray, text_size = size.small)
         table.cell(tradeTable, 2, 0, "+/-", text_color = color.white, text_size = size.small)
         table.cell(tradeTable, 2, 1, str.format("{0, number, currency}", tradeSize), text_color = color.aqua, text_size = size.small)
-        table.cell(tradeTable, 2, 2, str.tostring(takeProfitGains, str.tostring(tv.tickFormat())), text_color = (takeProfitGains > 0 ? color.rgb(182, 209, 186) : color.rgb(182, 153, 153)), text_size = size.small)
-        table.cell(tradeTable, 2, 3, str.tostring(tenkanExitGains1, str.tostring(tv.tickFormat())), text_color = (tenkanExitGains1 > 0 ? color.rgb(182, 209, 186) : color.rgb(182, 153, 153)), text_size = size.small)
-        table.cell(tradeTable, 2, 4, str.tostring(tenkanExitGains2, str.tostring(tv.tickFormat())), text_color = (tenkanExitGains2 > 0 ? color.rgb(182, 209, 186) : color.rgb(182, 153, 153)), text_size = size.small)
-        table.cell(tradeTable, 2, 5, str.tostring(tenkanExitGains3, str.tostring(tv.tickFormat())), text_color = (tenkanExitGains3 > 0 ? color.rgb(182, 209, 186) : color.rgb(182, 153, 153)), text_size = size.small)
-        table.cell(tradeTable, 2, 6, str.tostring(tenkanExitGains4, str.tostring(tv.tickFormat())), text_color = (tenkanExitGains4 > 0 ? color.rgb(182, 209, 186) : color.rgb(182, 153, 153)), text_size = size.small)
-        table.cell(tradeTable, 2, 7, str.tostring(tenkanExitGains5, str.tostring(tv.tickFormat())), text_color = (tenkanExitGains5 > 0 ? color.rgb(182, 209, 186) : color.rgb(182, 153, 153)), text_size = size.small)
-        table.cell(tradeTable, 2, 8, str.tostring(tenkanExitGains6, str.tostring(tv.tickFormat())), text_color = (tenkanExitGains6 > 0 ? color.rgb(182, 209, 186) : color.rgb(182, 153, 153)), text_size = size.small)
-        table.cell(tradeTable, 2, 9, str.tostring(tenkanExitGains7, str.tostring(tv.tickFormat())), text_color = (tenkanExitGains7 > 0 ? color.rgb(182, 209, 186) : color.rgb(182, 153, 153)), text_size = size.small)
-        table.cell(tradeTable, 2, 10, str.tostring(tenkanExitGains8, str.tostring(tv.tickFormat())), text_color = (tenkanExitGains8 > 0 ? color.rgb(182, 209, 186) : color.rgb(182, 153, 153)), text_size = size.small)
-        table.cell(tradeTable, 2, 11, str.tostring(tenkanExitGains9, str.tostring(tv.tickFormat())), text_color = (tenkanExitGains9 > 0 ? color.rgb(182, 209, 186) : color.rgb(182, 153, 153)), text_size = size.small)
-        table.cell(tradeTable, 2, 12, str.tostring(tenkanExitGains10, str.tostring(tv.tickFormat())), text_color = (tenkanExitGains10 > 0 ? color.rgb(182, 209, 186) : color.rgb(182, 153, 153)), text_size = size.small)
-        table.cell(tradeTable, 2, 13, str.tostring(chikouExitGains, str.tostring(tv.tickFormat())), text_color = (kijunExitGains > 0 ? color.rgb(182, 209, 186) : color.rgb(182, 153, 153)), text_size = size.small)
-        table.cell(tradeTable, 2, 14, str.tostring(kijunExitGains, str.tostring(tv.tickFormat())), text_color = (kijunExitGains > 0 ? color.rgb(182, 209, 186) : color.rgb(182, 153, 153)), text_size = size.small)
+        table.cell(tradeTable, 2, 2, str.tostring(takeProfitGains, str.tostring(util.tickFormat())), text_color = (takeProfitGains > 0 ? color.rgb(182, 209, 186) : color.rgb(182, 153, 153)), text_size = size.small)
+        table.cell(tradeTable, 2, 3, str.tostring(tenkanExitGains1, str.tostring(util.tickFormat())), text_color = (tenkanExitGains1 > 0 ? color.rgb(182, 209, 186) : color.rgb(182, 153, 153)), text_size = size.small)
+        table.cell(tradeTable, 2, 4, str.tostring(tenkanExitGains2, str.tostring(util.tickFormat())), text_color = (tenkanExitGains2 > 0 ? color.rgb(182, 209, 186) : color.rgb(182, 153, 153)), text_size = size.small)
+        table.cell(tradeTable, 2, 5, str.tostring(tenkanExitGains3, str.tostring(util.tickFormat())), text_color = (tenkanExitGains3 > 0 ? color.rgb(182, 209, 186) : color.rgb(182, 153, 153)), text_size = size.small)
+        table.cell(tradeTable, 2, 6, str.tostring(tenkanExitGains4, str.tostring(util.tickFormat())), text_color = (tenkanExitGains4 > 0 ? color.rgb(182, 209, 186) : color.rgb(182, 153, 153)), text_size = size.small)
+        table.cell(tradeTable, 2, 7, str.tostring(tenkanExitGains5, str.tostring(util.tickFormat())), text_color = (tenkanExitGains5 > 0 ? color.rgb(182, 209, 186) : color.rgb(182, 153, 153)), text_size = size.small)
+        table.cell(tradeTable, 2, 8, str.tostring(tenkanExitGains6, str.tostring(util.tickFormat())), text_color = (tenkanExitGains6 > 0 ? color.rgb(182, 209, 186) : color.rgb(182, 153, 153)), text_size = size.small)
+        table.cell(tradeTable, 2, 9, str.tostring(tenkanExitGains7, str.tostring(util.tickFormat())), text_color = (tenkanExitGains7 > 0 ? color.rgb(182, 209, 186) : color.rgb(182, 153, 153)), text_size = size.small)
+        table.cell(tradeTable, 2, 10, str.tostring(tenkanExitGains8, str.tostring(util.tickFormat())), text_color = (tenkanExitGains8 > 0 ? color.rgb(182, 209, 186) : color.rgb(182, 153, 153)), text_size = size.small)
+        table.cell(tradeTable, 2, 11, str.tostring(tenkanExitGains9, str.tostring(util.tickFormat())), text_color = (tenkanExitGains9 > 0 ? color.rgb(182, 209, 186) : color.rgb(182, 153, 153)), text_size = size.small)
+        table.cell(tradeTable, 2, 12, str.tostring(tenkanExitGains10, str.tostring(util.tickFormat())), text_color = (tenkanExitGains10 > 0 ? color.rgb(182, 209, 186) : color.rgb(182, 153, 153)), text_size = size.small)
+        table.cell(tradeTable, 2, 13, str.tostring(chikouExitGains, str.tostring(util.tickFormat())), text_color = (kijunExitGains > 0 ? color.rgb(182, 209, 186) : color.rgb(182, 153, 153)), text_size = size.small)
+        table.cell(tradeTable, 2, 14, str.tostring(kijunExitGains, str.tostring(util.tickFormat())), text_color = (kijunExitGains > 0 ? color.rgb(182, 209, 186) : color.rgb(182, 153, 153)), text_size = size.small)
         table.cell(tradeTable, 2, 15, str.format("{0, number, currency}", pnl+realtime), text_color = (pnl+realtime > 0 ? color.green : color.red), text_size = size.small)
         table.cell(tradeTable, 2, 16, str.format("{0, number, percent}", (pnl+realtime)/tradeSize), text_color = (pnl+realtime > 0 ? color.green : color.red), text_size = size.small)
 
