@@ -140,6 +140,8 @@ f_reset() =>
     f_set(IDX_ShouldExitOnTkCross, NO)
     f_set(IDX_TxCrossPrice, -1)
 
+f_tradeDirection(long, short) => long ? 1 : (short ? -1 : 0)
+
 var label activeTradeLabel = na
 var string activeTradeInfo = na
 var label maxCapitalLabel = na
@@ -158,6 +160,18 @@ var float pnl = 0.0
 
 var inLongTrade = false
 var inShortTrade = false
+
+var canPrepareForLong = false
+var shouldGoLong = false
+var longBreakoutPrice = 0.0
+var bool hasSignaledForLong = false
+bool didLongPositionClose = false
+
+var canPrepareForShort = false
+var shouldGoShort = false
+var shortBreakoutPrice = 0.0
+var bool hasSignaledForShort = false
+bool didShortPositionClose = false
 
 var shouldExitOnTenkan = false
 var shouldExitOnKijun = false
@@ -232,7 +246,6 @@ var chikouExitGains = 0.0
 //░░██████╔╝░░░██║░░░██║░░██║██║░░██║░░░██║░░░███████╗╚██████╔╝░░░██║░░░░░
 //░░╚═════╝░░░░╚═╝░░░╚═╝░░╚═╝╚═╝░░╚═╝░░░╚═╝░░░╚══════╝░╚═════╝░░░░╚═╝░░░░░
 
-
 if equilibriumScheme != "Custom"
     [tp, kp, sp, d] = yard.getEquilibriumPeriods(equilibriumScheme)
     tenkanSenPeriod := tp
@@ -304,47 +317,17 @@ else if priceWrtKumo == "below"
      and isChikouSpanFree
     marketView := "bearish"
 
+[highestTenkanSenBar,
+     highestTenkanValue,
+     lowestTenkanSenBar,
+     lowestTenkanValue,
+     highestKijunSenBar,
+     highestKijunValue,
+     lowestKijunSenBar,
+     lowestKijunValue] = yard.getHighestHighAndLowestLowSet(tenkanSenPeriod, kijunSenPeriod, includeCurrentBarFor9PeriodHighLow)
 
-// Where is price w.r.t kijun?
-string priceWrtKijun = "unknown"
-if inLongTrade // for exiting in a long position
-    priceWrtKijun := yard.getPositionRelativeToLevel(low, kijunSen)
-else if inShortTrade // for exiting in a short position
-    priceWrtKijun := yard.getPositionRelativeToLevel(high, kijunSen)
-else // for confluence to enter position
-    priceWrtKijun := yard.getPositionRelativeToLevel(close, kijunSen)
-
-bool didCandleGap = (open > high[1] and low > high[1]) or (open < low[1] and high < low[1])
-//plotshape(not allowEntryUponGaps and didCandleGap, title= "Candle Gap Up/Down", location=location.belowbar, color=color.gray, transp=0, style=shape.arrowup, text="", size=size.normal, editable=false)
-
-bool withinTestRange = (time >= fromDateInput and time <= toDateInput)
-
-float atr = ta.atr(atrLength) * atrStopMultiplier
-
-barIndex = includeCurrentBarFor9PeriodHighLow ? 0 : 1
-highestTenkanSenBar = ta.highestbars(high[barIndex], tenkanSenPeriod)
-highestTenkanValue = ta.highest(high[barIndex], tenkanSenPeriod)
-lowestTenkanSenBar = ta.lowestbars(low[barIndex], tenkanSenPeriod)
-lowestTenkanValue = ta.lowest(low[barIndex], tenkanSenPeriod)
-highestKijunSenBar = ta.highestbars(kijunSenPeriod)
-highestKijunValue = ta.highest(kijunSenPeriod)
-lowestKijunSenBar = ta.lowestbars(kijunSenPeriod)
-lowestKijunValue = ta.lowest(kijunSenPeriod)
-
-// Determine stop-loss w.r.t kumo
-float kumoStopLoss = -1
-if not na(senkouSpanA[displacement-1])
-     and not na(senkouSpanB[displacement-1])
-    if priceWrtKumo == "above" or priceWrtKumo == "within"
-        if kumoView == "bullish" or kumoView == "neutral"
-            kumoStopLoss := senkouSpanB[displacement-1]
-        else if kumoView == "bearish" or kumoView == "neutral"
-            kumoStopLoss := senkouSpanA[displacement-1]
-    else if priceWrtKumo == "below"
-        if kumoView == "bullish" or kumoView == "neutral"
-            kumoStopLoss := senkouSpanA[displacement-1]
-        else if kumoView == "bearish" or kumoView == "neutral"
-            kumoStopLoss := senkouSpanB[displacement-1]
+// Determine stop-loss factor using ATR
+float atr = yard.getAtrFactor(atrLength, atrStopMultiplier)
 
 
 //################################################################
@@ -355,13 +338,14 @@ if not na(senkouSpanA[displacement-1])
 //################################################################
 //################################################################
 
-f_tradeDirection(long, short) => long ? 1 : (short ? -1 : 0)
+bool withinTestRange = (time >= fromDateInput and time <= toDateInput)
 
-var canPrepareForLong = false
-var shouldGoLong = false
-var longBreakoutPrice = 0.0
-var bool hasSignaledForLong = false
-bool didLongPositionClose = false
+bool didCandleGap = (open > high[1] and low > high[1]) or (open < low[1] and high < low[1])
+//plotshape(not allowEntryUponGaps and didCandleGap, title= "Candle Gap Up/Down", location=location.belowbar, color=color.gray, transp=0, style=shape.arrowup, text="", size=size.normal, editable=false)
+
+//
+// Long Entry Strategy
+//
 
 canPrepareForLong := withinTestRange
                          and (allowEntryUponGaps or not didCandleGap)
@@ -395,6 +379,7 @@ if canPrepareForLong
     longBreakoutPrice := 0.0
 
     // Set stop-loss below the kumo, kijunSen, or below the entry candle's low, whichever is the lowest.
+    kumoStopLoss = yard.getStopFromRange(close, senkouSpanA[displacement-1], senkouSpanB[displacement-1])
     stopLoss := useKumoAsStop and kumoStopLoss > 0 and kumoStopLoss < kijunSen ? kumoStopLoss - atr : kijunSen - atr
     if stopLoss > low
         stopLoss := low - atr
@@ -429,11 +414,9 @@ if canPrepareForLong
                              text = "Long",
                              tooltip = activeTradeInfo)
 
-var canPrepareForShort = false
-var shouldGoShort = false
-var shortBreakoutPrice = 0.0
-var bool hasSignaledForShort = false
-bool didShortPositionClose = false
+//
+// Short Entry Strategy
+//
 
 canPrepareForShort :=  withinTestRange
                          and (allowEntryUponGaps or not didCandleGap)
@@ -467,6 +450,7 @@ if canPrepareForShort
     shortBreakoutPrice := 0.0
 
     // Set stop-loss above the kumo, kijunSen, or above the entry candle's high, whichever is the highest.
+    kumoStopLoss = yard.getStopFromRange(close, senkouSpanA[displacement-1], senkouSpanB[displacement-1])
     stopLoss := useKumoAsStop and kumoStopLoss > kijunSen ? kumoStopLoss + atr : kijunSen + atr
     if stopLoss < high
         stopLoss := high + atr
@@ -509,6 +493,15 @@ if canPrepareForShort
 //####                                                      ####
 //##############################################################
 //##############################################################
+
+// Where is price w.r.t kijun?
+string priceWrtKijun = "unknown"
+if inLongTrade // for exiting in a long position
+    priceWrtKijun := yard.getPositionRelativeToLevel(low, kijunSen)
+else if inShortTrade // for exiting in a short position
+    priceWrtKijun := yard.getPositionRelativeToLevel(high, kijunSen)
+else // for confluence to enter position
+    priceWrtKijun := yard.getPositionRelativeToLevel(close, kijunSen)
 
 
 if ((inLongTrade and high >= takeProfit)

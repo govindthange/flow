@@ -24,6 +24,26 @@ export getHighestHighAndLowestLow(int period) => math.avg(ta.lowest(period), ta.
 
 
 //
+// @function determines the highest-high and the lowest-low value for the specified interval.
+// @param shortTermPeriod, the short-term equilibrium point period.
+// @param midTermPeriod, the intermediate-term equilibrium point period.
+// @returns float, the highest & lowest short-term & mid-term bar and corresponding price.
+//
+export getHighestHighAndLowestLowSet(int shortTermPeriod, int midTermPeriod, bool includeCurrentBar) =>
+    int barIndex = includeCurrentBar ? 0 : 1
+    int highestShortTermBar = ta.highestbars(high[barIndex], shortTermPeriod)
+    float highestShortTermValue = ta.highest(high[barIndex], shortTermPeriod)
+    int lowestShortTermBar = ta.lowestbars(low[barIndex], shortTermPeriod)
+    float lowestShortTermValue = ta.lowest(low[barIndex], shortTermPeriod)
+    int highestMidTermBar = ta.highestbars(high[barIndex], midTermPeriod)
+    float highestMidTermValue = ta.highest(high[barIndex], midTermPeriod)
+    int lowestMidTermBar = ta.lowestbars(low[barIndex], midTermPeriod)
+    float lowestMidTermValue = ta.lowest(low[barIndex], midTermPeriod)
+
+    [highestShortTermBar, highestShortTermValue, lowestShortTermBar, lowestShortTermValue, highestMidTermBar, highestMidTermValue, lowestMidTermBar, lowestMidTermValue]
+
+
+//
 // @function gets a suitable combination of equilibrium periods for the specified scheme.
 // @param scheme string, the name of the scheme.
 // @returns 4 float values, a best suited combination of equilibrium periods.
@@ -176,4 +196,42 @@ export isLaggingSpanCongestionFree(float price, int displacement, float proximit
                                                  : laggingSpanInRelationToPrice == "above" ?
                                                                  (price > highest)
                                                                  : laggingSpanInRelationToPrice == "below" ? (price < lowest) : true
+
+
+//
+// @function determines the ATR factor using Average True Range.
+// @param length float, the ATR length.
+// @param multiplier float, the ATR multiplier.
+// @returns float, the stop-loss value.
+//
+export getAtrFactor(simple int length, simple float multiplier) =>
+    ta.atr(length) * multiplier
+
+
+//
+// @function determines the stop-loss value by looking at the range (i.e. a dynamic resistance band).
+// @param price float, the price.
+// @param fromLevel float, the from-range which is typically a fast moving line.
+// @param toLevel float, the to-range which is typically a slow moving line.
+// @returns float, the stop-loss value.
+//
+export getStopFromRange(float price, float fromLevel, float toLevel) =>
+    string strength = getStrength(fromLevel, toLevel)
+    string priceWrtResistanceBand = getPositionRelativeToRange(price, fromLevel, toLevel)
+
+    float stop = -1
+    if not na(fromLevel)
+         and not na(toLevel)
+        if priceWrtResistanceBand == "above" or priceWrtResistanceBand == "within"
+            if strength == "bullish" or strength == "neutral"
+                stop := toLevel
+            else if strength == "bearish" or strength == "neutral"
+                stop := fromLevel
+        else if priceWrtResistanceBand == "below"
+            if strength == "bullish" or strength == "neutral"
+                stop := fromLevel
+            else if strength == "bearish" or strength == "neutral"
+                stop := toLevel
+    
+    stop
 
