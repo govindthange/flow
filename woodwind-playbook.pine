@@ -267,6 +267,15 @@ string priceWrtKumo = yard.getPositionRelativeToRange(close, senkouSpanA[displac
 // Where is price w.r.t tenkan?
 string priceWrtTenkan = yard.getPositionRelativeToLevel(close, tenkanSen)
 
+// Where is price w.r.t kijun? <-- This is not required for entry but exit.
+string priceWrtKijun = "unknown"
+if inLongTrade // for exiting in a long position
+    priceWrtKijun := yard.getPositionRelativeToLevel(low, kijunSen)
+else if inShortTrade // for exiting in a short position
+    priceWrtKijun := yard.getPositionRelativeToLevel(high, kijunSen)
+else // for confluence to enter position
+    priceWrtKijun := yard.getPositionRelativeToLevel(close, kijunSen)
+
 // Where is tenkan w.r.t kijun?
 string tenkanWrtKijun = yard.getPositionRelativeToLevel(tenkanSen, kijunSen)
 
@@ -347,7 +356,6 @@ bool didCandleGap = (open > high[1] and low > high[1]) or (open < low[1] and hig
 //
 // Long Entry Strategy
 //
-
 canPrepareForLong := withinTestRange
                          and (allowEntryUponGaps or not didCandleGap)
                          and not inLongTrade
@@ -418,7 +426,6 @@ if canPrepareForLong
 //
 // Short Entry Strategy
 //
-
 canPrepareForShort :=  withinTestRange
                          and (allowEntryUponGaps or not didCandleGap)
                          and not inShortTrade
@@ -494,16 +501,6 @@ if canPrepareForShort
 //####                                                      ####
 //##############################################################
 //##############################################################
-
-// Where is price w.r.t kijun?
-string priceWrtKijun = "unknown"
-if inLongTrade // for exiting in a long position
-    priceWrtKijun := yard.getPositionRelativeToLevel(low, kijunSen)
-else if inShortTrade // for exiting in a short position
-    priceWrtKijun := yard.getPositionRelativeToLevel(high, kijunSen)
-else // for confluence to enter position
-    priceWrtKijun := yard.getPositionRelativeToLevel(close, kijunSen)
-
 
 if ((inLongTrade and high >= takeProfit)
          or (inShortTrade and low <= takeProfit))
