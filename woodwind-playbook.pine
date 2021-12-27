@@ -272,11 +272,12 @@ string tenkanWrtKijun = yard.getPositionRelativeToLevel(tenkanSen, kijunSen)
 
 // Did TK cross occur?
 var string recentTkCross = na
-recentTkCross := yard.getCrossoverStrength(tenkanSen, kijunSen, allowPrematureTkCrossForTrade)
+tkCrossStrengthIfOccurred = yard.getCrossoverStrength(tenkanSen, kijunSen, allowPrematureTkCrossForTrade)  // The fn will return na if no TK cross occurred
 
 // Where is TK cross w.r.t kumo? <--- This is not a filter. Ignore!
 var string tkCrossWrtKumo = "within"
-if recentTkCross != na
+if tkCrossStrengthIfOccurred != na
+    recentTkCross := tkCrossStrengthIfOccurred
     tkCrossWrtKumo := yard.getPositionRelativeToRange(kijunSen, senkouSpanA[displacement-1], senkouSpanB[displacement-1])
 
 // Where is chikou w.r.t price?
@@ -1096,10 +1097,10 @@ if (barstate.islast and showConfluenceInfo)
     table.cell(confluenceTable, 0, 1, "2. Price is " + priceWrtKumo + " kumo.", text_color = (priceWrtKumo == "above" ? color.green : (priceWrtKumo == "below" ? color.red : color.white)), text_halign = text.align_left, text_size = size.small)
     table.cell(confluenceTable, 0, 2, "3. Price is " + priceWrtTenkan + " tenkan.", text_color = priceWrtTenkan == "above" ? color.green : (priceWrtTenkan == "below" ? color.red : color.white), text_halign = text.align_left, text_size = size.small)
     table.cell(confluenceTable, 0, 3, "4. Tenkan is " + tenkanWrtKijun + " kijun.", text_color = (tenkanWrtKijun == "above" ? color.green : (tenkanWrtKijun == "below" ? color.red : color.white)), text_halign = text.align_left, text_size = size.small)
-    table.cell(confluenceTable, 0, 4, "5. TK cross was " + recentTkCross + " and " + tkCrossWrtKumo + " kumo.", text_color = (tkCrossWrtKumo == "above" ? (recentTkCross == "bullish" ? color.green : (recentTkCross == "bearish" ? color.rgb(255, 153, 153) : color.white)) : (tkCrossWrtKumo == "below" ? (recentTkCross == "bullish" ? color.rgb(182, 209, 186) : (recentTkCross == "bearish" ? color.red : color.white)) : color.gray)), text_halign = text.align_left, text_size = size.small)
+    table.cell(confluenceTable, 0, 4, "5. TK cross was " + recentTkCross + " and " + tkCrossWrtKumo + " kumo.", text_color = (tkCrossWrtKumo == "above" ? (recentTkCross == "bullish" ? color.green : (recentTkCross == "bearish" ? color.rgb(255, 153, 153) : color.white)) : (tkCrossWrtKumo == "below" ? (recentTkCross == "bullish" ? color.rgb(182, 209, 186) : (recentTkCross == "bearish" ? color.red : color.white)) : (recentTkCross == "bullish" ? color.rgb(182, 209, 186) : ( recentTkCross == "bearish" ? color.rgb(255, 153, 153) : color.gray)))), text_halign = text.align_left, text_size = size.small)
     table.cell(confluenceTable, 0, 5, "6. Chikou is " + chikouWrtPrice + " price.", text_color = (chikouWrtPrice == "above" ? color.green : (chikouWrtPrice == "below" ? color.red : color.white)), text_halign = text.align_left, text_size = size.small)
     table.cell(confluenceTable, 0, 6, "7. Chikou is " + chikouWrtKumo + " kumo.", text_color = (chikouWrtKumo == "above" ? color.green : (chikouWrtKumo == "below" ? color.red : color.gray)), text_halign = text.align_left, text_size = size.small)
-    table.cell(confluenceTable, 0, 7, "8. Senkou-Span-B " + (ssbProximityToChikou < 0 ? " won't block Chikou." : str.format(" will block Chikou at {0, number, #0.00%}", ssbProximityToChikou)), text_color = ( ssbProximityToChikou < 0 and recentTkCross == "bullish" ? color.green : ( ssbProximityToChikou < 0 and recentTkCross == "bearish" ? color.red : color.white)), text_halign = text.align_left, text_size = size.small)
+    table.cell(confluenceTable, 0, 7, "8. Senkou-Span-B " + (ssbProximityToChikou < 0 ? " won't block Chikou." : str.format(" will block Chikou at {0, number, #0.00%}", ssbProximityToChikou)), text_color = ( ssbProximityToChikou < 0 and recentTkCross == "bullish" ? color.green : ( ssbProximityToChikou < 0 and recentTkCross == "bearish" ? color.red : color.gray)), text_halign = text.align_left, text_size = size.small)
     table.cell(confluenceTable, 0, 8, "9. Chikou " + (isChikouSpanFree ? "clear from congestion." : " heading into " + str.tostring(congestionProximity) + " candles!"), text_color = (isChikouSpanFree ? (marketView == "bullish" ? color.green : (marketView == "bearish" ? color.red : color.gray)) : color.white), text_halign = text.align_left, text_size = size.small)
     
     if inShortTrade or inLongTrade
