@@ -167,7 +167,7 @@ export getProximityRelativeToLevel(float price, float level, string strength, st
     lowest = ta.lowest(level[displacement - 1 - congestionProximity], congestionProximity)
     highest = ta.highest(level[displacement - 1 - congestionProximity], congestionProximity)
     
-    float proximity = -1.0
+    float proximity = 0.0
     if ((strength == "bullish" or priceWrtResistanceBand == "above")
          and (laggingSpanWrtResistanceBand == "below" or laggingSpanWrtResistanceBand == "within"))
         proximity := (lowest - price)/price
