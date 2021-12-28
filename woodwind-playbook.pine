@@ -309,7 +309,7 @@ bool isChikouSpanFree = yard.isLaggingSpanCongestionFree(close, displacement, co
 
 // Establish market view through confluence 
 string marketView = "conslidating"
-if ((disregardPriceBeyondKumo
+if (disregardPriceBeyondKumo
          or (not disregardPriceBeyondKumo and priceWrtKumo == "above"))
      and priceWrtTenkan == "above"
      and (tenkanWrtKijun == "above"
@@ -322,7 +322,7 @@ if ((disregardPriceBeyondKumo
              or (requireChikouBeyondKumo and chikouWrtKumo == "above"))
      and isChikouSpanFree
     marketView := "bullish"
-else if ((disregardPriceBeyondKumo
+else if (disregardPriceBeyondKumo
              or (not disregardPriceBeyondKumo and priceWrtKumo == "below"))
      and priceWrtTenkan == "below"
      and (tenkanWrtKijun == "below"
