@@ -51,7 +51,7 @@ bool allowTkCrossExitInNurturePhase = input.bool(true, title="Allow TK cross exi
 bool allowPrematureTkCrossForTrade = input.bool(true, title="Allow premature TK cross for signals", tooltip="Premature TK cross occurs when conversion line just overlaps baseline but does not cross it.")
 bool allowNeutralFutureKumoValidForTrade = input.bool(false, title="Allow neutral future kumo valid for signals")
 bool requireChikouBeyondKumo = input.bool(true, title="Mandate lagging-span be beyond kumo for signals", tooltip="When enabled works very well on BTC 1H charts.")
-float senkouSpanBSafeProximity = input.float(100.0, minval=0.0, title="Chikou-SSB safe proximty %", tooltip="If lagging-span is not required beyond kumo then how close in %age it can get to SSB before an entry singal is invalidated?") / 100
+float senkouSpanBSafeProximity = input.float(0.0, minval=0.0, title="Critical Lagging-Span to SSB % Gap", tooltip="If lagging-span is not required beyond kumo then how close in %age it can get to SSB before an entry singal is invalidated?", tooltip="This is the gap between the lagging-span and the long-term resistance level in percentage. If the above checkbox is turned OFF then no entry signal will be shown while the lagging-span is within the specified percent range from the long-term resistance.")
 bool allowTenkanExitToCascade = input.bool(true, title="Allow crossover of short-term equilibrium point to cascade exit signals", tooltip="When false and price reverses to cross the short-term equilibrium point then only one exit signal will appear. The next signal can only come if price again reverses in your favor and touches or goes beyond the short-term equilibrium point. Essentially by turning OFF you will be able to ride the trend better and longer but at a risk of not scaling out.")
 
 bool showSignalsUponBreakout = input.bool(true, "Show entry signals upon 9-period high/low breakout", tooltip="Do not disable it! When enabled you should place a limit order for entry right at the price dipicted by the gray/green/red line.")
@@ -297,7 +297,10 @@ string laggingKumoView = yard.getStrength(senkouSpanA[2*displacement-1], senkouS
 string chikouWrtKumo = yard.getPositionRelativeToRange(close, senkouSpanA[2*displacement-1], senkouSpanB[2*displacement-1])
 
 // Where is chikou w.r.t a flat Senkou-Span-B ahead?
-float ssbProximityToChikou = yard.getProximityRelativeToLevel(close, senkouSpanB, recentTkCross, priceWrtKumo, chikouWrtKumo, displacement*2, congestionProximity)
+[chicouToSsbGap, highestSsb, lowestSsb] = yard.getGap(close, senkouSpanB[displacement*2 - 1 - congestionProximity], congestionProximity, recentTkCross, priceWrtKumo)
+bool isChikouSafeFromImmediateObstacles = chicouToSsbGap >= 0
+                                                 or (chicouToSsbGap/close <= (-1 * senkouSpanBSafeProximity/100))
+//log(str.format("gap: {0}, safe? {1}, from: [{2}, {3}], to: {4}, recentTkCross: {5}, priceWrtKumo: {6}", chicouToSsbGap, isChikouSafeFromImmediateObstacles, ta.highest(senkouSpanB[displacement*2 - 1 - congestionProximity], congestionProximity), ta.lowest(senkouSpanB[displacement*2 - 1 - congestionProximity], congestionProximity), close, recentTkCross, priceWrtKumo))
 
 // Is chikou free from congestion ahead? Is it heading into price?
 bool isChikouSpanFree = yard.isLaggingSpanCongestionFree(close, displacement, congestionProximity, congestionTolerance, recentTkCross, chikouWrtPrice)
@@ -311,7 +314,7 @@ if priceWrtKumo == "above"
      and (leadingKumoView == "bullish"
              or (allowNeutralFutureKumoValidForTrade and leadingKumoView == "neutral"))
      and chikouWrtPrice == "above"
-     and ((not requireChikouBeyondKumo and ssbProximityToChikou <= senkouSpanBSafeProximity)
+     and ((not requireChikouBeyondKumo and isChikouSafeFromImmediateObstacles)
              or (requireChikouBeyondKumo and chikouWrtKumo == "above"))
      and isChikouSpanFree
     marketView := "bullish"
@@ -322,7 +325,7 @@ else if priceWrtKumo == "below"
      and (leadingKumoView == "bearish"
              or (allowNeutralFutureKumoValidForTrade and leadingKumoView == "neutral"))
      and chikouWrtPrice == "below"
-     and ((not requireChikouBeyondKumo and ssbProximityToChikou <= senkouSpanBSafeProximity)
+     and ((not requireChikouBeyondKumo and isChikouSafeFromImmediateObstacles)
              or (requireChikouBeyondKumo and chikouWrtKumo == "below"))
      and isChikouSpanFree
     marketView := "bearish"
@@ -1095,7 +1098,7 @@ if (barstate.islast and showConfluenceInfo)
     table.cell(confluenceTable, 0, 4, "5. TK cross was " + recentTkCross + " and " + tkCrossWrtKumo + " kumo.", text_color = (tkCrossWrtKumo == "above" ? (recentTkCross == "bullish" ? color.green : (recentTkCross == "bearish" ? color.rgb(255, 153, 153) : color.white)) : (tkCrossWrtKumo == "below" ? (recentTkCross == "bullish" ? color.rgb(182, 209, 186) : (recentTkCross == "bearish" ? color.red : color.white)) : (recentTkCross == "bullish" ? color.rgb(182, 209, 186) : ( recentTkCross == "bearish" ? color.rgb(255, 153, 153) : color.gray)))), text_halign = text.align_left, text_size = size.small)
     table.cell(confluenceTable, 0, 5, "6. Chikou is " + chikouWrtPrice + " price.", text_color = (chikouWrtPrice == "above" ? color.green : (chikouWrtPrice == "below" ? color.red : color.white)), text_halign = text.align_left, text_size = size.small)
     table.cell(confluenceTable, 0, 6, "7. Chikou is " + chikouWrtKumo + " kumo.", text_color = (chikouWrtKumo == "above" ? color.green : (chikouWrtKumo == "below" ? color.red : color.gray)), text_halign = text.align_left, text_size = size.small)
-    table.cell(confluenceTable, 0, 7, "8. Senkou-Span-B " + (ssbProximityToChikou < 0 ? " won't block Chikou." : str.format(" will block Chikou at {0, number, #0.00%}", ssbProximityToChikou)), text_color = ( ssbProximityToChikou < 0 and recentTkCross == "bullish" ? color.green : ( ssbProximityToChikou < 0 and recentTkCross == "bearish" ? color.red : color.gray)), text_halign = text.align_left, text_size = size.small)
+    table.cell(confluenceTable, 0, 7, "8. Senkou-Span-B " + (isChikouSafeFromImmediateObstacles ? " won't block Chikou." : str.format(" will block Chikou at {0, number, #0.00%}", chicouToSsbGap/close)), text_color = ( isChikouSafeFromImmediateObstacles and recentTkCross == "bullish" ? color.green : ( isChikouSafeFromImmediateObstacles and recentTkCross == "bearish" ? color.red : color.gray)), text_halign = text.align_left, text_size = size.small)
     table.cell(confluenceTable, 0, 8, "9. Chikou " + (isChikouSpanFree ? "clear from congestion." : " heading into " + str.tostring(congestionProximity) + " candles!"), text_color = (isChikouSpanFree ? (marketView == "bullish" ? color.green : (marketView == "bearish" ? color.red : color.gray)) : color.white), text_halign = text.align_left, text_size = size.small)
     
     if inShortTrade or inLongTrade

@@ -25,8 +25,8 @@ export getHighestHighAndLowestLow(int period) => math.avg(ta.lowest(period), ta.
 
 //
 // @function determines the highest-high and the lowest-low value for the specified interval.
-// @param shortTermPeriod, the short-term equilibrium point period.
-// @param midTermPeriod, the intermediate-term equilibrium point period.
+// @param shortTermPeriod int, the short-term equilibrium point period.
+// @param midTermPeriod int, the intermediate-term equilibrium point period.
 // @returns float, the highest & lowest short-term & mid-term bar and corresponding price.
 //
 export getHighestHighAndLowestLowSet(int shortTermPeriod, int midTermPeriod, bool includeCurrentBar) =>
@@ -65,9 +65,9 @@ export getEquilibriumPeriods(string scheme) =>
 
 //
 // @function projects a one glance view of the entire resistance net faced by the price. It does so by computing different equilibrium points for the price.
-// @param shortTermPeriod, the period for computing the short-term equilibrium point.
-// @param midTermPeriod, the period for computing the intermediate-term equilibrium point.
-// @param longTermPeriod, the period for computing the 2 additional long-term equilibrium points.
+// @param shortTermPeriod int, the period for computing the short-term equilibrium point.
+// @param midTermPeriod int, the period for computing the intermediate-term equilibrium point.
+// @param longTermPeriod int, the period for computing the 2 additional long-term equilibrium points.
 // @returns shortTermEquilibrium float, the midpoint of highest-high and lowest-low of the candles in last shortTermPeriod.
 // @returns mideTermEquilibrium float, the midpoint of highest-high and lowest-low of the candles in last midTermPeriod.
 // @returns longTermEquilibriumA float, the midpoint of the shortTermEquilibrium and midTermEquilibrium points.
@@ -154,28 +154,29 @@ export getPositionRelativeToRange(float price, float fromLevel, float toLevel) =
 
 
 //
-// @function determines how far the lagging-span is from the long-term signficant support/resistance.
+// @function determines how far the price is from a signifcant supply/demand zone (the long-term signficant support/resistance).
 // @param price float, the price.
 // @param level float, the long-term support or resistance.
-// @param strength string, the market direction i.e. the strength of the short-term moving-average and mid-term moving-average crossover.
-// @param priceWrtResistanceBand string, whether the price is above/below the long-term resistance net.
-// @param laggingSpanWrtResistanceBand string, whether lagging-span is above/below the lagging long-term resistance net.
-// @returns float, the proximity of the level.
+// @param span int, the number of candles to consider for calculating the gap.
+// @param bias string, the market direction deduced from the crossover of short-term moving-average and mid-term moving-average.
+// @param priceWrtResistanceBand string, whether the price is above/below the long-term resistance band.
+// @returns float, the gap between the price and the significant level.
 //
-export getProximityRelativeToLevel(float price, float level, string strength, string priceWrtResistanceBand, string laggingSpanWrtResistanceBand, float displacement, int congestionProximity) =>
-
-    lowest = ta.lowest(level[displacement - 1 - congestionProximity], congestionProximity)
-    highest = ta.highest(level[displacement - 1 - congestionProximity], congestionProximity)
+export getGap(float price, float level, int span, string bias, string priceWrtResistanceBand) =>
+    lowest = ta.lowest(level, span)
+    highest = ta.highest(level, span)
     
-    float proximity = 0.0
-    if ((strength == "bullish" or priceWrtResistanceBand == "above")
-         and (laggingSpanWrtResistanceBand == "below" or laggingSpanWrtResistanceBand == "within"))
-        proximity := (lowest - price)/price
-    else if ((strength == "bearish" or priceWrtResistanceBand == "below")
-         and (laggingSpanWrtResistanceBand == "above" or laggingSpanWrtResistanceBand == "within"))
-        proximity := (price - highest)/price
+    float gap = 0.0
+    if ((bias == "bullish" or bias == "neutral")
+         and priceWrtResistanceBand == "above")
+         and not na(level)
+        gap := price - highest
+    else if ((bias == "bearish" or bias == "neutral")
+         and priceWrtResistanceBand == "below")
+         and not na(level)
+        gap := lowest - price
     
-    proximity
+    [gap, highest, lowest]
 
 
 //
