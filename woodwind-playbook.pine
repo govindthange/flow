@@ -49,6 +49,7 @@ float atrStopMultiplier = input.float(5, minval=0.0, title="ATR x ?", tooltip="F
 bool tkCrossExitEnabled = input.bool(true, title="Enable TK cross Exits")
 bool allowTkCrossExitInNurturePhase = input.bool(true, title="Allow TK cross exits in nurture phase")
 bool allowPrematureTkCrossForTrade = input.bool(true, title="Allow premature TK cross for signals", tooltip="Premature TK cross occurs when conversion line just overlaps baseline but does not cross it.")
+bool disregardPriceBeyondKumo = input.bool(false, title="Disregard price being beyond resistance band for entry signals")
 bool disregardLeadingKumoColor = input.bool(false, title="Disregard leading resistance band bias for entry signals")
 bool allowNeutralLeadingKumo = input.bool(false, title="Allow neutral leading resistance band valid for signals")
 bool requireChikouBeyondKumo = input.bool(true, title="Mandate lagging-span be beyond kumo for signals", tooltip="When enabled works very well on BTC 1H charts.")
@@ -308,7 +309,8 @@ bool isChikouSpanFree = yard.isLaggingSpanCongestionFree(close, displacement, co
 
 // Establish market view through confluence 
 string marketView = "conslidating"
-if priceWrtKumo == "above"
+if ((disregardPriceBeyondKumo
+         or (not disregardPriceBeyondKumo and priceWrtKumo == "above"))
      and priceWrtTenkan == "above"
      and (tenkanWrtKijun == "above"
              or (allowPrematureTkCrossForTrade and tenkanWrtKijun == "at"))
@@ -320,7 +322,8 @@ if priceWrtKumo == "above"
              or (requireChikouBeyondKumo and chikouWrtKumo == "above"))
      and isChikouSpanFree
     marketView := "bullish"
-else if priceWrtKumo == "below"
+else if ((disregardPriceBeyondKumo
+             or (not disregardPriceBeyondKumo and priceWrtKumo == "below"))
      and priceWrtTenkan == "below"
      and (tenkanWrtKijun == "below"
              or (allowPrematureTkCrossForTrade and tenkanWrtKijun == "at"))
