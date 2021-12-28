@@ -87,19 +87,19 @@ export findEquilibrium(int shortTermPeriod, int midTermPeriod, int longTermPerio
 // @param slow float, the slow moving point.
 // @returns string, it is "bullish" if fast moving point is over the slow moving point o/w returns "bearish".
 //
-export getStrength(float fast, float slow) =>
+export getBias(float fast, float slow) =>
     float diff = fast - slow
     string view = diff > 0 ? "bullish" : (diff < 0 ? "bearish" : "neutral")
     view
 
 
 //
-// @function checks crossover of 2 moving averages and establishes whether its bullish or bearish cross.
+// @function checks crossover of 2 moving averages and establishes whether its bullish or bearish.
 // @param fast float, the fast moving line.
 // @param slow float, the slow moving lline.
-// @returns string, it is "bullish" if fast moving line cosses above the slow moving line o/w bearish.
+// @returns string, it returns "bullish" if fast moving line cosses above the slow moving line o/w returns "bearish".
 //
-export getCrossoverStrength(float fast, float slow, bool allowPrematureCross) =>
+export getBiasFromCrossover(float fast, float slow, bool allowPrematureCross) =>
     string view = na
     if (fast[1] <= slow[1] and fast > slow)
         view := "bullish"
@@ -131,7 +131,7 @@ export getPositionRelativeToLevel(float price, float level) =>
 // @returns string, the above/below/within range.
 //
 export getPositionRelativeToRange(float price, float fromLevel, float toLevel) =>
-    string view = getStrength(fromLevel, toLevel)
+    string view = getBias(fromLevel, toLevel)
     string position = "within"
     if (view == "bullish" and price > fromLevel)
          or (view == "bearish" and price > toLevel)
@@ -187,12 +187,12 @@ export getGap(float price, float level, int span, string bias, string priceWrtRe
 // @param laggingSpanInRelationToPrice string, the position of lagging-span w.r.t price in the look-back period.
 // @returns bool, whether the price would face congestion or not.
 //
-export isLaggingSpanCongestionFree(float price, int displacement, float proximity, float scale, string strength, string laggingSpanInRelationToPrice) =>
+export isLaggingSpanCongestionFree(float price, int displacement, float proximity, float scale, string bias, string laggingSpanInRelationToPrice) =>
     highest = (1-scale/100) * ta.highest(high[displacement-proximity], proximity)
     lowest = (1-scale/100) * ta.lowest(low[displacement-proximity], proximity)
-    strength == "bullish" ?
+    bias == "bullish" ?
                          (price > highest)
-                         : strength == "bearish" ?
+                         : bias == "bearish" ?
                                                  (price < lowest)
                                                  : laggingSpanInRelationToPrice == "above" ?
                                                                  (price > highest)
@@ -216,22 +216,22 @@ export getAtrFactor(simple int length, simple float multiplier) =>
 // @param toLevel float, the to-range which is typically a slow moving line.
 // @returns float, the stop-loss value.
 //
-export getStopFromRange(float price, float fromLevel, float toLevel) =>
-    string strength = getStrength(fromLevel, toLevel)
+export getStopLossFromRange(float price, float fromLevel, float toLevel) =>
+    string bias = getBias(fromLevel, toLevel)
     string priceWrtResistanceBand = getPositionRelativeToRange(price, fromLevel, toLevel)
 
     float stop = -1
     if not na(fromLevel)
          and not na(toLevel)
         if priceWrtResistanceBand == "above" or priceWrtResistanceBand == "within"
-            if strength == "bullish" or strength == "neutral"
+            if bias == "bullish" or bias == "neutral"
                 stop := toLevel
-            else if strength == "bearish" or strength == "neutral"
+            else if bias == "bearish" or bias == "neutral"
                 stop := fromLevel
         else if priceWrtResistanceBand == "below"
-            if strength == "bullish" or strength == "neutral"
+            if bias == "bullish" or bias == "neutral"
                 stop := fromLevel
-            else if strength == "bearish" or strength == "neutral"
+            else if bias == "bearish" or bias == "neutral"
                 stop := toLevel
     
     stop

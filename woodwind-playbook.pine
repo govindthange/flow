@@ -256,10 +256,10 @@ if equilibriumScheme != "Custom"
 [tenkanSen, kijunSen, senkouSpanA, senkouSpanB] = yard.findEquilibrium(tenkanSenPeriod, kijunSenPeriod, senkouSpanPeriod)
 
 // How is current kumo?
-string kumoView = yard.getStrength(senkouSpanA[displacement-1], senkouSpanB[displacement-1])
+string kumoView = yard.getBias(senkouSpanA[displacement-1], senkouSpanB[displacement-1])
 
 // How is future kumo?
-string leadingKumoView = yard.getStrength(senkouSpanA, senkouSpanB)
+string leadingKumoView = yard.getBias(senkouSpanA, senkouSpanB)
 
 // Where is price w.r.t kumo?
 string priceWrtKumo = yard.getPositionRelativeToRange(close, senkouSpanA[displacement-1], senkouSpanB[displacement-1])
@@ -281,7 +281,7 @@ string tenkanWrtKijun = yard.getPositionRelativeToLevel(tenkanSen, kijunSen)
 
 // Did TK cross occur?
 var string recentTkCross = na
-tkCrossStrengthIfOccurred = yard.getCrossoverStrength(tenkanSen, kijunSen, allowPrematureTkCrossForTrade)  // The fn will return na if no TK cross occurred
+tkCrossStrengthIfOccurred = yard.getBiasFromCrossover(tenkanSen, kijunSen, allowPrematureTkCrossForTrade)  // The fn will return na if no TK cross occurred
 
 // Where is TK cross w.r.t kumo? <--- This is not a filter. Ignore!
 var string tkCrossWrtKumo = "within"
@@ -293,7 +293,7 @@ if tkCrossStrengthIfOccurred != na
 string chikouWrtPrice = yard.getPositionRelativeToRange(close, high[displacement-1], low[displacement-1])
 
 // Where is chikou w.r.t kumo?
-string laggingKumoView = yard.getStrength(senkouSpanA[2*displacement-1], senkouSpanB[2*displacement-1])
+string laggingKumoView = yard.getBias(senkouSpanA[2*displacement-1], senkouSpanB[2*displacement-1])
 string chikouWrtKumo = yard.getPositionRelativeToRange(close, senkouSpanA[2*displacement-1], senkouSpanB[2*displacement-1])
 
 // Where is chikou w.r.t a flat Senkou-Span-B ahead?
@@ -391,7 +391,7 @@ if canPrepareForLong
     longBreakoutPrice := 0.0
 
     // Set stop-loss below the kumo, kijunSen, or below the entry candle's low, whichever is the lowest.
-    kumoStopLoss = yard.getStopFromRange(close, senkouSpanA[displacement-1], senkouSpanB[displacement-1])
+    kumoStopLoss = yard.getStopLossFromRange(close, senkouSpanA[displacement-1], senkouSpanB[displacement-1])
     stopLoss := useKumoAsStop and kumoStopLoss > 0 and kumoStopLoss < kijunSen ? kumoStopLoss - atr : kijunSen - atr
     if stopLoss > low
         stopLoss := low - atr
@@ -461,7 +461,7 @@ if canPrepareForShort
     shortBreakoutPrice := 0.0
 
     // Set stop-loss above the kumo, kijunSen, or above the entry candle's high, whichever is the highest.
-    kumoStopLoss = yard.getStopFromRange(close, senkouSpanA[displacement-1], senkouSpanB[displacement-1])
+    kumoStopLoss = yard.getStopLossFromRange(close, senkouSpanA[displacement-1], senkouSpanB[displacement-1])
     stopLoss := useKumoAsStop and kumoStopLoss > kijunSen ? kumoStopLoss + atr : kijunSen + atr
     if stopLoss < high
         stopLoss := high + atr
