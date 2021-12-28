@@ -49,6 +49,7 @@ float atrStopMultiplier = input.float(5, minval=0.0, title="ATR x ?", tooltip="F
 bool tkCrossExitEnabled = input.bool(true, title="Enable TK cross Exits")
 bool allowTkCrossExitInNurturePhase = input.bool(true, title="Allow TK cross exits in nurture phase")
 bool allowPrematureTkCrossForTrade = input.bool(true, title="Allow premature TK cross for signals", tooltip="Premature TK cross occurs when conversion line just overlaps baseline but does not cross it.")
+bool disregardLeadingKumoColor = input.bool(true, title="Disregard leading resistance band bias for entry signals")
 bool allowNeutralFutureKumoValidForTrade = input.bool(false, title="Allow neutral future kumo valid for signals")
 bool requireChikouBeyondKumo = input.bool(true, title="Mandate lagging-span be beyond kumo for signals", tooltip="When enabled works very well on BTC 1H charts.")
 float senkouSpanBSafeProximity = input.float(0.0, minval=0.0, title="Critical Lagging-Span to SSB % Gap", tooltip="If lagging-span is not required beyond kumo then how close in %age it can get to SSB before an entry singal is invalidated?", tooltip="This is the gap between the lagging-span and the long-term resistance level in percentage. If the above checkbox is turned OFF then no entry signal will be shown while the lagging-span is within the specified percent range from the long-term resistance.")
@@ -311,8 +312,9 @@ if priceWrtKumo == "above"
      and priceWrtTenkan == "above"
      and (tenkanWrtKijun == "above"
              or (allowPrematureTkCrossForTrade and tenkanWrtKijun == "at"))
-     and (leadingKumoView == "bullish"
-             or (allowNeutralFutureKumoValidForTrade and leadingKumoView == "neutral"))
+     and (disregardLeadingKumoColor
+             or (not disregardLeadingKumoColor and leadingKumoView == "bullish")
+             or (not disregardLeadingKumoColor and allowNeutralFutureKumoValidForTrade and leadingKumoView == "neutral"))
      and chikouWrtPrice == "above"
      and ((not requireChikouBeyondKumo and isChikouSafeFromImmediateObstacles)
              or (requireChikouBeyondKumo and chikouWrtKumo == "above"))
@@ -322,8 +324,9 @@ else if priceWrtKumo == "below"
      and priceWrtTenkan == "below"
      and (tenkanWrtKijun == "below"
              or (allowPrematureTkCrossForTrade and tenkanWrtKijun == "at"))
-     and (leadingKumoView == "bearish"
-             or (allowNeutralFutureKumoValidForTrade and leadingKumoView == "neutral"))
+     and (disregardLeadingKumoColor
+             or (not disregardLeadingKumoColor and leadingKumoView == "bearish")
+             or (not disregardLeadingKumoColor and allowNeutralFutureKumoValidForTrade and leadingKumoView == "neutral"))
      and chikouWrtPrice == "below"
      and ((not requireChikouBeyondKumo and isChikouSafeFromImmediateObstacles)
              or (requireChikouBeyondKumo and chikouWrtKumo == "below"))
