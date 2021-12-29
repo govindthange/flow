@@ -831,7 +831,17 @@ if withinTestRange
     totalCandles := totalCandles + 1
 
 var int winners = 0
+var int hotStreak = 0
+var int maxHotStreak = 0
+var float hotStreakGains = 0.0
+var float maxHotStreakGains = 0.0
+
 var int loosers = 0
+var int coldStreak = 0
+var int maxColdStreak = 0
+var float coldStreakLoss = 0.0
+var float maxColdStreakLoss = 0.0
+
 var float cumulativeCapital = 0.0
 var float maxCapital = 0.0
 var float totalPnl = 0.0
@@ -872,10 +882,26 @@ if withinTestRange
         winners := winners + 1
         maxProfit := maxProfit < pnl ? pnl : maxProfit
         totalProfit := totalProfit + pnl
+
+        coldStreak := 0
+        hotStreak := hotStreak + 1
+        maxHotStreak := maxHotStreak < hotStreak ? hotStreak : maxHotStreak
+
+        coldStreakLoss := 0.0
+        hotStreakGains := hotStreakGains + (pnl/tradeSize)
+        maxHotStreakGains := maxHotStreakGains < hotStreakGains ? hotStreakGains : maxHotStreakGains
     else
         loosers := loosers + 1
         maxLoss := maxLoss > pnl ? pnl : maxLoss
         totalLoss := totalLoss + pnl
+        
+        hotStreak := 0
+        coldStreak := coldStreak + 1
+        maxColdStreak := maxColdStreak < coldStreak ? coldStreak : maxColdStreak
+        
+        hotStreakGains := 0.0
+        coldStreakLoss := coldStreakLoss + (pnl/tradeSize)
+        maxColdStreakLoss := maxColdStreakLoss > coldStreakLoss ? coldStreakLoss : maxColdStreakLoss
     
     cumulativeCapital := cumulativeCapital + tradeSize
     maxCapital := maxCapital < tradeSize ? tradeSize : maxCapital
@@ -981,12 +1007,12 @@ if withinTestRange
 // Display PnL summary
 var table pnlTable = table.new(position.bottom_left, 7, 3, bgcolor = color.rgb(0, 0, 0, 30), frame_color = color.black)
 if (barstate.islast and showPnl)
-    table.cell(pnlTable, 0, 0, "Winners", text_halign = text.align_center, text_color = color.white, text_size = size.small)
-    table.cell(pnlTable, 0, 1, str.tostring(winners), text_color = color.green, text_halign = text.align_center, text_size = size.small)
-    table.cell(pnlTable, 0, 2, str.format("{0, number, currency}", maxProfit), text_halign = text.align_center, text_color = color.rgb(182, 209, 186), text_size = size.small)
-    table.cell(pnlTable, 1, 0, "Loosers", text_halign = text.align_center, text_color = color.white, text_size = size.small)
-    table.cell(pnlTable, 1, 1, str.tostring(loosers), text_color = color.red, text_halign = text.align_center, text_size = size.small)
-    table.cell(pnlTable, 1, 2, str.format("{0, number, currency}", maxLoss), text_halign = text.align_center, text_color = color.rgb(182, 153, 153), text_size = size.small)
+    table.cell(pnlTable, 0, 0, "Winners (HS)", text_halign = text.align_center, text_color = color.white, text_size = size.small)
+    table.cell(pnlTable, 0, 1, str.format("{0} ({1})", winners, maxHotStreak), text_color = color.green, text_halign = text.align_center, text_size = size.small)
+    table.cell(pnlTable, 0, 2, str.format("{0, number, currency}\n({1, number, #0.00%})", maxProfit, maxHotStreakGains), text_halign = text.align_center, text_color = color.rgb(182, 209, 186), text_size = size.small)
+    table.cell(pnlTable, 1, 0, "Loosers (CS)", text_halign = text.align_center, text_color = color.white, text_size = size.small)
+    table.cell(pnlTable, 1, 1, str.format("{0} ({1})", loosers, maxColdStreak), text_color = color.red, text_halign = text.align_center, text_size = size.small)
+    table.cell(pnlTable, 1, 2, str.format("{0, number, currency}\n({1, number, #0.00%})", maxLoss, maxColdStreakLoss), text_halign = text.align_center, text_color = color.rgb(182, 153, 153), text_size = size.small)
     table.cell(pnlTable, 2, 0, "Total", text_halign = text.align_center, text_color = color.white, text_size = size.small)
     table.cell(pnlTable, 2, 1, str.tostring(totalTrades), text_halign = text.align_center, text_color = color.silver, text_size = size.small)
     table.cell(pnlTable, 2, 2, str.format("{0, number, percent}", winners/totalTrades), text_halign = text.align_center, text_color = color.blue, text_size = size.small)
@@ -996,9 +1022,9 @@ if (barstate.islast and showPnl)
     table.cell(pnlTable, 4, 0, "Capital", text_halign = text.align_center, text_color = color.white, text_size = size.small)
     table.cell(pnlTable, 4, 1, str.format("{0, number, currency}", maxCapital), text_halign = text.align_center, text_color = color.silver, text_size = size.small)
     table.cell(pnlTable, 4, 2, str.format("{0, number, currency}", cumulativeCapital/totalTrades), text_halign = text.align_center, text_color = color.gray, text_size = size.small)
-    table.cell(pnlTable, 5, 0, "Total PnL", text_halign = text.align_center, text_color = color.white, text_size = size.small)
+    table.cell(pnlTable, 5, 0, "Total PnL (*)", text_halign = text.align_center, text_color = color.white, text_size = size.small)
     table.cell(pnlTable, 5, 1, str.format("{0, number, currency}", totalPnl), text_halign = text.align_center, text_color =  (totalPnl > 0 ? color.rgb(182, 209, 186) : color.rgb(182, 153, 153)), text_size = size.small)
-    table.cell(pnlTable, 5, 2, str.format("{0, number, #0.00%} | {1, number, #0.00%}", totalPnlPercent, totalPnl/maxCapital), text_halign = text.align_center, text_color =   (totalPnl > 0 ? color.green : color.red), text_size = size.small)
+    table.cell(pnlTable, 5, 2, str.format("{0, number, #0.00%}\n({1, number, #0.00%})", totalPnlPercent, totalPnl/maxCapital), text_halign = text.align_center, text_color =   (totalPnl > 0 ? color.green : color.red), text_size = size.small)
     table.cell(pnlTable, 6, 0, "Days", text_halign = text.align_center, text_color = color.white, text_size = size.small, text_size = size.small)
     table.cell(pnlTable, 6, 1, str.format("{0, number}", (toDateInput - fromDateInput)/ (24 * 60 * 60 * 1000)), text_halign = text.align_center, text_color = color.silver, text_size = size.small)
     table.cell(pnlTable, 6, 2, str.tostring(totalCandles), text_halign = text.align_center, text_color = color.gray, text_size = size.small)
