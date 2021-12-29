@@ -1,5 +1,14 @@
-# Custom Scripts
+██████╗░██╗░█████╗░░█████╗░░█████╗░██╗░░░░░░█████╗░  ░░░░░░░
+██╔══██╗██║██╔══██╗██╔══██╗██╔══██╗██║░░░░░██╔══██╗  ░░██╗░░
+██████╔╝██║██║░░╚═╝██║░░╚═╝██║░░██║██║░░░░░██║░░██║  ██████╗
+██╔═══╝░██║██║░░██╗██║░░██╗██║░░██║██║░░░░░██║░░██║  ╚═██╔═╝
+██║░░░░░██║╚█████╔╝╚█████╔╝╚█████╔╝███████╗╚█████╔╝  ░░╚═╝░░
+╚═╝░░░░░╚═╝░╚════╝░░╚════╝░░╚════╝░╚══════╝░╚════╝░  ░░░░░░░
 
-This repository contains proprietary code written using various languages as a proof-of-concept or to backtest functions, data, or automated strategies.
+# Woodwind Playbook v2.1
 
-> Although the code in this repository will be made opensource in future, as of now and until declared free for use, it is not meant for distribution and use by anyone without the author's permission.
+Piccolo+ (v2.1) is a step function improvement over Piccolo (v2.0) for the ability to configure various aspects of strategy, better placement of stop-losses and to strategically signal better entry and exit points.
+
+This folder contains proprietary code written using pine script language to backtest strategies based on technical analysis.
+
+> Although the code in this folder will be made opensource in future but as of now and until declared free for use, it is not meant for distribution and/or free for use by anyone without the author's permission.

@@ -1,0 +1,1174 @@
+// █████   ███   █████                       █████                  ███                 █████    ███████████  ████                       █████                       █████     
+//░░███   ░███  ░░███                       ░░███                  ░░░                 ░░███    ░░███░░░░░███░░███                      ░░███                       ░░███      
+// ░███   ░███   ░███   ██████   ██████   ███████  █████ ███ █████ ████  ████████    ███████     ░███    ░███ ░███   ██████   █████ ████ ░███████   ██████   ██████  ░███ █████
+// ░███   ░███   ░███  ███░░███ ███░░███ ███░░███ ░░███ ░███░░███ ░░███ ░░███░░███  ███░░███     ░██████████  ░███  ░░░░░███ ░░███ ░███  ░███░░███ ███░░███ ███░░███ ░███░░███ 
+// ░░███  █████  ███  ░███ ░███░███ ░███░███ ░███  ░███ ░███ ░███  ░███  ░███ ░███ ░███ ░███     ░███░░░░░░   ░███   ███████  ░███ ░███  ░███ ░███░███ ░███░███ ░███ ░██████░  
+//  ░░░█████░█████░   ░███ ░███░███ ░███░███ ░███  ░░███████████   ░███  ░███ ░███ ░███ ░███     ░███         ░███  ███░░███  ░███ ░███  ░███ ░███░███ ░███░███ ░███ ░███░░███ 
+//    ░░███ ░░███     ░░██████ ░░██████ ░░████████  ░░████░████    █████ ████ █████░░████████    █████        █████░░████████ ░░███████  ████████ ░░██████ ░░██████  ████ █████
+//     ░░░   ░░░       ░░░░░░   ░░░░░░   ░░░░░░░░    ░░░░ ░░░░    ░░░░░ ░░░░ ░░░░░  ░░░░░░░░    ░░░░░        ░░░░░  ░░░░░░░░   ░░░░░███ ░░░░░░░░   ░░░░░░   ░░░░░░  ░░░░ ░░░░░ 
+//                                                                                                                             ███ ░███                                        
+// © 2021                                                                                                                      ░░██████                                         
+// @ govindthange                                                                                                               ░░░░░░                                          
+
+//
+// @version=5
+// @description is a strategy based trading program.
+//
+indicator("Thange Woodwind Playbook v2.1", shorttitle="Thange/Piccolo+", overlay=true, max_labels_count=250, max_lines_count=500)
+import govindthange/WoodwindYard/1 as yard
+import govindthange/WoodwindVault/3 as vault
+import govindthange/ThangeVault/1 as util
+import ed56/debugger/2 as debug
+
+//
+// Debug utility
+//
+[console, frame] = debug.debugger(5)
+
+log(string msg) =>
+    debug.print(console, frame, msg, barstate.islast)
+
+
+//
+// Collect configuration parameters
+//
+
+fromDateInput = input.time(timestamp("1 Apr 2021 05:30 +0300"), title="Backtest From Date")
+toDateInput = input.time(timestamp("31 Dec 2021 05:30 +0300"), title="Backtest To Date")
+
+float accountSize = input.float(1000, minval=0.0, title="Account Size")
+float maxRisk = input.float(25, minval=0.0, title="Maximum Risk Per Position") / 100
+float riskToRewardRatio = input.float(2.0, minval=1.0, title="Risk/Reward Ratio")
+float ratioWrtRiskToBeginTrailingSL = input.float (3.0, minval=0.0, title="Nurture Phase Ratio", tooltip="It is a ratio w.r.t R/R. Until this level the programme will not show any exit signals. You should start trailing stop-loss only after the price crosses this level. This level shown by a red/green dotted line above/below the entry signal.")
+float exitPercent = input.float(10, minval=0.0, title="Scale-Out %") / 100
+float chikouExitPercent = input.float(0, minval=0.0, title="Lagging-Span Exit %", tooltip="This signal will only appear once.") / 100
+float takeProfitPercent = input.float(10, minval=0.0, title="Take-Profit %") / 100
+int atrLength = input.int(30, minval=0, title="ATR Length", tooltip="Choose higher values for lower timeframes. In BTC use 30 for 5m/15m/1H/4H and 9 for 4H/12H.")
+float atrStopMultiplier = input.float(5, minval=0.0, title="ATR x ?", tooltip="In BTC use 5 for 5m/15m/1H/4H/6H, 3 for 12H and 3/1 for D/2D.")
+
+bool allowPrematureTkCrossForTrade = input.bool(true, title="Show entry signal even when short-term MA crosses mid-term MA prematurely", tooltip="A premature cross occurs when short-term moving-average (MA) overlaps mid-term moving-average but does not cross it.")
+bool tkCrossExitEnabled = input.bool(true, title="Show exit signals when short-term MA crosses mid-term MA")
+bool allowTkCrossExitInNurturePhase = input.bool(true, title="Show exit signals when short-term MA crosses mid-term MA in nurture phase")
+bool disregardPriceBeyondKumo = input.bool(false, title="Do not require price to be beyond resistance band for entry signals")
+bool disregardLeadingKumoColor = input.bool(true, title="Disregard leading resistance band bias for entry signals", tooltip="Enable it in BTC for 5m/15m/1H/D/3D. Disable it in BTC for 4H/6H/12H.")
+bool allowNeutralLeadingKumo = input.bool(false, title="Allow neutral leading resistance band valid for entry signals")
+bool requireChikouBeyondKumo = input.bool(true, title="Mandate lagging-span be beyond kumo for entry signals", tooltip="Enable it in BTC for 5m/15m/1H/4H.")
+float criticalChikouToSsbGap = input.float(0.0, minval=0.0, title="Critical Lagging-Span to SSB % Gap", tooltip="If lagging-span is not required beyond kumo then how close in %age it can get to SSB before an entry singal is invalidated?", tooltip="This is the gap between the lagging-span and the long-term resistance level in percentage. If the above checkbox is turned OFF then no entry signal will be shown while the lagging-span is within the specified percent range from the long-term resistance.")
+bool allowTenkanExitToCascade = input.bool(true, title="Allow crossover of short-term equilibrium-point (STEP) to cascade exit signals", tooltip="When false and price reverses to cross the short-term equilibrium point then only one exit signal will appear. The next signal can only come if price again reverses in your favor and touches or goes beyond the short-term equilibrium point. Essentially by turning OFF you will be able to ride the trend better and longer but at a risk of not scaling out.")
+bool requireHiLoBreachToInvalidateTenkanExit = input.bool(false, title="Enforce Rule: After price reverses and crosses-over the STEP to open below/above it then show next STEP exit signal only after the price again attempts to breach the STEP to the up/down side for long/short position respectively.", tooltip="Disabling improves performance as you get early exit signals to minimize losses. Disable it in BTC for 5m/15m/1H/4H/6H/12H/1D.")
+
+bool showSignalsUponBreakout = input.bool(true, "Show entry signal upon 9-period high/low breakout", tooltip="Do not disable it! When enabled you should place a limit order for entry right at the price dipicted by the gray/green/red line.")
+bool allowEntryUponGaps = input.bool(false, "Show entry signals even on gap-up/down candles ( ! )", tooltip="This is not recommended!. This setting is only for study purposes.")
+bool includeCurrentBarFor9PeriodHighLow = input.bool(false, title="Include current bar to show 9-period highs/lows ( ! )", tooltip="This is not recommended!. This setting is only for study purposes.")
+bool useKumoAsStop = input.bool(false, title="Use long-term moving-average (MA) resistance band for stop-loss")
+bool useTenkanPeriodFarthestPointAsStop = input.bool(false, title="Use short-term period's farthest high/low point for stop-loss ( ! )", tooltip="This is for study purpose. Enabling this gives mixed performance.")
+float breakevenRatio = input.float(0, minval = 0, title="Stop-Loss Breakeven Ratio 9 ( ! )", tooltip="It is a ratio w.r.t the risk. When price reaches this level in nurture phase the stop-loss should be shifted to breakeven. 0 means no breakeven concept to be used. This setting is for study purpose and performance drops drastically for values greater than 0.")
+int congestionProximity = input.int(10, minval=1, title="Congestion Candle Span", tooltip="How many bars far should the lagging-span be and called safe before it bumps into the price?")
+float congestionTolerance = input.float(0, minval=0.0, title="Congestion Tolerance", tooltip="What percent of the highest-high/lowest-low of candles in congestion-span be treated as noise for determining congestion for the lagging-span?")
+
+string equilibriumScheme = input.string("Custom", title="Equilibrium Scheme", options=["Custom", "Standard", "Scalper", "5 Day Week", "Popular", "Ideal", "Trend Finder", "Conservative"], tooltip="In BTC use Scalper or 5-Day-Week for 5m/15m/1H, Popular or Ideal for 15m/1H/4H, and Standard for 6H.")
+int tenkanSenPeriod = input.int(9, minval=1, title="Short-Term Period")
+int kijunSenPeriod = input.int(26, minval=1, title="Mid-Term Period")
+int senkouSpanPeriod = input.int(52, minval=1, title="Long-Term Period")
+int displacement = input.int(26, minval=1, title="Displacement")
+
+bool showPnl = input.bool(true, title="Show profit & loss summary")
+bool showConfluenceInfo = input.bool(false, title="Show confluence Summary")
+bool showTradePlan = input.bool(false, title="Show realtime trade plan in a separate table")
+bool horizontalTradePlan = input.bool(true, title="Show trade plan table horizontally")
+bool highlightTradesWithBackgroundColor = input.bool(true, "Highlight trades with background colors")
+
+
+//########################################################
+//########################################################
+//####                                                ####
+//####                  Declarations                  ####
+//####                                                ####
+//########################################################
+//########################################################
+
+//
+// Standard constants
+//
+YES = 1.0
+NO = 0.0
+
+//
+// Color definitions
+//
+sessionColor = color.rgb(0, 0, 0, 100)
+exitSignalColor = color.orange
+
+longBgColor = color.rgb(0,255,0,94)
+longLineColor = color.rgb(29, 176, 12, 0)
+longPrimarySignalColor = color.rgb(29, 176, 12, 30)
+longSecondarySignalColor = color.new(longPrimarySignalColor, 60)
+shortBgColor = color.rgb(255,0,0,92)
+shortLineColor = color.rgb(242, 10, 10, 0)
+shortPrimarySignalColor = color.rgb(242, 10, 10, 30)
+shortSecondarySignalColor = color.new(shortPrimarySignalColor, 60)
+
+pnlLabelColor = color.new(color.black, 60)
+pnlLabelProfitColor = color.green
+pnlLabelProfitBgColor = color.new(longPrimarySignalColor, 87)
+pnlLabelLossColor = color.red
+pnlLabelLossBgColor = color.new(shortPrimarySignalColor, 85)
+
+pnlLabelMaxCapitalColor =  color.new(color.blue, 45)
+pnlLabelMaxCapitalTextColor =  color.yellow
+
+// Initialize an empty array to store trading parameters
+
+var context = array.new_float(15)
+
+f_set(_key, _val) => array.set(context, _key, _val)
+
+f_get(_key) => array.get(context, _key)
+
+f_getString(_key) => str.tostring(array.get(context, _key))
+
+f_true(_key) => f_get(_key) == YES
+
+// Declare constants to access global variables
+IDX_PriceLevelToBeginTrailingStopLoss = 0
+IDX_ShouldExitOnStopLoss = 1
+IDX_CanExitAfterKijunOrTkCross = 2
+IDX_ShouldExitOnTkCross = 3
+IDX_TxCrossPrice = 4
+
+f_reset() =>
+    f_set(IDX_PriceLevelToBeginTrailingStopLoss, -1)
+    f_set(IDX_ShouldExitOnStopLoss, NO)
+    f_set(IDX_CanExitAfterKijunOrTkCross, NO)
+    f_set(IDX_ShouldExitOnTkCross, NO)
+    f_set(IDX_TxCrossPrice, -1)
+
+f_tradeDirection(long, short) => long ? 1 : (short ? -1 : 0)
+
+var label activeTradeLabel = na
+var string activeTradeInfo = na
+var label maxCapitalLabel = na
+var color maxCapitalLabelBgColor = na
+var color maxCapitalLabelTextColor = na
+
+float maxRiskPerPosition = accountSize * maxRisk
+var float qty = 0.0
+var float qtyPerExit = 0.0
+var float qtyPerTakeProfit = 0.0
+var float qtyPerChikouExit = 0.0
+var float remainingExitQty = 0.0
+var int totalTrades = 0
+var float tradeSize = 0.0
+var float pnl = 0.0
+
+var inLongTrade = false
+var inShortTrade = false
+
+var canPrepareForLong = false
+var shouldGoLong = false
+var longBreakoutPrice = 0.0
+var bool hasSignaledForLong = false
+bool didLongPositionClose = false
+
+var canPrepareForShort = false
+var shouldGoShort = false
+var shortBreakoutPrice = 0.0
+var bool hasSignaledForShort = false
+bool didShortPositionClose = false
+
+var shouldExitOnTenkan = false
+var shouldExitOnKijun = false
+var shouldExitOnTkCross = false
+var shouldExitOnStop = false
+var shouldTakeProfit = false
+var didTakeProfit = false
+var shouldExitPreemptively = false
+var shouldExitOnChikou = false
+var didExitOnChikou = false
+
+var entryPrice = 0.0
+
+var stopLoss = 0.0
+var breakevenTrigger = 0.0
+var takeProfit = 0.0
+var tenkanExit1 = 0.0
+var tenkanExit2 = 0.0
+var tenkanExit3 = 0.0
+var tenkanExit4 = 0.0
+var tenkanExit5 = 0.0
+var tenkanExit6 = 0.0
+var tenkanExit7 = 0.0
+var tenkanExit8 = 0.0
+var tenkanExit9 = 0.0
+var tenkanExit10 = 0.0
+var kijunExit = 0.0
+var tkCrossExit = 0.0
+var preemptiveExit = 0.0
+var chikouExit = 0.0
+
+var stopLossQty = 0.0
+var takeProfitQty = 0.0
+var tenkanExitQty1 = 0.0
+var tenkanExitQty2 = 0.0
+var tenkanExitQty3 = 0.0
+var tenkanExitQty4 = 0.0
+var tenkanExitQty5 = 0.0
+var tenkanExitQty6 = 0.0
+var tenkanExitQty7 = 0.0
+var tenkanExitQty8 = 0.0
+var tenkanExitQty9 = 0.0
+var tenkanExitQty10 = 0.0
+var kijunExitQty = 0.0
+var tkCrossExitQty = 0.0
+var preemptiveExitQty = 0.0
+var chikouExitQty = 0.0
+
+var stopLossGains = 0.0
+var takeProfitGains = 0.0
+var tenkanExitGains1 = 0.0
+var tenkanExitGains2 = 0.0
+var tenkanExitGains3 = 0.0
+var tenkanExitGains4 = 0.0
+var tenkanExitGains5 = 0.0
+var tenkanExitGains6 = 0.0
+var tenkanExitGains7 = 0.0
+var tenkanExitGains8 = 0.0
+var tenkanExitGains9 = 0.0
+var tenkanExitGains10 = 0.0
+var kijunExitGains = 0.0
+var tkCrossExitGains = 0.0
+var preemptiveExitGains = 0.0
+var chikouExitGains = 0.0
+
+
+//░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░
+//░░░█████╗░░██████╗░██████╗███████╗░██████╗░██████╗███╗░░░███╗███████╗███╗░░██╗████████╗░░
+//░░██╔══██╗██╔════╝██╔════╝██╔════╝██╔════╝██╔════╝████╗░████║██╔════╝████╗░██║╚══██╔══╝░░
+//░░███████║╚█████╗░╚█████╗░█████╗░░╚█████╗░╚█████╗░██╔████╔██║█████╗░░██╔██╗██║░░░██║░░░░░
+//░░██╔══██║░╚═══██╗░╚═══██╗██╔══╝░░░╚═══██╗░╚═══██╗██║╚██╔╝██║██╔══╝░░██║╚████║░░░██║░░░░░
+//░░██║░░██║██████╔╝██████╔╝███████╗██████╔╝██████╔╝██║░╚═╝░██║███████╗██║░╚███║░░░██║░░░░░
+//░░╚═╝░░╚═╝╚═════╝░╚═════╝░╚══════╝╚═════╝░╚═════╝░╚═╝░░░░░╚═╝╚══════╝╚═╝░░╚══╝░░░╚═╝░░░░░
+//░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░
+
+if equilibriumScheme != "Custom"
+    [tp, kp, sp, d] = yard.getEquilibriumPeriods(equilibriumScheme)
+    tenkanSenPeriod := tp
+    kijunSenPeriod := kp
+    senkouSpanPeriod := sp
+    displacement := d
+
+[tenkanSen, kijunSen, senkouSpanA, senkouSpanB] = yard.findEquilibrium(tenkanSenPeriod, kijunSenPeriod, senkouSpanPeriod)
+
+// How is current kumo?
+string kumoView = yard.getBias(senkouSpanA[displacement-1], senkouSpanB[displacement-1])
+
+// How is future kumo?
+string leadingKumoView = yard.getBias(senkouSpanA, senkouSpanB)
+
+// Where is price w.r.t kumo?
+string priceWrtKumo = yard.getPositionRelativeToRange(close, senkouSpanA[displacement-1], senkouSpanB[displacement-1])
+
+// Where is price w.r.t tenkan?
+string priceWrtTenkan = yard.getPositionRelativeToLevel(close, tenkanSen)
+
+// Where is price w.r.t kijun? <-- This is not required for entry but exit.
+string priceWrtKijun = "unknown"
+if inLongTrade // for exiting in a long position
+    priceWrtKijun := yard.getPositionRelativeToLevel(low, kijunSen)
+else if inShortTrade // for exiting in a short position
+    priceWrtKijun := yard.getPositionRelativeToLevel(high, kijunSen)
+else // for confluence to enter position
+    priceWrtKijun := yard.getPositionRelativeToLevel(close, kijunSen)
+
+// Where is tenkan w.r.t kijun?
+string tenkanWrtKijun = yard.getPositionRelativeToLevel(tenkanSen, kijunSen)
+
+// Did TK cross occur?
+var string recentTkCross = na
+tkCrossStrengthIfOccurred = yard.getBiasFromCrossover(tenkanSen, kijunSen, allowPrematureTkCrossForTrade)  // The fn will return na if no TK cross occurred
+
+// Where is TK cross w.r.t kumo? <--- This is not a filter. Ignore!
+var string tkCrossWrtKumo = "within"
+if tkCrossStrengthIfOccurred != na
+    recentTkCross := tkCrossStrengthIfOccurred
+    tkCrossWrtKumo := yard.getPositionRelativeToRange(kijunSen, senkouSpanA[displacement-1], senkouSpanB[displacement-1])
+
+// Where is chikou w.r.t price?
+string chikouWrtPrice = yard.getPositionRelativeToRange(close, high[displacement-1], low[displacement-1])
+
+// Where is chikou w.r.t kumo?
+string laggingKumoView = yard.getBias(senkouSpanA[2*displacement-1], senkouSpanB[2*displacement-1])
+string chikouWrtKumo = yard.getPositionRelativeToRange(close, senkouSpanA[2*displacement-1], senkouSpanB[2*displacement-1])
+
+// Where is chikou w.r.t a flat Senkou-Span-B ahead?
+[chicouToSsbGap, highestSsb, lowestSsb] = yard.getGap(close, senkouSpanB[displacement*2 - 1 - congestionProximity], congestionProximity, recentTkCross, priceWrtKumo)
+bool isChikouSafeFromImmediateObstacles = chicouToSsbGap >= 0
+                                                 or (chicouToSsbGap/close <= (-1 * criticalChikouToSsbGap/100))
+//log(str.format("gap: {0}, safe? {1}, from: [{2}, {3}], to: {4}, recentTkCross: {5}, priceWrtKumo: {6}", chicouToSsbGap, isChikouSafeFromImmediateObstacles, ta.highest(senkouSpanB[displacement*2 - 1 - congestionProximity], congestionProximity), ta.lowest(senkouSpanB[displacement*2 - 1 - congestionProximity], congestionProximity), close, recentTkCross, priceWrtKumo))
+
+// Is chikou free from congestion ahead? Is it heading into price?
+bool isChikouSpanFree = yard.isLaggingSpanCongestionFree(close, displacement, congestionProximity, congestionTolerance, recentTkCross, chikouWrtPrice)
+
+// Establish market view through confluence 
+string marketView = "conslidating"
+if (disregardPriceBeyondKumo
+         or (not disregardPriceBeyondKumo and priceWrtKumo == "above"))
+     and priceWrtTenkan == "above"
+     and (tenkanWrtKijun == "above"
+             or (allowPrematureTkCrossForTrade and tenkanWrtKijun == "at"))
+     and (disregardLeadingKumoColor
+             or (not disregardLeadingKumoColor and leadingKumoView == "bullish")
+             or (not disregardLeadingKumoColor and allowNeutralLeadingKumo and leadingKumoView == "neutral"))
+     and chikouWrtPrice == "above"
+     and ((not requireChikouBeyondKumo and isChikouSafeFromImmediateObstacles)
+             or (requireChikouBeyondKumo and chikouWrtKumo == "above"))
+     and isChikouSpanFree
+    marketView := "bullish"
+else if (disregardPriceBeyondKumo
+             or (not disregardPriceBeyondKumo and priceWrtKumo == "below"))
+     and priceWrtTenkan == "below"
+     and (tenkanWrtKijun == "below"
+             or (allowPrematureTkCrossForTrade and tenkanWrtKijun == "at"))
+     and (disregardLeadingKumoColor
+             or (not disregardLeadingKumoColor and leadingKumoView == "bearish")
+             or (not disregardLeadingKumoColor and allowNeutralLeadingKumo and leadingKumoView == "neutral"))
+     and chikouWrtPrice == "below"
+     and ((not requireChikouBeyondKumo and isChikouSafeFromImmediateObstacles)
+             or (requireChikouBeyondKumo and chikouWrtKumo == "below"))
+     and isChikouSpanFree
+    marketView := "bearish"
+
+[highestTenkanSenBar,
+     highestTenkanValue,
+     lowestTenkanSenBar,
+     lowestTenkanValue,
+     highestKijunSenBar,
+     highestKijunValue,
+     lowestKijunSenBar,
+     lowestKijunValue] = yard.getHighestHighAndLowestLowSet(tenkanSenPeriod, kijunSenPeriod, includeCurrentBarFor9PeriodHighLow)
+
+// Determine stop-loss factor using ATR
+float atr = yard.getAtrFactor(atrLength, atrStopMultiplier)
+
+
+//░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░
+//░░███████╗███╗░░██╗████████╗██████╗░██╗░░░██╗░░
+//░░██╔════╝████╗░██║╚══██╔══╝██╔══██╗╚██╗░██╔╝░░
+//░░█████╗░░██╔██╗██║░░░██║░░░██████╔╝░╚████╔╝░░░
+//░░██╔══╝░░██║╚████║░░░██║░░░██╔══██╗░░╚██╔╝░░░░
+//░░███████╗██║░╚███║░░░██║░░░██║░░██║░░░██║░░░░░
+//░░╚══════╝╚═╝░░╚══╝░░░╚═╝░░░╚═╝░░╚═╝░░░╚═╝░░░░░
+//░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░
+
+bool withinTestRange = (time >= fromDateInput and time <= toDateInput)
+
+bool didCandleGap = (open > high[1] and low > high[1]) or (open < low[1] and high < low[1])
+//plotshape(not allowEntryUponGaps and didCandleGap, title= "Candle Gap Up/Down", location=location.belowbar, color=color.gray, transp=0, style=shape.arrowup, text="", size=size.normal, editable=false)
+
+//
+// Long Entry Strategy
+//
+canPrepareForLong := withinTestRange
+                         and (allowEntryUponGaps or not didCandleGap)
+                         and not inLongTrade
+                         and not inShortTrade
+                         and marketView == "bullish"
+
+if showSignalsUponBreakout
+    if not canPrepareForLong
+        hasSignaledForLong := false
+        longBreakoutPrice := 0.0
+    else if canPrepareForLong and not hasSignaledForLong
+        longBreakoutPrice := highestTenkanValue
+        // Draw 9-period high line to indicate the best entry point
+        line.new(bar_index-tenkanSenPeriod, highestTenkanValue, bar_index, highestTenkanValue, width=1, color=color.silver, style=line.style_dotted)
+        line.new(bar_index+highestTenkanSenBar-1, highestTenkanValue, bar_index, highestTenkanValue, width=1, color=longLineColor, style=line.style_solid)
+else if canPrepareForLong
+    // Draw 9-period high line to indicate the best entry point
+    line.new(bar_index-tenkanSenPeriod, highestTenkanValue, bar_index, highestTenkanValue, width=1, color=color.silver, style=line.style_dotted)
+    line.new(bar_index+highestTenkanSenBar-1, highestTenkanValue, bar_index, highestTenkanValue, width=1, color=longLineColor, style=line.style_solid)
+
+if canPrepareForLong
+     and (not showSignalsUponBreakout or high >= longBreakoutPrice)
+    
+    shouldGoLong := true
+    hasSignaledForLong := false
+    inLongTrade := true
+    shouldExitOnKijun := false
+    
+    entryPrice := showSignalsUponBreakout ? longBreakoutPrice : close
+    longBreakoutPrice := 0.0
+
+    // Set stop-loss below the kumo, kijunSen, or below the entry candle's low, whichever is the lowest.
+    kumoStopLoss = yard.getStopLossFromRange(close, senkouSpanA[displacement-1], senkouSpanB[displacement-1])
+    stopLoss := useKumoAsStop and kumoStopLoss > 0 and kumoStopLoss < kijunSen ? kumoStopLoss - atr : kijunSen - atr
+    if stopLoss > low
+        stopLoss := low - atr
+
+    // If tenkan period's low is the lowest point then set it as SL
+    if useTenkanPeriodFarthestPointAsStop
+        farthest = ta.lowest(low, tenkanSenPeriod + 1)
+        if stopLoss > farthest
+            stopLoss := farthest - atr
+    
+    takeProfit := entryPrice + (entryPrice - stopLoss) * riskToRewardRatio * f_tradeDirection(inLongTrade, inShortTrade)
+    
+    qty := maxRiskPerPosition / (entryPrice - stopLoss)
+    qtyPerExit := qty * exitPercent
+    qtyPerTakeProfit := qty * takeProfitPercent
+    qtyPerChikouExit := qty * chikouExitPercent
+    remainingExitQty := qty
+    tradeSize := qty * entryPrice
+    
+    breakevenTrigger := entryPrice + (entryPrice - stopLoss) * breakevenRatio
+    array.set(context, IDX_PriceLevelToBeginTrailingStopLoss, entryPrice + (entryPrice - stopLoss) * ratioWrtRiskToBeginTrailingSL)
+    line.new(bar_index, f_get(IDX_PriceLevelToBeginTrailingStopLoss), bar_index+10, f_get(IDX_PriceLevelToBeginTrailingStopLoss), width=2, color=longLineColor, style=line.style_dotted)
+    line.new(bar_index, stopLoss, bar_index+10, stopLoss, width=2, color=longLineColor, style=line.style_solid)
+    
+    activeTradeInfo := str.format("#{0}. Buy {1} w/ {2, number, currency}\nEntry @ {3, number, currency}\nStop @ {4, number, currency}\nProfit @ {5, number, currency} ({6} R/R)", totalTrades+1, str.tostring(qty), tradeSize, entryPrice, stopLoss, takeProfit, riskToRewardRatio)
+    activeTradeLabel := label.new(x = bar_index,
+                             y = low,
+                             style = label.style_label_up,
+                             color = pnlLabelLossBgColor,
+                             textcolor = pnlLabelLossColor,
+                             yloc = yloc.belowbar,
+                             text = "Long",
+                             tooltip = activeTradeInfo)
+
+//
+// Short Entry Strategy
+//
+canPrepareForShort :=  withinTestRange
+                         and (allowEntryUponGaps or not didCandleGap)
+                         and not inShortTrade
+                         and not inLongTrade
+                         and marketView == "bearish"
+
+if showSignalsUponBreakout
+    if not canPrepareForShort
+        hasSignaledForShort := false
+        shortBreakoutPrice := 0.0
+    else if canPrepareForShort and not hasSignaledForShort
+        shortBreakoutPrice := lowestTenkanValue
+        // Draw 9-period high line to indicate the best entry point
+        line.new(bar_index-tenkanSenPeriod, lowestTenkanValue, bar_index, lowestTenkanValue, width=1, color=color.silver, style=line.style_dotted)
+        line.new(bar_index+lowestTenkanSenBar-1, lowestTenkanValue, bar_index, lowestTenkanValue, width=1, color=shortLineColor, style=line.style_solid)
+else if canPrepareForShort
+    // Draw 9-period high line to indicate the best entry point
+    line.new(bar_index-tenkanSenPeriod, lowestTenkanValue, bar_index, lowestTenkanValue, width=1, color=color.silver, style=line.style_dotted)
+    line.new(bar_index+lowestTenkanSenBar-1, lowestTenkanValue, bar_index, lowestTenkanValue, width=1, color=shortLineColor, style=line.style_solid)
+
+if canPrepareForShort
+     and (not showSignalsUponBreakout or low <= shortBreakoutPrice)
+    
+    shouldGoShort := true
+    hasSignaledForShort := false
+    inShortTrade := true
+    shouldExitOnKijun := false
+    
+    entryPrice := showSignalsUponBreakout ? shortBreakoutPrice : close
+    shortBreakoutPrice := 0.0
+
+    // Set stop-loss above the kumo, kijunSen, or above the entry candle's high, whichever is the highest.
+    kumoStopLoss = yard.getStopLossFromRange(close, senkouSpanA[displacement-1], senkouSpanB[displacement-1])
+    stopLoss := useKumoAsStop and kumoStopLoss > kijunSen ? kumoStopLoss + atr : kijunSen + atr
+    if stopLoss < high
+        stopLoss := high + atr
+    
+    // If tenkan period's high is the highest point then set it as SL
+    if useTenkanPeriodFarthestPointAsStop
+        farthest = ta.highest(high, tenkanSenPeriod + 1)
+        if stopLoss < farthest
+            stopLoss := farthest + atr
+    
+    takeProfit := entryPrice - (stopLoss - entryPrice) * riskToRewardRatio
+    
+    qty := maxRiskPerPosition / (stopLoss - entryPrice)
+    qtyPerExit := qty * exitPercent
+    qtyPerTakeProfit := qty * takeProfitPercent
+    qtyPerChikouExit := qty * chikouExitPercent
+    remainingExitQty := qty
+    tradeSize := qty * entryPrice
+    
+    breakevenTrigger := entryPrice - (stopLoss - entryPrice) * breakevenRatio
+    array.set(context, IDX_PriceLevelToBeginTrailingStopLoss, entryPrice - (stopLoss - entryPrice) * ratioWrtRiskToBeginTrailingSL)
+    line.new(bar_index, f_get(IDX_PriceLevelToBeginTrailingStopLoss), bar_index+10, f_get(IDX_PriceLevelToBeginTrailingStopLoss), width=2, color=shortLineColor, style=line.style_dotted)
+    line.new(bar_index, stopLoss, bar_index+10, stopLoss, width=2, color=shortLineColor, style=line.style_solid)
+    
+    activeTradeInfo := str.format("#{0}. Sell {1} w/ {2, number, currency}\nEntry @ {3, number, currency}\nStop @ {4, number, currency}\nProfit @ {5, number, currency} ({6} R/R)", totalTrades+1, str.tostring(qty), tradeSize, entryPrice, stopLoss, takeProfit, riskToRewardRatio)
+    activeTradeLabel := label.new(x = bar_index,
+                             y = high,
+                             style = label.style_label_down,
+                             color = pnlLabelLossBgColor,
+                             textcolor = pnlLabelLossColor,
+                             yloc = yloc.abovebar,
+                             text = "Short",
+                             tooltip = activeTradeInfo)
+
+
+//░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░
+//░░███████╗██╗░░██╗██╗████████╗░░
+//░░██╔════╝╚██╗██╔╝██║╚══██╔══╝░░
+//░░█████╗░░░╚███╔╝░██║░░░██║░░░░░
+//░░██╔══╝░░░██╔██╗░██║░░░██║░░░░░
+//░░███████╗██╔╝╚██╗██║░░░██║░░░░░
+//░░╚══════╝╚═╝░░╚═╝╚═╝░░░╚═╝░░░░░
+//░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░
+
+if ((inLongTrade and high >= takeProfit)
+         or (inShortTrade and low <= takeProfit))
+     and not didTakeProfit
+     and remainingExitQty > 0
+    
+    shouldTakeProfit := true
+    
+    [_qty, _remainingQty, _gains] = vault.computeExitGains(entryPrice, takeProfit, qtyPerTakeProfit, remainingExitQty, f_tradeDirection(inLongTrade, inShortTrade))
+    takeProfitQty := _qty
+    takeProfitGains := _gains
+    pnl := pnl + _gains
+    remainingExitQty := _remainingQty
+    activeTradeInfo += str.format("\nTP {0, number} @ {1, number, currency} = {2, number, currency}/{3, number, currency}", _qty, takeProfit, _gains, pnl)
+    label.set_tooltip(activeTradeLabel, activeTradeInfo)
+
+
+if ((inLongTrade and chikouWrtPrice == "below" and high < low[displacement-1] and high[1] >= low[displacement-1-1])
+         or (inShortTrade and chikouWrtPrice == "above" and low > high[displacement-1] and low[1] <= high[displacement-1-1]))
+     and not didExitOnChikou
+     and remainingExitQty > 0
+     and qtyPerChikouExit > 0
+    
+    shouldExitOnChikou := true
+    chikouExit := close
+    [_qty, _remainingQty, _gains] = vault.computeExitGains(entryPrice, close, qtyPerChikouExit, remainingExitQty, f_tradeDirection(inLongTrade, inShortTrade))
+    chikouExitQty := _qty
+    chikouExitGains := _gains
+    pnl := pnl + _gains
+    remainingExitQty := _remainingQty
+    activeTradeInfo += str.format("\nCE {0, number} @ {1, number, currency} = {2, number, currency}/{3, number, currency}", _qty, close, _gains, pnl)
+    label.set_tooltip(activeTradeLabel, activeTradeInfo)
+
+
+if (inLongTrade and high > f_get(IDX_PriceLevelToBeginTrailingStopLoss))
+     or (inShortTrade and low < f_get(IDX_PriceLevelToBeginTrailingStopLoss))
+    f_set(IDX_CanExitAfterKijunOrTkCross, YES)
+
+
+if ((inLongTrade and high >= breakevenTrigger)
+         or (inShortTrade and low <= breakevenTrigger))
+     and breakevenRatio != 0.0
+     and not f_true(IDX_CanExitAfterKijunOrTkCross)
+    
+    stopLoss := entryPrice
+    line.new(bar_index, breakevenTrigger, bar_index+5, breakevenTrigger, width=2, color=color.white, style=line.style_solid)
+
+
+//
+// Since kijun is a trailing stop-loss, the old stop-loss order is valid only
+// if the trade is in nurture phase (i.e. IDX_CanExitAfterKijunOrTkCross = false)
+//
+if ((inLongTrade and low <= stopLoss)
+         or (inShortTrade and high >= stopLoss))
+     and not f_true(IDX_CanExitAfterKijunOrTkCross)
+    
+    f_set(IDX_ShouldExitOnStopLoss, YES)
+    shouldExitOnStop := true
+    stopLossGains := (stopLoss - entryPrice) * remainingExitQty * f_tradeDirection(inLongTrade, inShortTrade)
+    pnl := pnl + stopLossGains
+    activeTradeInfo += str.format("\nSL {0} @ {1, number, currency} = {2, number, currency}/{3, number, currency}", str.tostring(remainingExitQty), stopLoss, stopLossGains, pnl)
+    label.set_tooltip(activeTradeLabel, activeTradeInfo)
+    remainingExitQty := 0
+
+else if ((inLongTrade and priceWrtKijun == "below")
+         or (inShortTrade and priceWrtKijun == "above"))
+     and f_true(IDX_CanExitAfterKijunOrTkCross)
+    
+    shouldExitOnKijun := true
+    kijunExit := kijunSen
+    if (inLongTrade and kijunExit < stopLoss)
+         or (inShortTrade and kijunExit > stopLoss)
+        kijunExitGains := (stopLoss - entryPrice) * remainingExitQty * f_tradeDirection(inLongTrade, inShortTrade)
+        pnl := pnl + kijunExitGains
+        activeTradeInfo += str.format("\nKE~SL {0} @ {1, number, currency} = {2, number, currency}/{3, number, currency}", str.tostring(remainingExitQty), stopLoss, kijunExitGains, pnl)
+    else
+        kijunExitGains := (kijunExit - entryPrice) * remainingExitQty * f_tradeDirection(inLongTrade, inShortTrade)
+        pnl := pnl + kijunExitGains
+        activeTradeInfo += str.format("\nKE {0} @ {1, number, currency} = {2, number, currency}/{3, number, currency}", str.tostring(remainingExitQty), kijunExit, kijunExitGains, pnl)
+    label.set_tooltip(activeTradeLabel, activeTradeInfo)
+    remainingExitQty := 0
+//
+// Since a TK-cross-exit is a manually placed order it can only be placed when the other 2 limit-orders,
+// the kijun-exit (a trailing stop) or the stop-loss (automatically triggerred order) are not triggerred yet.
+//
+else if ((inLongTrade and recentTkCross == "bearish")
+         or (inShortTrade and recentTkCross == "bullish"))
+     and tkCrossExitEnabled
+     and (allowTkCrossExitInNurturePhase 
+             or (not allowTkCrossExitInNurturePhase and f_true(IDX_CanExitAfterKijunOrTkCross)))
+    
+    shouldExitOnTkCross := true
+    tkCrossExit := close
+    if (inLongTrade and tkCrossExit < stopLoss)
+         or (inShortTrade and tkCrossExit > stopLoss)
+        tkCrossExitGains := (stopLoss - entryPrice) * remainingExitQty * f_tradeDirection(inLongTrade, inShortTrade)
+        pnl := pnl + tkCrossExitGains
+        activeTradeInfo += str.format("\nTKCP~SL {0} @ {1, number, currency} = {2, number, currency}/{3, number, currency}", str.tostring(remainingExitQty), stopLoss, tkCrossExitGains, pnl)
+    else
+        tkCrossExitGains := (tkCrossExit - entryPrice) * remainingExitQty * f_tradeDirection(inLongTrade, inShortTrade)
+        pnl := pnl + tkCrossExitGains
+        activeTradeInfo += str.format("\nTKCP @ {1, number, currency} = {2, number, currency}/{3, number, currency}", str.tostring(remainingExitQty), tkCrossExit, tkCrossExitGains, pnl)
+    label.set_tooltip(activeTradeLabel, activeTradeInfo)
+    remainingExitQty := 0
+
+else if ((inLongTrade and marketView == "bearish")
+         or (inShortTrade and marketView == "bullish"))
+    
+    shouldExitPreemptively := true
+    if (inLongTrade and close < stopLoss)
+         or (inShortTrade and close > stopLoss)
+        preemptiveExitGains := (stopLoss - entryPrice) * remainingExitQty * f_tradeDirection(inLongTrade, inShortTrade)
+        pnl := pnl + preemptiveExitGains
+        activeTradeInfo += str.format("\nPE~SL {0} @ {1, number, currency} = {2, number, currency}/{3, number, currency}", str.tostring(remainingExitQty), stopLoss, preemptiveExitGains, pnl) // PE is Preemptive Exit
+    else
+        preemptiveExitGains := (close - entryPrice) * remainingExitQty * f_tradeDirection(inLongTrade, inShortTrade)
+        pnl := pnl + preemptiveExitGains
+        activeTradeInfo += str.format("\nPE {0} @ {1, number, currency} = {2, number, currency}/{3, number, currency}", str.tostring(remainingExitQty), close, preemptiveExitGains, pnl) // PE is Preemptive Exit
+    label.set_tooltip(activeTradeLabel, activeTradeInfo)
+    remainingExitQty := 0
+//
+// Since all tenkan-exits are manually placed orders they can only be placed when the other 2 limit-orders,
+// the kijun-exit (a trailing stop) or the stop-loss (automatically triggerred order) are not triggerred yet.
+// You'll also not bother scaling out gains by placing a tenkan-exit order when a TK-cross/preemptive-exits has occurred.
+//
+else if ((allowTenkanExitToCascade
+             and ((inLongTrade
+                         and open < tenkanSen
+                         and ((requireHiLoBreachToInvalidateTenkanExit and high <= tenkanSen) or not requireHiLoBreachToInvalidateTenkanExit))
+                     or (inShortTrade
+                             and open > tenkanSen
+                             and ((requireHiLoBreachToInvalidateTenkanExit and low >= tenkanSen) or not requireHiLoBreachToInvalidateTenkanExit))))
+     or (not allowTenkanExitToCascade
+                 and ((inLongTrade and open < tenkanSen
+                             and ((requireHiLoBreachToInvalidateTenkanExit and high <= tenkanSen) or not requireHiLoBreachToInvalidateTenkanExit)
+                             and high[1] > tenkanSen[1])
+                         or (inShortTrade and open > tenkanSen
+                                 and ((requireHiLoBreachToInvalidateTenkanExit and low >= tenkanSen) or not requireHiLoBreachToInvalidateTenkanExit)
+                                 and low[1] < tenkanSen[1]))))
+     and remainingExitQty > 0
+    
+    shouldExitOnTenkan := true
+    [_qty, _remainingQty, _gains] = vault.computeExitGains(entryPrice, close, qtyPerExit, remainingExitQty, f_tradeDirection(inLongTrade, inShortTrade))
+    pnl := pnl + _gains
+    remainingExitQty := _remainingQty
+    activeTradeInfo += str.format("\nTE {0, number} @ {1, number, currency} = {2, number, currency}/{3, number, currency}", _qty, close, _gains, pnl)
+        
+    if (tenkanExit1 == 0.0)
+        tenkanExit1 := close
+        tenkanExitQty1 := _qty
+        tenkanExitGains1 := _gains
+    
+    else if (tenkanExit2 == 0.0)
+        tenkanExit2 := close
+        tenkanExitQty2 := _qty
+        tenkanExitGains2 := _gains
+    
+    else if (tenkanExit3 == 0.0)
+        tenkanExit3 := close
+        tenkanExitQty3 := _qty
+        tenkanExitGains3 := _gains
+    
+    else if (tenkanExit4 == 0.0)
+        tenkanExit4 := close
+        tenkanExitQty4 := _qty
+        tenkanExitGains4 := _gains
+    
+    else if (tenkanExit5 == 0.0)
+        tenkanExit5 := close
+        tenkanExitQty5 := _qty
+        tenkanExitGains5 := _gains
+    
+    else if (tenkanExit6 == 0.0)
+        tenkanExit6 := close
+        tenkanExitQty6 := _qty
+        tenkanExitGains6 := _gains
+    
+    else if (tenkanExit7 == 0.0)
+        tenkanExit7 := close
+        tenkanExitQty7 := _qty
+        tenkanExitGains7 := _gains
+    
+    else if (tenkanExit8 == 0.0)
+        tenkanExit8 := close
+        tenkanExitQty8 := _qty
+        tenkanExitGains8 := _gains
+    
+    else if (tenkanExit9 == 0.0)
+        tenkanExit9 := close
+        tenkanExitQty9 := _qty
+        tenkanExitGains9 := _gains
+    
+    else if (tenkanExit10 == 0.0)
+        tenkanExit10 := close
+        tenkanExitQty10 := _qty
+        tenkanExitGains10 := _gains
+    
+    label.set_tooltip(activeTradeLabel, activeTradeInfo)
+else
+    shouldExitOnTenkan := false
+
+
+//░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░
+//░░░██████╗██╗░██████╗░███╗░░██╗░█████╗░██╗░░░░░░██████╗░░
+//░░██╔════╝██║██╔════╝░████╗░██║██╔══██╗██║░░░░░██╔════╝░░
+//░░╚█████╗░██║██║░░██╗░██╔██╗██║███████║██║░░░░░╚█████╗░░░
+//░░░╚═══██╗██║██║░░╚██╗██║╚████║██╔══██║██║░░░░░░╚═══██╗░░
+//░░██████╔╝██║╚██████╔╝██║░╚███║██║░░██║███████╗██████╔╝░░
+//░░╚═════╝░╚═╝░╚═════╝░╚═╝░░╚══╝╚═╝░░╚═╝╚══════╝╚═════╝░░░
+//░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░
+
+plotshape(inLongTrade and marketView == "bearish" and shouldExitPreemptively, title= "Preeemptive Long Exit", location=location.belowbar, color=longPrimarySignalColor, transp=0, style=shape.flag, text="", size=size.small, editable=false)
+plotshape(inShortTrade and marketView == "bullish" and shouldExitPreemptively, title= "Preeemptive Short Exit", location=location.belowbar, color=shortPrimarySignalColor, transp=0, style=shape.flag, text="", size=size.small, editable=false)
+
+plotshape(showSignalsUponBreakout and canPrepareForLong and not hasSignaledForLong and not shouldGoLong, title= "Prepare to go long", location=location.belowbar, color=color.teal, transp=0, style=shape.triangleup, text="", size=size.tiny, editable=false)
+if showSignalsUponBreakout and canPrepareForLong
+    canPrepareForLong := false // reset flag
+    if showSignalsUponBreakout
+        hasSignaledForLong := true
+
+plotshape(showSignalsUponBreakout and canPrepareForShort and not hasSignaledForShort and not shouldGoShort, title= "Prepare to go short", location=location.abovebar, color=color.red, transp=0, style=shape.triangledown, text="", size=size.tiny, editable=false)
+if showSignalsUponBreakout and canPrepareForShort
+    canPrepareForShort := false // reset flag
+    if showSignalsUponBreakout
+        hasSignaledForShort := true
+
+plotshape(inLongTrade and ((showSignalsUponBreakout and shouldGoLong) or (not showSignalsUponBreakout and canPrepareForLong)), title="Long Entry A", location=location.belowbar, color=longPrimarySignalColor, transp=0, style=shape.triangleup, text="", size=size.small, editable=false)
+plotshape(inLongTrade and ((showSignalsUponBreakout and shouldGoLong) or (not showSignalsUponBreakout and canPrepareForLong)), title="Long Entry B", location=location.belowbar, color=longPrimarySignalColor, transp=0, style=shape.triangleup, text="", size=size.tiny, editable=false)
+if not showSignalsUponBreakout
+    canPrepareForLong := false
+else if shouldGoLong
+    shouldGoLong := false
+
+plotshape(inShortTrade and ((showSignalsUponBreakout and shouldGoShort) or (not showSignalsUponBreakout and canPrepareForShort)), title= "Short Entry A", location=location.abovebar, color=shortPrimarySignalColor, transp=0, style=shape.triangledown, text="", size=size.small, editable=false)
+plotshape(inShortTrade and ((showSignalsUponBreakout and shouldGoShort) or (not showSignalsUponBreakout and canPrepareForShort)), title= "Short Entry B", location=location.abovebar, color=shortPrimarySignalColor, transp=0, style=shape.triangledown, text="", size=size.tiny, editable=false)
+if not showSignalsUponBreakout
+    canPrepareForShort := false
+else if shouldGoShort
+    shouldGoShort := false
+
+plotshape(inLongTrade and shouldExitOnTenkan, title= "Tenkan Long Exit", location=location.abovebar, color= (remainingExitQty <= 0 ? exitSignalColor : longSecondarySignalColor), transp=0, style=shape.diamond, text="", size=size.tiny, editable=false)
+plotshape(inShortTrade and shouldExitOnTenkan, title= "Tenkan Short Exit", location=location.belowbar, color= (remainingExitQty <= 0 ? exitSignalColor : shortSecondarySignalColor), transp=0, style=shape.diamond, text="", size=size.tiny, editable=false)
+
+plotshape(inLongTrade and shouldExitOnKijun, title= "Kijun Long Exit", location=location.abovebar, color=longSecondarySignalColor, transp=0, style=shape.circle, text="", size=size.tiny, editable=false)
+plotshape(inShortTrade and shouldExitOnKijun, title= "Kijun Short Exit", location=location.belowbar, color=shortSecondarySignalColor, transp=0, style=shape.circle, text="", size=size.tiny, editable=false)
+
+plotshape(inLongTrade and shouldExitOnTkCross, title= "TK Cross Long Exit", location=location.abovebar, color=longSecondarySignalColor, transp=0, style=shape.xcross, text="", size=size.small, editable=false)
+plotshape(inShortTrade and shouldExitOnTkCross, title= "TK Cross Short Exit", location=location.belowbar, color=shortSecondarySignalColor, transp=0, style=shape.xcross, text="", size=size.small, editable=false)
+
+plotshape(inLongTrade and (f_true(IDX_ShouldExitOnStopLoss) or shouldExitOnStop), title= "Stop Loss Long Exit", location=location.belowbar, color=longPrimarySignalColor, transp=0, style=shape.flag, text="", size=size.small, editable=false)
+plotshape(inShortTrade and inShortTrade and (f_true(IDX_ShouldExitOnStopLoss) or shouldExitOnStop), title= "Stop Loss Short Exit", location=location.abovebar, color=shortPrimarySignalColor, transp=0, style=shape.flag, text="", size=size.small, editable=false)
+
+plotshape(inLongTrade and shouldTakeProfit, title= "Fixed Long Exit", location=location.abovebar, color= (remainingExitQty <= 0 ? exitSignalColor : longSecondarySignalColor), transp=0, style=shape.square, text="", size=size.tiny, editable=false)
+plotshape(inShortTrade and shouldTakeProfit, title= "Fixed Short Exit", location=location.belowbar, color= (remainingExitQty <= 0 ? exitSignalColor : shortSecondarySignalColor), transp=0, style=shape.square, text="", size=size.tiny, editable=false)
+
+plotshape(inLongTrade and shouldExitOnChikou, title= "Chikou Long Exit", location=location.abovebar, color= (remainingExitQty <= 0 ? exitSignalColor : color.white), transp=0, style=shape.diamond, text="", size=size.tiny, editable=false)
+plotshape(inShortTrade and shouldExitOnChikou, title= "Chikou Short Exit", location=location.belowbar, color= (remainingExitQty <= 0 ? exitSignalColor : color.white), transp=0, style=shape.diamond, text="", size=size.tiny, editable=false)
+
+if shouldTakeProfit
+    didTakeProfit := true
+    shouldTakeProfit := false
+
+if shouldExitOnChikou
+    didExitOnChikou := true
+    shouldExitOnChikou := false
+
+//###################################################################
+//###################################################################
+//####                                                           ####
+//####                  Flag variables for exit                  ####
+//####                                                           ####
+//###################################################################
+//###################################################################
+
+if (inLongTrade and (shouldExitOnKijun or f_true(IDX_ShouldExitOnStopLoss) or shouldExitOnTkCross or shouldExitPreemptively or remainingExitQty <= 0))
+    inLongTrade := false
+    f_reset()
+    didLongPositionClose := true
+    if showSignalsUponBreakout
+        hasSignaledForLong := false
+        canPrepareForLong := false
+
+if (inShortTrade and (shouldExitOnKijun or f_true(IDX_ShouldExitOnStopLoss) or shouldExitOnTkCross or shouldExitPreemptively or remainingExitQty <= 0))
+    inShortTrade := false
+    f_reset()
+    didShortPositionClose := true
+    if showSignalsUponBreakout
+        hasSignaledForShort := false
+        canPrepareForShort := false
+
+//
+// Draw background color
+//
+if inLongTrade and highlightTradesWithBackgroundColor
+    sessionColor := longBgColor
+else if inShortTrade and highlightTradesWithBackgroundColor
+    sessionColor := shortBgColor
+else if withinTestRange
+    sessionColor := color.rgb(0, 0, 0, 60)
+
+bgcolor(sessionColor, editable=false)
+
+
+//░░░░░░░░░░░░░░░░░░░░░░░░░░░░░
+//░░██████╗░███╗░░██╗██╗░░░░░░░
+//░░██╔══██╗████╗░██║██║░░░░░░░
+//░░██████╔╝██╔██╗██║██║░░░░░░░
+//░░██╔═══╝░██║╚████║██║░░░░░░░
+//░░██║░░░░░██║░╚███║███████╗░░
+//░░╚═╝░░░░░╚═╝░░╚══╝╚══════╝░░
+//░░░░░░░░░░░░░░░░░░░░░░░░░░░░░
+
+var int totalCandles = 0
+if withinTestRange
+    totalCandles := totalCandles + 1
+
+var int winners = 0
+var int hotStreak = 0
+var int maxHotStreak = 0
+var float hotStreakGains = 0.0
+var float maxHotStreakGains = 0.0
+
+var int loosers = 0
+var int coldStreak = 0
+var int maxColdStreak = 0
+var float coldStreakLoss = 0.0
+var float maxColdStreakLoss = 0.0
+
+var float cumulativeCapital = 0.0
+var float maxCapital = 0.0
+var float totalPnl = 0.0
+var float totalPnlPercent = 0.0
+var float totalProfit = 0.0
+var float totalLoss = 0.0
+var float prevPnl = 0.0
+var float prevPnlPercent = 0.0
+var float maxProfit = 0.0
+var float maxLoss = 0.0
+
+float realtime = 0.0
+if inLongTrade or inShortTrade
+    realtime := (close - entryPrice) * remainingExitQty * f_tradeDirection(inLongTrade, inShortTrade)
+
+if (activeTradeLabel != na
+     and (inLongTrade or inShortTrade))
+    label.set_color(activeTradeLabel, ((pnl+realtime) > 0 ? pnlLabelProfitBgColor : pnlLabelLossBgColor))
+    label.set_textcolor(activeTradeLabel, ((pnl+realtime) > 0 ? pnlLabelProfitColor : pnlLabelLossColor))
+    label.set_text(activeTradeLabel, str.format("{0, number, currency}\n{1, number, #0.00%}", pnl+realtime, (pnl+realtime)/tradeSize))
+    label.set_tooltip(activeTradeLabel, str.format("{0}\n{1}⟶ {2, number, #0.00%} RoI", activeTradeInfo, (remainingExitQty > 0 ? str.format("{0} Balance Units\n", remainingExitQty) : ""), (pnl + realtime)/tradeSize))
+
+if withinTestRange
+     and (didLongPositionClose or didShortPositionClose)
+     
+    realtime := 0.0
+    
+    label.set_color(activeTradeLabel, (pnl > 0 ? pnlLabelProfitBgColor : pnlLabelLossBgColor))
+    label.set_textcolor(activeTradeLabel, (pnl > 0 ? pnlLabelProfitColor : pnlLabelLossColor))
+    label.set_text(activeTradeLabel, str.format("{0, number, currency}\n{1, number, #0.00%}", pnl, pnl/tradeSize))
+    label.set_tooltip(activeTradeLabel, str.format("{0}\n⟶ {1, number, #0.00%} RoI", activeTradeInfo, pnl/tradeSize))
+    
+    totalTrades := totalTrades + 1
+    
+    totalPnl := totalPnl + pnl
+    totalPnlPercent := totalPnlPercent + (pnl/tradeSize)
+    if pnl > 0
+        winners := winners + 1
+        maxProfit := maxProfit < pnl ? pnl : maxProfit
+        totalProfit := totalProfit + pnl
+
+        coldStreak := 0
+        hotStreak := hotStreak + 1
+        maxHotStreak := maxHotStreak < hotStreak ? hotStreak : maxHotStreak
+
+        coldStreakLoss := 0.0
+        hotStreakGains := hotStreakGains + (pnl/tradeSize)
+        maxHotStreakGains := maxHotStreakGains < hotStreakGains ? hotStreakGains : maxHotStreakGains
+    else
+        loosers := loosers + 1
+        maxLoss := maxLoss > pnl ? pnl : maxLoss
+        totalLoss := totalLoss + pnl
+        
+        hotStreak := 0
+        coldStreak := coldStreak + 1
+        maxColdStreak := maxColdStreak < coldStreak ? coldStreak : maxColdStreak
+        
+        hotStreakGains := 0.0
+        coldStreakLoss := coldStreakLoss + (pnl/tradeSize)
+        maxColdStreakLoss := maxColdStreakLoss > coldStreakLoss ? coldStreakLoss : maxColdStreakLoss
+    
+    cumulativeCapital := cumulativeCapital + tradeSize
+    maxCapital := maxCapital < tradeSize ? tradeSize : maxCapital
+    
+    prevPnl := pnl
+    prevPnlPercent := 100*pnl/tradeSize
+    
+    if tradeSize == maxCapital
+        if maxCapitalLabel != na
+            label.set_color(maxCapitalLabel, maxCapitalLabelBgColor)
+            label.set_textcolor(maxCapitalLabel, maxCapitalLabelTextColor)
+            
+        maxCapitalLabelBgColor := (pnl > 0 ? pnlLabelProfitBgColor : pnlLabelLossBgColor)
+        maxCapitalLabelTextColor := (pnl > 0 ? pnlLabelProfitColor : pnlLabelLossColor)
+        maxCapitalLabel := activeTradeLabel
+        label.set_color(activeTradeLabel, pnlLabelMaxCapitalColor)
+        label.set_textcolor(activeTradeLabel, pnlLabelMaxCapitalTextColor)
+    
+    activeTradeLabel := na
+    activeTradeInfo := na
+    qty := 0.0
+    qtyPerExit := 0.0
+    qtyPerTakeProfit := 0.0
+    qtyPerChikouExit := 0.0
+    remainingExitQty := 0.0
+    pnl := 0.0
+    tradeSize := 0.0
+    
+    shouldExitOnKijun := false
+    shouldExitOnTenkan := false
+    shouldExitOnTkCross := false
+    shouldExitOnStop := false
+    shouldTakeProfit := false
+    didTakeProfit := false
+    shouldExitPreemptively := false
+    shouldExitOnChikou := false
+    didExitOnChikou := false
+    
+    entryPrice := 0.0
+    
+    stopLoss := 0.0
+    breakevenTrigger := 0.0
+    takeProfit := 0.0
+    tenkanExit1 := 0.0
+    tenkanExit2 := 0.0
+    tenkanExit3 := 0.0
+    tenkanExit4 := 0.0
+    tenkanExit5 := 0.0
+    tenkanExit6 := 0.0
+    tenkanExit7 := 0.0
+    tenkanExit8 := 0.0
+    tenkanExit9 := 0.0
+    tenkanExit10 := 0.0
+    kijunExit := 0.0
+    tkCrossExit := 0.0
+    preemptiveExit = 0.0
+    chikouExit = 0.0
+    
+    stopLossQty := 0.0
+    takeProfitQty := 0.0
+    tenkanExitQty1 := 0.0
+    tenkanExitQty2 := 0.0
+    tenkanExitQty3 := 0.0
+    tenkanExitQty4 := 0.0
+    tenkanExitQty5 := 0.0
+    tenkanExitQty6 := 0.0
+    tenkanExitQty7 := 0.0
+    tenkanExitQty8 := 0.0
+    tenkanExitQty9 := 0.0
+    tenkanExitQty10 := 0.0
+    kijunExitQty := 0.0
+    tkCrossExitQty := 0.0
+    preemptiveExitQty := 0.0
+    chikouExitQty := 0.0
+    
+    stopLossGains := 0.0
+    takeProfitGains := 0.0
+    tenkanExitGains1 := 0.0
+    tenkanExitGains2 := 0.0
+    tenkanExitGains3 := 0.0
+    tenkanExitGains4 := 0.0
+    tenkanExitGains5 := 0.0
+    tenkanExitGains6 := 0.0
+    tenkanExitGains7 := 0.0
+    tenkanExitGains8 := 0.0
+    tenkanExitGains9 := 0.0
+    tenkanExitGains10 := 0.0
+    kijunExitGains := 0.0
+    tkCrossExitGains := 0.0
+    preemptiveExitGains := 0.0
+    chikouExitGains := 0.0
+
+
+//░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░
+//░░██████╗░██╗░██████╗██████╗░██╗░░░░░░█████╗░██╗░░░██╗░░
+//░░██╔══██╗██║██╔════╝██╔══██╗██║░░░░░██╔══██╗╚██╗░██╔╝░░
+//░░██║░░██║██║╚█████╗░██████╔╝██║░░░░░███████║░╚████╔╝░░░
+//░░██║░░██║██║░╚═══██╗██╔═══╝░██║░░░░░██╔══██║░░╚██╔╝░░░░
+//░░██████╔╝██║██████╔╝██║░░░░░███████╗██║░░██║░░░██║░░░░░
+//░░╚═════╝░╚═╝╚═════╝░╚═╝░░░░░╚══════╝╚═╝░░╚═╝░░░╚═╝░░░░░
+//░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░
+
+// Display PnL summary
+var table pnlTable = table.new(position.bottom_left, 7, 3, bgcolor = color.rgb(0, 0, 0, 30), frame_color = color.black)
+if (barstate.islast and showPnl)
+    table.cell(pnlTable, 0, 0, "Winners (HS)", text_halign = text.align_center, text_color = color.white, text_size = size.small)
+    table.cell(pnlTable, 0, 1, str.format("{0} ({1})", winners, maxHotStreak), text_color = color.green, text_halign = text.align_center, text_size = size.small)
+    table.cell(pnlTable, 0, 2, str.format("{0, number, currency}\n({1, number, #0.00%})", maxProfit, maxHotStreakGains), text_halign = text.align_center, text_color = color.rgb(182, 209, 186), text_size = size.small)
+    table.cell(pnlTable, 1, 0, "Loosers (CS)", text_halign = text.align_center, text_color = color.white, text_size = size.small)
+    table.cell(pnlTable, 1, 1, str.format("{0} ({1})", loosers, maxColdStreak), text_color = color.red, text_halign = text.align_center, text_size = size.small)
+    table.cell(pnlTable, 1, 2, str.format("{0, number, currency}\n({1, number, #0.00%})", maxLoss, maxColdStreakLoss), text_halign = text.align_center, text_color = color.rgb(182, 153, 153), text_size = size.small)
+    table.cell(pnlTable, 2, 0, "Total", text_halign = text.align_center, text_color = color.white, text_size = size.small)
+    table.cell(pnlTable, 2, 1, str.tostring(totalTrades), text_halign = text.align_center, text_color = color.silver, text_size = size.small)
+    table.cell(pnlTable, 2, 2, str.format("{0, number, percent}", winners/totalTrades), text_halign = text.align_center, text_color = color.blue, text_size = size.small)
+    table.cell(pnlTable, 3, 0, "W/L-PnL", text_halign = text.align_center, text_color = color.white, text_size = size.small)
+    table.cell(pnlTable, 3, 1, str.format("{0, number, currency}", totalProfit), text_halign = text.align_center, text_color = color.rgb(182, 209, 186), text_size = size.small)
+    table.cell(pnlTable, 3, 2, str.format("{0, number, currency}", totalLoss), text_halign = text.align_center, text_color = color.rgb(182, 153, 153), text_size = size.small)
+    table.cell(pnlTable, 4, 0, "Capital", text_halign = text.align_center, text_color = color.white, text_size = size.small)
+    table.cell(pnlTable, 4, 1, str.format("{0, number, currency}", maxCapital), text_halign = text.align_center, text_color = color.silver, text_size = size.small)
+    table.cell(pnlTable, 4, 2, str.format("{0, number, currency}", cumulativeCapital/totalTrades), text_halign = text.align_center, text_color = color.gray, text_size = size.small)
+    table.cell(pnlTable, 5, 0, "Total PnL (*)", text_halign = text.align_center, text_color = color.white, text_size = size.small)
+    table.cell(pnlTable, 5, 1, str.format("{0, number, currency}", totalPnl), text_halign = text.align_center, text_color =  (totalPnl > 0 ? color.rgb(182, 209, 186) : color.rgb(182, 153, 153)), text_size = size.small)
+    table.cell(pnlTable, 5, 2, str.format("{0, number, #0.00%}\n({1, number, #0.00%})", totalPnlPercent, totalPnl/maxCapital), text_halign = text.align_center, text_color =   (totalPnl > 0 ? color.green : color.red), text_size = size.small)
+    table.cell(pnlTable, 6, 0, "Days", text_halign = text.align_center, text_color = color.white, text_size = size.small, text_size = size.small)
+    table.cell(pnlTable, 6, 1, str.format("{0, number}", (toDateInput - fromDateInput)/ (24 * 60 * 60 * 1000)), text_halign = text.align_center, text_color = color.silver, text_size = size.small)
+    table.cell(pnlTable, 6, 2, str.tostring(totalCandles), text_halign = text.align_center, text_color = color.gray, text_size = size.small)
+
+// Display trade information
+if horizontalTradePlan
+    var table tradeTable = table.new(position.bottom_right, 17, 4, bgcolor = color.rgb(0, 0, 0, 30), frame_width = 2, frame_color = color.black)
+    if (barstate.islast and showTradePlan)
+        table.cell(tradeTable, 1, 0, "Entry", text_color = color.white, text_size = size.small)
+        table.cell(tradeTable, 2, 0, "TP", text_color = color.white, text_size = size.small)
+        table.cell(tradeTable, 3, 0, "Exit 1", text_color = color.white, text_size = size.small)
+        table.cell(tradeTable, 4, 0, "Exit 2", text_color = color.white, text_size = size.small)
+        table.cell(tradeTable, 5, 0, "Exit 3", text_color = color.white, text_size = size.small)
+        table.cell(tradeTable, 6, 0, "Exit 4", text_color = color.white, text_size = size.small)
+        table.cell(tradeTable, 7, 0, "Exit 5", text_color = color.white, text_size = size.small)
+        table.cell(tradeTable, 8, 0, "Exit 6", text_color = color.white, text_size = size.small)
+        table.cell(tradeTable, 9, 0, "Exit 7", text_color = color.white, text_size = size.small)
+        table.cell(tradeTable, 10, 0, "Exit 8", text_color = color.white, text_size = size.small)
+        table.cell(tradeTable, 11, 0, "Exit 9", text_color = color.white, text_size = size.small)
+        table.cell(tradeTable, 12, 0, "Exit 10", text_color = color.white, text_size = size.small)
+        table.cell(tradeTable, 13, 0, "C.Exit", text_color = color.white, text_size = size.small)
+        table.cell(tradeTable, 14, 0, "K.Exit", text_color = color.white, text_size = size.small)
+        table.cell(tradeTable, 15, 0, "SL/PnL", text_color = color.white, text_size = size.small)
+        table.cell(tradeTable, 16, 0, "Qty/%", text_color = color.white, text_size = size.small)
+        table.cell(tradeTable, 0, 1, (inLongTrade ? "Buy" : ( inShortTrade ? "Sell" : "-")), text_color = color.white, text_size = size.small)
+        table.cell(tradeTable, 1, 1, str.tostring(entryPrice, str.tostring(util.tickFormat())), text_color = color.blue, text_size = size.small)
+        table.cell(tradeTable, 2, 1, str.tostring(inLongTrade ? takeProfit : takeProfit, str.tostring(util.tickFormat())), text_color = color.gray, text_size = size.small)
+        table.cell(tradeTable, 3, 1, str.tostring(tenkanExit1, str.tostring(util.tickFormat())), text_color = color.gray, text_size = size.small)
+        table.cell(tradeTable, 4, 1, str.tostring(tenkanExit2, str.tostring(util.tickFormat())), text_color = color.gray, text_size = size.small)
+        table.cell(tradeTable, 5, 1, str.tostring(tenkanExit3, str.tostring(util.tickFormat())), text_color = color.gray, text_size = size.small)
+        table.cell(tradeTable, 6, 1, str.tostring(tenkanExit4, str.tostring(util.tickFormat())), text_color = color.gray, text_size = size.small)
+        table.cell(tradeTable, 7, 1, str.tostring(tenkanExit5, str.tostring(util.tickFormat())), text_color = color.gray, text_size = size.small)
+        table.cell(tradeTable, 8, 1, str.tostring(tenkanExit6, str.tostring(util.tickFormat())), text_color = color.gray, text_size = size.small)
+        table.cell(tradeTable, 9, 1, str.tostring(tenkanExit7, str.tostring(util.tickFormat())), text_color = color.gray, text_size = size.small)
+        table.cell(tradeTable, 10, 1, str.tostring(tenkanExit8, str.tostring(util.tickFormat())), text_color = color.gray, text_size = size.small)
+        table.cell(tradeTable, 11, 1, str.tostring(tenkanExit9, str.tostring(util.tickFormat())), text_color = color.gray, text_size = size.small)
+        table.cell(tradeTable, 12, 1, str.tostring(tenkanExit10, str.tostring(util.tickFormat())), text_color = color.gray, text_size = size.small)
+        table.cell(tradeTable, 13, 1, str.tostring(chikouExit, str.tostring(util.tickFormat())), text_color = color.gray, text_size = size.small)
+        table.cell(tradeTable, 14, 1, str.tostring(kijunExit, str.tostring(util.tickFormat())), text_color = color.gray, text_size = size.small)
+        table.cell(tradeTable, 15, 1, str.format("{0, number, currency}", stopLoss), text_color = color.orange, text_size = size.small)
+        table.cell(tradeTable, 16, 1, str.format("{0, number, #0.0000}", qty), text_color = color.gray, text_size = size.small)
+        table.cell(tradeTable, 0, 2, "+/-", text_color = color.white, text_size = size.small)
+        table.cell(tradeTable, 1, 2, str.format("{0,number,currency}", tradeSize), text_color = color.aqua, text_size = size.small)
+        table.cell(tradeTable, 2, 2, str.tostring(takeProfitGains, str.tostring(util.tickFormat())), text_color = (takeProfitGains > 0 ? color.rgb(182, 209, 186) : color.rgb(182, 153, 153)), text_size = size.small)
+        table.cell(tradeTable, 3, 2, str.tostring(tenkanExitGains1, str.tostring(util.tickFormat())), text_color = (tenkanExitGains1 > 0 ? color.rgb(182, 209, 186) : color.rgb(182, 153, 153)), text_size = size.small)
+        table.cell(tradeTable, 4, 2, str.tostring(tenkanExitGains2, str.tostring(util.tickFormat())), text_color = (tenkanExitGains2 > 0 ? color.rgb(182, 209, 186) : color.rgb(182, 153, 153)), text_size = size.small)
+        table.cell(tradeTable, 5, 2, str.tostring(tenkanExitGains3, str.tostring(util.tickFormat())), text_color = (tenkanExitGains3 > 0 ? color.rgb(182, 209, 186) : color.rgb(182, 153, 153)), text_size = size.small)
+        table.cell(tradeTable, 6, 2, str.tostring(tenkanExitGains4, str.tostring(util.tickFormat())), text_color = (tenkanExitGains4 > 0 ? color.rgb(182, 209, 186) : color.rgb(182, 153, 153)), text_size = size.small)
+        table.cell(tradeTable, 7, 2, str.tostring(tenkanExitGains5, str.tostring(util.tickFormat())), text_color = (tenkanExitGains5 > 0 ? color.rgb(182, 209, 186) : color.rgb(182, 153, 153)), text_size = size.small)
+        table.cell(tradeTable, 8, 2, str.tostring(tenkanExitGains6, str.tostring(util.tickFormat())), text_color = (tenkanExitGains6 > 0 ? color.rgb(182, 209, 186) : color.rgb(182, 153, 153)), text_size = size.small)
+        table.cell(tradeTable, 9, 2, str.tostring(tenkanExitGains7, str.tostring(util.tickFormat())), text_color = (tenkanExitGains7 > 0 ? color.rgb(182, 209, 186) : color.rgb(182, 153, 153)), text_size = size.small)
+        table.cell(tradeTable, 10, 2, str.tostring(tenkanExitGains8, str.tostring(util.tickFormat())), text_color = (tenkanExitGains8 > 0 ? color.rgb(182, 209, 186) : color.rgb(182, 153, 153)), text_size = size.small)
+        table.cell(tradeTable, 11, 2, str.tostring(tenkanExitGains9, str.tostring(util.tickFormat())), text_color = (tenkanExitGains9 > 0 ? color.rgb(182, 209, 186) : color.rgb(182, 153, 153)), text_size = size.small)
+        table.cell(tradeTable, 12, 2, str.tostring(tenkanExitGains10, str.tostring(util.tickFormat())), text_color = (tenkanExitGains10 > 0 ? color.rgb(182, 209, 186) : color.rgb(182, 153, 153)), text_size = size.small)
+        table.cell(tradeTable, 13, 2, str.tostring(chikouExitGains, str.tostring(util.tickFormat())), text_color = (kijunExitGains > 0 ? color.rgb(182, 209, 186) : color.rgb(182, 153, 153)), text_size = size.small)
+        table.cell(tradeTable, 14, 2, str.tostring(kijunExitGains, str.tostring(util.tickFormat())), text_color = (kijunExitGains > 0 ? color.rgb(182, 209, 186) : color.rgb(182, 153, 153)), text_size = size.small)
+        table.cell(tradeTable, 15, 2, str.format("{0, number, currency}", pnl+realtime), text_color = (pnl+realtime > 0 ? color.green : color.red), text_size = size.small)
+        table.cell(tradeTable, 16, 2, str.format("{0, number, #0.00%}", (pnl+realtime)/tradeSize), text_color = (pnl+realtime > 0 ? color.green : color.red), text_size = size.small)
+else
+    var table tradeTable = table.new(position.bottom_right, 4, 17, bgcolor = color.rgb(0, 0, 0, 30), frame_width = 2, frame_color = color.black)
+    if (barstate.islast and showTradePlan)
+        table.cell(tradeTable, 0, 1, "Entry", text_color = color.white, text_size = size.small)
+        table.cell(tradeTable, 0, 2, "TP", text_color = color.white, text_size = size.small)
+        table.cell(tradeTable, 0, 3, "Exit 1", text_color = color.white, text_size = size.small)
+        table.cell(tradeTable, 0, 4, "Exit 2", text_color = color.white, text_size = size.small)
+        table.cell(tradeTable, 0, 5, "Exit 3", text_color = color.white, text_size = size.small)
+        table.cell(tradeTable, 0, 6, "Exit 4", text_color = color.white, text_size = size.small)
+        table.cell(tradeTable, 0, 7, "Exit 5", text_color = color.white, text_size = size.small)
+        table.cell(tradeTable, 0, 8, "Exit 6", text_color = color.white, text_size = size.small)
+        table.cell(tradeTable, 0, 9, "Exit 7", text_color = color.white, text_size = size.small)
+        table.cell(tradeTable, 0, 10, "Exit 8", text_color = color.white, text_size = size.small)
+        table.cell(tradeTable, 0, 11, "Exit 9", text_color = color.white, text_size = size.small)
+        table.cell(tradeTable, 0, 12, "Exit 10", text_color = color.white, text_size = size.small)
+        table.cell(tradeTable, 0, 13, "C.Exit", text_color = color.white, text_size = size.small)
+        table.cell(tradeTable, 0, 14, "K.Exit", text_color = color.white, text_size = size.small)
+        table.cell(tradeTable, 0, 15, "SL/PnL", text_color = color.white, text_size = size.small)
+        table.cell(tradeTable, 0, 16, "Qty/%", text_color = color.white, text_size = size.small)
+        table.cell(tradeTable, 1, 0, (inLongTrade ? "Buy" : ( inShortTrade ? "Sell" : "-")), text_color = color.white, text_size = size.small)
+        table.cell(tradeTable, 1, 1, str.tostring(entryPrice, str.tostring(util.tickFormat())), text_color = color.blue, text_size = size.small)
+        table.cell(tradeTable, 1, 2, str.tostring(inLongTrade ? takeProfit : takeProfit, str.tostring(util.tickFormat())), text_color = color.gray, text_size = size.small)
+        table.cell(tradeTable, 1, 3, str.tostring(tenkanExit1, str.tostring(util.tickFormat())), text_color = color.gray, text_size = size.small)
+        table.cell(tradeTable, 1, 4, str.tostring(tenkanExit2, str.tostring(util.tickFormat())), text_color = color.gray, text_size = size.small)
+        table.cell(tradeTable, 1, 5, str.tostring(tenkanExit3, str.tostring(util.tickFormat())), text_color = color.gray, text_size = size.small)
+        table.cell(tradeTable, 1, 6, str.tostring(tenkanExit4, str.tostring(util.tickFormat())), text_color = color.gray, text_size = size.small)
+        table.cell(tradeTable, 1, 7, str.tostring(tenkanExit5, str.tostring(util.tickFormat())), text_color = color.gray, text_size = size.small)
+        table.cell(tradeTable, 1, 8, str.tostring(tenkanExit6, str.tostring(util.tickFormat())), text_color = color.gray, text_size = size.small)
+        table.cell(tradeTable, 1, 9, str.tostring(tenkanExit7, str.tostring(util.tickFormat())), text_color = color.gray, text_size = size.small)
+        table.cell(tradeTable, 1, 10, str.tostring(tenkanExit8, str.tostring(util.tickFormat())), text_color = color.gray, text_size = size.small)
+        table.cell(tradeTable, 1, 11, str.tostring(tenkanExit9, str.tostring(util.tickFormat())), text_color = color.gray, text_size = size.small)
+        table.cell(tradeTable, 1, 12, str.tostring(tenkanExit10, str.tostring(util.tickFormat())), text_color = color.gray, text_size = size.small)
+        table.cell(tradeTable, 1, 13, str.tostring(chikouExit, str.tostring(util.tickFormat())), text_color = color.gray, text_size = size.small)
+        table.cell(tradeTable, 1, 14, str.tostring(kijunExit, str.tostring(util.tickFormat())), text_color = color.gray, text_size = size.small)
+        table.cell(tradeTable, 1, 15, str.format("{0, number, currency}", stopLoss), text_color = color.orange, text_size = size.small)
+        table.cell(tradeTable, 1, 16, str.format("{0, number, #0.0000}", qty), text_color = color.gray, text_size = size.small)
+        table.cell(tradeTable, 2, 0, "+/-", text_color = color.white, text_size = size.small)
+        table.cell(tradeTable, 2, 1, str.format("{0, number, currency}", tradeSize), text_color = color.aqua, text_size = size.small)
+        table.cell(tradeTable, 2, 2, str.tostring(takeProfitGains, str.tostring(util.tickFormat())), text_color = (takeProfitGains > 0 ? color.rgb(182, 209, 186) : color.rgb(182, 153, 153)), text_size = size.small)
+        table.cell(tradeTable, 2, 3, str.tostring(tenkanExitGains1, str.tostring(util.tickFormat())), text_color = (tenkanExitGains1 > 0 ? color.rgb(182, 209, 186) : color.rgb(182, 153, 153)), text_size = size.small)
+        table.cell(tradeTable, 2, 4, str.tostring(tenkanExitGains2, str.tostring(util.tickFormat())), text_color = (tenkanExitGains2 > 0 ? color.rgb(182, 209, 186) : color.rgb(182, 153, 153)), text_size = size.small)
+        table.cell(tradeTable, 2, 5, str.tostring(tenkanExitGains3, str.tostring(util.tickFormat())), text_color = (tenkanExitGains3 > 0 ? color.rgb(182, 209, 186) : color.rgb(182, 153, 153)), text_size = size.small)
+        table.cell(tradeTable, 2, 6, str.tostring(tenkanExitGains4, str.tostring(util.tickFormat())), text_color = (tenkanExitGains4 > 0 ? color.rgb(182, 209, 186) : color.rgb(182, 153, 153)), text_size = size.small)
+        table.cell(tradeTable, 2, 7, str.tostring(tenkanExitGains5, str.tostring(util.tickFormat())), text_color = (tenkanExitGains5 > 0 ? color.rgb(182, 209, 186) : color.rgb(182, 153, 153)), text_size = size.small)
+        table.cell(tradeTable, 2, 8, str.tostring(tenkanExitGains6, str.tostring(util.tickFormat())), text_color = (tenkanExitGains6 > 0 ? color.rgb(182, 209, 186) : color.rgb(182, 153, 153)), text_size = size.small)
+        table.cell(tradeTable, 2, 9, str.tostring(tenkanExitGains7, str.tostring(util.tickFormat())), text_color = (tenkanExitGains7 > 0 ? color.rgb(182, 209, 186) : color.rgb(182, 153, 153)), text_size = size.small)
+        table.cell(tradeTable, 2, 10, str.tostring(tenkanExitGains8, str.tostring(util.tickFormat())), text_color = (tenkanExitGains8 > 0 ? color.rgb(182, 209, 186) : color.rgb(182, 153, 153)), text_size = size.small)
+        table.cell(tradeTable, 2, 11, str.tostring(tenkanExitGains9, str.tostring(util.tickFormat())), text_color = (tenkanExitGains9 > 0 ? color.rgb(182, 209, 186) : color.rgb(182, 153, 153)), text_size = size.small)
+        table.cell(tradeTable, 2, 12, str.tostring(tenkanExitGains10, str.tostring(util.tickFormat())), text_color = (tenkanExitGains10 > 0 ? color.rgb(182, 209, 186) : color.rgb(182, 153, 153)), text_size = size.small)
+        table.cell(tradeTable, 2, 13, str.tostring(chikouExitGains, str.tostring(util.tickFormat())), text_color = (kijunExitGains > 0 ? color.rgb(182, 209, 186) : color.rgb(182, 153, 153)), text_size = size.small)
+        table.cell(tradeTable, 2, 14, str.tostring(kijunExitGains, str.tostring(util.tickFormat())), text_color = (kijunExitGains > 0 ? color.rgb(182, 209, 186) : color.rgb(182, 153, 153)), text_size = size.small)
+        table.cell(tradeTable, 2, 15, str.format("{0, number, currency}", pnl+realtime), text_color = (pnl+realtime > 0 ? color.green : color.red), text_size = size.small)
+        table.cell(tradeTable, 2, 16, str.format("{0, number, percent}", (pnl+realtime)/tradeSize), text_color = (pnl+realtime > 0 ? color.green : color.red), text_size = size.small)
+
+// Display confluence information
+var table confluenceTable = table.new(position.top_right, 3, 19, bgcolor = color.rgb(0, 0, 0, 30), frame_width = 2, frame_color = color.black)
+if (barstate.islast and showConfluenceInfo)
+    table.cell(confluenceTable, 0, 0, "1. Future kumo is " + leadingKumoView + ".", text_color = (leadingKumoView == "bullish" ? color.green : (leadingKumoView == "bearish" ? color.red : color.white)), text_halign = text.align_left, text_size = size.small)
+    table.cell(confluenceTable, 0, 1, "2. Price is " + priceWrtKumo + " kumo.", text_color = (priceWrtKumo == "above" ? color.green : (priceWrtKumo == "below" ? color.red : color.white)), text_halign = text.align_left, text_size = size.small)
+    table.cell(confluenceTable, 0, 2, "3. Price is " + priceWrtTenkan + " tenkan.", text_color = priceWrtTenkan == "above" ? color.green : (priceWrtTenkan == "below" ? color.red : color.white), text_halign = text.align_left, text_size = size.small)
+    table.cell(confluenceTable, 0, 3, "4. Tenkan is " + tenkanWrtKijun + " kijun.", text_color = (tenkanWrtKijun == "above" ? color.green : (tenkanWrtKijun == "below" ? color.red : color.white)), text_halign = text.align_left, text_size = size.small)
+    table.cell(confluenceTable, 0, 4, "5. TK cross was " + recentTkCross + " and " + tkCrossWrtKumo + " kumo.", text_color = (tkCrossWrtKumo == "above" ? (recentTkCross == "bullish" ? color.green : (recentTkCross == "bearish" ? color.rgb(255, 153, 153) : color.white)) : (tkCrossWrtKumo == "below" ? (recentTkCross == "bullish" ? color.rgb(182, 209, 186) : (recentTkCross == "bearish" ? color.red : color.white)) : (recentTkCross == "bullish" ? color.rgb(182, 209, 186) : ( recentTkCross == "bearish" ? color.rgb(255, 153, 153) : color.gray)))), text_halign = text.align_left, text_size = size.small)
+    table.cell(confluenceTable, 0, 5, "6. Chikou is " + chikouWrtPrice + " price.", text_color = (chikouWrtPrice == "above" ? color.green : (chikouWrtPrice == "below" ? color.red : color.white)), text_halign = text.align_left, text_size = size.small)
+    table.cell(confluenceTable, 0, 6, "7. Chikou is " + chikouWrtKumo + " kumo.", text_color = (chikouWrtKumo == "above" ? color.green : (chikouWrtKumo == "below" ? color.red : color.gray)), text_halign = text.align_left, text_size = size.small)
+    table.cell(confluenceTable, 0, 7, "8. Senkou-Span-B " + (isChikouSafeFromImmediateObstacles ? " won't block Chikou." : str.format(" will block Chikou at {0, number, #0.00%}", chicouToSsbGap/close)), text_color = ( isChikouSafeFromImmediateObstacles and recentTkCross == "bullish" ? color.green : ( isChikouSafeFromImmediateObstacles and recentTkCross == "bearish" ? color.red : color.gray)), text_halign = text.align_left, text_size = size.small)
+    table.cell(confluenceTable, 0, 8, "9. Chikou " + (isChikouSpanFree ? "clear from congestion." : " heading into " + str.tostring(congestionProximity) + " candles!"), text_color = (isChikouSpanFree ? (marketView == "bullish" ? color.green : (marketView == "bearish" ? color.red : color.gray)) : color.white), text_halign = text.align_left, text_size = size.small)
+    
+    if inShortTrade or inLongTrade
+        table.cell(confluenceTable, 0, 9, "", text_color = color.yellow, text_halign = text.align_left, text_size = size.tiny)
+        table.cell(confluenceTable, 0, 10, "* Your trade is live! Respond to signals proactively.", text_color = color.aqua, text_halign = text.align_left, text_size = size.tiny)
+        table.cell(confluenceTable, 0, 11, "", text_color = color.yellow, text_halign = text.align_left, text_size = size.tiny)
+        table.cell(confluenceTable, 0, 12, "", text_color = color.yellow, text_halign = text.align_left, text_size = size.tiny)
+        table.cell(confluenceTable, 0, 13, "", text_color = color.yellow, text_halign = text.align_left, text_size = size.tiny)
+        table.cell(confluenceTable, 0, 14, "", text_color = color.yellow, text_halign = text.align_left, text_size = size.tiny)
+        table.cell(confluenceTable, 0, 15, "", text_color = color.yellow, text_halign = text.align_left, text_size = size.tiny)
+        table.cell(confluenceTable, 0, 16, "", text_color = color.yellow, text_halign = text.align_left, text_size = size.tiny)
+        table.cell(confluenceTable, 0, 17, "", text_color = color.yellow, text_halign = text.align_left, text_size = size.tiny)
+        table.cell(confluenceTable, 0, 18, "", text_color = color.yellow, text_halign = text.align_left, text_size = size.tiny)
+    else
+        table.cell(confluenceTable, 0, 9, "- Is current kumo thick?", text_color = color.yellow, text_halign = text.align_left, text_size = size.tiny)
+        table.cell(confluenceTable, 0, 10, "- Is current kumo in flux?", text_color = color.yellow, text_halign = text.align_left, text_size = size.tiny)
+        table.cell(confluenceTable, 0, 11, "- Is Senkou-Span-B flat & long?", text_color = color.yellow, text_halign = text.align_left, text_size = size.tiny)
+        table.cell(confluenceTable, 0, 12, "- Is future kumo trending?", text_color = color.yellow, text_halign = text.align_left, text_size = size.tiny)
+        table.cell(confluenceTable, 0, 13, "- Is kijun flat & long?", text_color = color.yellow, text_halign = text.align_left, text_size = size.tiny)
+        table.cell(confluenceTable, 0, 14, "- Is 26 period high/low too far from the price?", text_color = color.yellow, text_halign = text.align_left, text_size = size.tiny)
+        table.cell(confluenceTable, 0, 15, "- Does last 26 candle indicate kijun will trend?", text_color = color.yellow, text_halign = text.align_left, text_size = size.tiny)
+        table.cell(confluenceTable, 0, 16, "- Are kumo shadows in the close proximity?", text_color = color.yellow, text_halign = text.align_left, text_size = size.tiny)
+        table.cell(confluenceTable, 0, 17, str.format("{0} {1}", (marketView == "bullish" ? "Go long upon" : (marketView == "bearish" ? "Go short upon" : "Hang on!")), (marketView == "bullish" ? str.tostring(longBreakoutPrice) + " breakout." : (marketView == "bearish" ? str.tostring(shortBreakoutPrice) + " breakout." : " Thange playbook is scanning for signals."))), text_color = color.aqua, text_halign = text.align_left, text_size = size.tiny)
+        table.cell(confluenceTable, 0, 18, "Be ready with a limit-order at 9-period high/low.", text_color = color.aqua, text_halign = text.align_left, text_size = size.tiny)

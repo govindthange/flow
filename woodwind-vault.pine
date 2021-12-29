@@ -1,0 +1,39 @@
+// █████   ███   █████                       █████                  ███                 █████    █████   █████                      ████   █████   
+//░░███   ░███  ░░███                       ░░███                  ░░░                 ░░███    ░░███   ░░███                      ░░███  ░░███    
+// ░███   ░███   ░███   ██████   ██████   ███████  █████ ███ █████ ████  ████████    ███████     ░███    ░███   ██████   █████ ████ ░███  ███████  
+// ░███   ░███   ░███  ███░░███ ███░░███ ███░░███ ░░███ ░███░░███ ░░███ ░░███░░███  ███░░███     ░███    ░███  ░░░░░███ ░░███ ░███  ░███ ░░░███░   
+// ░░███  █████  ███  ░███ ░███░███ ░███░███ ░███  ░███ ░███ ░███  ░███  ░███ ░███ ░███ ░███     ░░███   ███    ███████  ░███ ░███  ░███   ░███    
+//  ░░░█████░█████░   ░███ ░███░███ ░███░███ ░███  ░░███████████   ░███  ░███ ░███ ░███ ░███      ░░░█████░    ███░░███  ░███ ░███  ░███   ░███ ███
+//    ░░███ ░░███     ░░██████ ░░██████ ░░████████  ░░████░████    █████ ████ █████░░████████       ░░███     ░░████████ ░░████████ █████  ░░█████ 
+//     ░░░   ░░░       ░░░░░░   ░░░░░░   ░░░░░░░░    ░░░░ ░░░░    ░░░░░ ░░░░ ░░░░░  ░░░░░░░░         ░░░       ░░░░░░░░   ░░░░░░░░ ░░░░░    ░░░░░  
+//                                                                                                                                                 
+// © 2021
+// @ govindthange
+//
+// @version=5
+
+//
+// @description provides auxiliary functions to support Woodwind Playbook.
+//
+library("WoodwindVault")
+
+
+//
+// @function calculates the gains after a position is scaled down.
+// @param entry float, the entry price of the short/long position.
+// @param exit float, the exit price of the short/long position.
+// @param qty float, the quantity by which a position is to be scaled down.
+// @param remainingQty float, the remaining quantity before the scale down.
+// @param direction int, its -1 for a short position and +1 for a long position.
+// @returns _qty float, the quantity by which the position is scaled down.
+// @returns _remainingQty float, the remaining quantity after the scale down. 
+// @returns _gains float, the profit & loss after the scale down. 
+//
+export computeExitGains(float entry, float exit, float qty, float remainingQty, int direction) =>
+    float _qty = qty
+    if (remainingQty <= qty)
+        _qty := remainingQty
+    _gains = (exit - entry) * _qty * direction
+    _remainingQty = remainingQty - _qty
+    [_qty, _remainingQty, _gains]
+
