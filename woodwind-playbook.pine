@@ -37,39 +37,39 @@ fromDateInput = input.time(timestamp("1 Apr 2021 05:30 +0300"), title="Backtest 
 toDateInput = input.time(timestamp("31 Dec 2021 05:30 +0300"), title="Backtest To Date")
 
 float accountSize = input.float(1000, minval=0.0, title="Account Size")
-float maxRisk = input.float(25, minval=0.0, title="Maximum risk per position") / 100
-float riskToRewardRatio = input.float(2.0, minval=1.0, title="Risk:Reward Ratio")
-float ratioWrtRiskToBeginTrailingSL = input.float (3.0, minval=0.0, title="Nurture Phase", tooltip="It is a ratio w.r.t R/R. Until this level the programme will not show any exit signals. You should start trailing stop-loss only after the price crosses this level. This level shown by a red/green dotted line above/below the entry signal.")
-float exitPercent = input.float(10, minval=0.0, title="Scale out percent") / 100
-float chikouExitPercent = input.float(0, minval=0.0, title="Lagging-Span exit %", tooltip="This signal will only appear once.") / 100
-float takeProfitPercent = input.float(10, minval=0.0, title="Take profit percent") / 100
-int atrLength = input.int(30, minval=0, title="ATR Length", tooltip="Choose higher values for lower timeframes. Following works best for BTC: [30 for 5m/15m/1H/4H], [9 for 4H/12H]")
-float atrStopMultiplier = input.float(5, minval=0.0, title="ATR x ?", tooltip="Following works best for BTC: [5 for 5m/15m/1H/4H/6H], [3 for 12H], [3 or 1 for D/2D] ")
+float maxRisk = input.float(25, minval=0.0, title="Maximum Risk Per Position") / 100
+float riskToRewardRatio = input.float(2.0, minval=1.0, title="Risk/Reward Ratio")
+float ratioWrtRiskToBeginTrailingSL = input.float (3.0, minval=0.0, title="Nurture Phase Ratio", tooltip="It is a ratio w.r.t R/R. Until this level the programme will not show any exit signals. You should start trailing stop-loss only after the price crosses this level. This level shown by a red/green dotted line above/below the entry signal.")
+float exitPercent = input.float(10, minval=0.0, title="Scale-Out %") / 100
+float chikouExitPercent = input.float(0, minval=0.0, title="Lagging-Span Exit %", tooltip="This signal will only appear once.") / 100
+float takeProfitPercent = input.float(10, minval=0.0, title="Take-Profit %") / 100
+int atrLength = input.int(30, minval=0, title="ATR Length", tooltip="Choose higher values for lower timeframes. In BTC use 30 for 5m/15m/1H/4H and 9 for 4H/12H.")
+float atrStopMultiplier = input.float(5, minval=0.0, title="ATR x ?", tooltip="In BTC use 5 for 5m/15m/1H/4H/6H, 3 for 12H and 3/1 for D/2D.")
 
-bool tkCrossExitEnabled = input.bool(true, title="Enable TK cross Exits")
-bool allowTkCrossExitInNurturePhase = input.bool(true, title="Allow TK cross exits in nurture phase")
-bool allowPrematureTkCrossForTrade = input.bool(true, title="Allow premature TK cross for signals", tooltip="Premature TK cross occurs when conversion line just overlaps baseline but does not cross it.")
-bool disregardPriceBeyondKumo = input.bool(false, title="Disregard price being beyond resistance band for entry signals")
-bool disregardLeadingKumoColor = input.bool(false, title="Disregard leading resistance band bias for entry signals")
-bool allowNeutralLeadingKumo = input.bool(false, title="Allow neutral leading resistance band valid for signals")
-bool requireChikouBeyondKumo = input.bool(true, title="Mandate lagging-span be beyond kumo for signals", tooltip="When enabled works very well on BTC 1H charts.")
+bool allowPrematureTkCrossForTrade = input.bool(true, title="Show entry signal even when short-term MA crosses mid-term MA prematurely", tooltip="A premature cross occurs when short-term moving-average (MA) overlaps mid-term moving-average but does not cross it.")
+bool tkCrossExitEnabled = input.bool(true, title="Show exit signals when short-term MA crosses mid-term MA")
+bool allowTkCrossExitInNurturePhase = input.bool(true, title="Show exit signals when short-term MA crosses mid-term MA in nurture phase")
+bool disregardPriceBeyondKumo = input.bool(false, title="Do not require price to be beyond resistance band for entry signals")
+bool disregardLeadingKumoColor = input.bool(true, title="Disregard leading resistance band bias for entry signals", tooltip="Enable it in BTC for 5m/15m/1H/D/3D. Disable it in BTC for 4H/6H/12H.")
+bool allowNeutralLeadingKumo = input.bool(false, title="Allow neutral leading resistance band valid for entry signals")
+bool requireChikouBeyondKumo = input.bool(true, title="Mandate lagging-span be beyond kumo for entry signals", tooltip="Enable it in BTC for 5m/15m/1H/4H.")
 float criticalChikouToSsbGap = input.float(0.0, minval=0.0, title="Critical Lagging-Span to SSB % Gap", tooltip="If lagging-span is not required beyond kumo then how close in %age it can get to SSB before an entry singal is invalidated?", tooltip="This is the gap between the lagging-span and the long-term resistance level in percentage. If the above checkbox is turned OFF then no entry signal will be shown while the lagging-span is within the specified percent range from the long-term resistance.")
-bool allowTenkanExitToCascade = input.bool(true, title="Allow crossover of short-term equilibrium point to cascade exit signals", tooltip="When false and price reverses to cross the short-term equilibrium point then only one exit signal will appear. The next signal can only come if price again reverses in your favor and touches or goes beyond the short-term equilibrium point. Essentially by turning OFF you will be able to ride the trend better and longer but at a risk of not scaling out.")
-bool requireHiLoBreachToInvalidateTenkanExit = input.bool(false, title="Require candle's high/low to breach short-term equilrium point (STEP) after price crosses-over the STEP to invalidate the exit signal.", tooltip="Disabling this setting improves performance as you get early exit signals to minimize losses. When disabled it gave slightly better performance for Bitcoin in 5m, 15m, 1H, 4H, 6H, 12H, and 1D.")
+bool allowTenkanExitToCascade = input.bool(true, title="Allow crossover of short-term equilibrium-point (STEP) to cascade exit signals", tooltip="When false and price reverses to cross the short-term equilibrium point then only one exit signal will appear. The next signal can only come if price again reverses in your favor and touches or goes beyond the short-term equilibrium point. Essentially by turning OFF you will be able to ride the trend better and longer but at a risk of not scaling out.")
+bool requireHiLoBreachToInvalidateTenkanExit = input.bool(false, title="Enforce Rule: After price reverses and crosses-over the STEP to open below/above it then show next STEP exit signal only after the price again attempts to breach the STEP to the up/down side for long/short position respectively.", tooltip="Disabling improves performance as you get early exit signals to minimize losses. Disable it in BTC for 5m/15m/1H/4H/6H/12H/1D.")
 
-bool showSignalsUponBreakout = input.bool(true, "Show entry signals upon 9-period high/low breakout", tooltip="Do not disable it! When enabled you should place a limit order for entry right at the price dipicted by the gray/green/red line.")
+bool showSignalsUponBreakout = input.bool(true, "Show entry signal upon 9-period high/low breakout", tooltip="Do not disable it! When enabled you should place a limit order for entry right at the price dipicted by the gray/green/red line.")
 bool allowEntryUponGaps = input.bool(false, "Show entry signals even on gap-up/down candles ( ! )", tooltip="This is not recommended!. This setting is only for study purposes.")
 bool includeCurrentBarFor9PeriodHighLow = input.bool(false, title="Include current bar to show 9-period highs/lows ( ! )", tooltip="This is not recommended!. This setting is only for study purposes.")
-bool useKumoAsStop = input.bool(false, title="Use kumo as stop-loss")
-bool useTenkanPeriodFarthestPointAsStop = input.bool(false, title="Use short-term period's farthest high/low point as stop-loss ( ! )", tooltip="This is for study purpose. Enabling this gives mixed performance.")
+bool useKumoAsStop = input.bool(false, title="Use long-term moving-average (MA) resistance band for stop-loss")
+bool useTenkanPeriodFarthestPointAsStop = input.bool(false, title="Use short-term period's farthest high/low point for stop-loss ( ! )", tooltip="This is for study purpose. Enabling this gives mixed performance.")
 float breakevenRatio = input.float(0, minval = 0, title="Stop-Loss Breakeven Ratio 9 ( ! )", tooltip="It is a ratio w.r.t the risk. When price reaches this level in nurture phase the stop-loss should be shifted to breakeven. 0 means no breakeven concept to be used. This setting is for study purpose and performance drops drastically for values greater than 0.")
-int congestionProximity = input.int(10, minval=1, title="Congestion Span", tooltip="How many bars far should the lagging-span be and called safe before it bumps into the price?")
+int congestionProximity = input.int(10, minval=1, title="Congestion Candle Span", tooltip="How many bars far should the lagging-span be and called safe before it bumps into the price?")
 float congestionTolerance = input.float(0, minval=0.0, title="Congestion Tolerance", tooltip="What percent of the highest-high/lowest-low of candles in congestion-span be treated as noise for determining congestion for the lagging-span?")
 
-string equilibriumScheme = input.string("Custom", title="Equilibrium Scheme", options=["Custom", "Standard", "Scalper", "5 Day Week", "Popular", "Ideal", "Trend Finder", "Forflies"])
-int tenkanSenPeriod = input.int(9, minval=1, title="Short-term period")
-int kijunSenPeriod = input.int(26, minval=1, title="Mid-term period")
-int senkouSpanPeriod = input.int(52, minval=1, title="Long-term period")
+string equilibriumScheme = input.string("Custom", title="Equilibrium Scheme", options=["Custom", "Standard", "Scalper", "5 Day Week", "Popular", "Ideal", "Trend Finder", "Forflies"], tooltip="In BTC use Scalper or 5-Day-Week for 5m/15m/1H, Popular or Ideal for 15m/1H/4H, and Standard for 6H.")
+int tenkanSenPeriod = input.int(9, minval=1, title="Short-Term Period")
+int kijunSenPeriod = input.int(26, minval=1, title="Mid-Term Period")
+int senkouSpanPeriod = input.int(52, minval=1, title="Long-Term Period")
 int displacement = input.int(26, minval=1, title="Displacement")
 
 bool showPnl = input.bool(true, title="Show profit & loss summary")
@@ -349,7 +349,6 @@ else if (disregardPriceBeyondKumo
 
 // Determine stop-loss factor using ATR
 float atr = yard.getAtrFactor(atrLength, atrStopMultiplier)
-
 
 
 //░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░
