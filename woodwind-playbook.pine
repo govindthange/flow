@@ -66,7 +66,7 @@ float breakevenRatio = input.float(0, minval = 0, title="Stop-Loss Breakeven Rat
 int congestionProximity = input.int(10, minval=1, title="Congestion Candle Span", tooltip="How many bars far should the lagging-span be and called safe before it bumps into the price?")
 float congestionTolerance = input.float(0, minval=0.0, title="Congestion Tolerance", tooltip="What percent of the highest-high/lowest-low of candles in congestion-span be treated as noise for determining congestion for the lagging-span?")
 
-string equilibriumScheme = input.string("Custom", title="Equilibrium Scheme", options=["Custom", "Standard", "Scalper", "5 Day Week", "Popular", "Ideal", "Trend Finder", "Forflies"], tooltip="In BTC use Scalper or 5-Day-Week for 5m/15m/1H, Popular or Ideal for 15m/1H/4H, and Standard for 6H.")
+string equilibriumScheme = input.string("Custom", title="Equilibrium Scheme", options=["Custom", "Standard", "Scalper", "5 Day Week", "Popular", "Ideal", "Trend Finder", "Conservative"], tooltip="In BTC use Scalper or 5-Day-Week for 5m/15m/1H, Popular or Ideal for 15m/1H/4H, and Standard for 6H.")
 int tenkanSenPeriod = input.int(9, minval=1, title="Short-Term Period")
 int kijunSenPeriod = input.int(26, minval=1, title="Mid-Term Period")
 int senkouSpanPeriod = input.int(52, minval=1, title="Long-Term Period")

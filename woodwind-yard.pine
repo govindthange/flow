@@ -57,7 +57,7 @@ export getEquilibriumPeriods(string scheme) =>
         "Popular" => [9, 30, 60, 30]
         "Ideal" => [10, 30, 60, 30]
         "Trend Finder" => [12, 24, 120, 24]
-        "Forflies" => [20, 60, 120, 30]
+        "Conservative" => [20, 60, 120, 30]
         =>
             runtime.error("Scheme not supported!")
             [int(na), int(na), int(na), int(na)]
