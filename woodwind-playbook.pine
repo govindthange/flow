@@ -70,6 +70,7 @@ bool useTenkanPeriodFarthestPointAsStop = input.bool(false, title="Use short-ter
 float breakevenRatio = input.float(0, minval = 0, title="Stop-Loss Breakeven Ratio 9 ( ! )", tooltip="It is a ratio w.r.t the risk. When price reaches this level in nurture phase the stop-loss should be shifted to breakeven. 0 means no breakeven concept to be used. This setting is for study purpose and performance drops drastically for values greater than 0.")
 int congestionProximity = input.int(10, minval=1, title="Congestion Candle Span", tooltip="How many bars far should the lagging-span be and called safe before it bumps into the price?")
 float congestionTolerance = input.float(0, minval=0.0, title="Congestion Tolerance", tooltip="What percent of the highest-high/lowest-low of candles in congestion-span be treated as noise for determining congestion for the lagging-span?")
+bool useMtf = input.bool(false, "Use Multi Timeframe Analysis")
 
 string equilibriumScheme = input.string("Custom", title="Equilibrium Scheme", options=["Custom", "Standard", "Scalper", "5 Day Week", "Popular", "Ideal", "Trend Finder", "Conservative"], tooltip="In BTC use Scalper or 5-Day-Week for 5m/15m/1H, Popular or Ideal for 15m/1H/4H, and Standard for 6H.")
 int tenkanSenPeriod = input.int(9, minval=1, title="Short-Term Period")
@@ -150,20 +151,23 @@ f_reset() =>
 
 f_tradeDirection(long, short) => long ? 1 : (short ? -1 : 0)
 
-log(str.format("CTF: {0}, HTF1: {1}, HTF2: {2}", timeframe.period, yard.getHigherTimeframe(), yard.getHigherTimeframe(2)))
-
 findEquilibriumOnHtf(resolution, tenkanSenPeriod, kijunSenPeriod, senkouSpanPeriod) =>
     htfIndex = barstate.isrealtime ? 1 : 0
     ctfIndex = barstate.isrealtime ? 0 : 1
+
+    o = request.security(symbol=syminfo.tickerid, timeframe=resolution, expression=open[htfIndex])[ctfIndex]
+    h = request.security(symbol=syminfo.tickerid, timeframe=resolution, expression=high[htfIndex])[ctfIndex]
+    l = request.security(symbol=syminfo.tickerid, timeframe=resolution, expression=low[htfIndex])[ctfIndex]
     c = request.security(symbol=syminfo.tickerid, timeframe=resolution, expression=close[htfIndex])[ctfIndex]
+    ch = request.security(symbol=syminfo.tickerid, timeframe=resolution, expression=close[htfIndex])[ctfIndex]
     
     // [t, k, sSA1, sSB1] = request.security(symbol=syminfo.tickerid, timeframe=resolution, expression=yard.findEquilibrium(9, 26, 52)[htfIndex])[ctfIndex]
     [t, k, ssA, ssB] = request.security(symbol=syminfo.tickerid, timeframe=resolution, expression=yard.findEquilibrium(tenkanSenPeriod, kijunSenPeriod, senkouSpanPeriod))
-    [t, k, ssA, ssB, c]
+    [o, h, l, c, t, k, ssA, ssB, ch]
 
 
-getEquilibriumOnHtf(order) =>
-    htf = yard.getHigherTimeframe(order)
+getEquilibriumOnHtf(order=1, magnitude=4) =>
+    htf = yard.getHigherTimeframe(order, magnitude)
     switch htf
         "1" =>
             findEquilibriumOnHtf("1", 7, 22, 44)
@@ -177,14 +181,14 @@ getEquilibriumOnHtf(order) =>
         "30" =>
             findEquilibriumOnHtf("30", 7, 22, 44)
         
-        "45" =>
-            findEquilibriumOnHtf("45", 7, 22, 44)
+        // "45" =>
+        //     findEquilibriumOnHtf("45", 7, 22, 44)
         
         "60" =>
             findEquilibriumOnHtf("60", 7, 22, 44)
         
-        "120" =>
-            findEquilibriumOnHtf("120", 9, 30, 60)
+        // "120" =>
+        //     findEquilibriumOnHtf("120", 9, 30, 60)
         
         "240" =>
             findEquilibriumOnHtf("240", 9, 30, 60)
@@ -195,27 +199,29 @@ getEquilibriumOnHtf(order) =>
         "720" =>
             findEquilibriumOnHtf("720", 9, 26, 52)
         
-        "D" =>
-            findEquilibriumOnHtf("D", 9, 26, 52)
+        // "D" =>
+        //     findEquilibriumOnHtf("D", 9, 26, 52)
         
-        "2D" =>
-            findEquilibriumOnHtf("2D", 9, 26, 52)
+        // "2D" =>
+        //     findEquilibriumOnHtf("2D", 9, 26, 52)
         
-        "3D" =>
-            findEquilibriumOnHtf("3D", 9, 26, 52)
+        // "3D" =>
+        //     findEquilibriumOnHtf("3D", 9, 26, 52)
         
-        "5D" =>
-            findEquilibriumOnHtf("5D", 9, 26, 52)
+        // "5D" =>
+        //     findEquilibriumOnHtf("5D", 9, 26, 52)
         
-        "240" =>
-            findEquilibriumOnHtf("240", 9, 26, 52)
+        // "240" =>
+        //     findEquilibriumOnHtf("240", 9, 26, 52)
         
-        =>
-            findEquilibriumOnHtf("3M", 9, 26, 52)
+        // =>
+        //     findEquilibriumOnHtf("3M", 9, 26, 52)
 
-getDisplacementForHtf(displacement, order) => displacement * order
+getDisplacementForHtf(int displacement, float order, int magnitude) => math.round(displacement * math.pow(magnitude, order))
 
-getProjectionForHtf(displacement, order) => getDisplacementForHtf(displacement, order) - 2*order
+getProjectionForHtf(int displacement, float order, int magnitude) => math.round(getDisplacementForHtf(displacement, order, magnitude) - 2*magnitude)
+
+getCongestionForHtf(int proximity, float order, int magnitude) => math.round(proximity * math.pow(magnitude, order))
 
 var label activeTradeLabel = na
 var string activeTradeInfo = na
@@ -322,17 +328,19 @@ var chikouExitGains = 0.0
 //░░╚═╝░░╚═╝░░░╚═╝░░░╚═╝░░░░░░░╚═╝░░╚═╝╚═════╝░╚═════╝░╚══════╝╚═════╝░╚═════╝░╚═╝░░░░░╚═╝╚══════╝╚═╝░░╚══╝░░░╚═╝░░░░░
 //░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░
 
-[tenkanHtf1, kijunHtf1, senkouSpanAHtf1, senkouSpanBHtf1, chikouHtf1] = getEquilibriumOnHtf(1)
+int htfMagnitude = 4
+float htfOrder1 = 1 // 1 order up timeframe i.e. 4x of current timeframe
+float htfOrder2 = 2 * htfOrder1 // 2 orders up timeframe i.e. 16x of current timeframe
+log(str.format("CTF: {0}, HTF1: {1}, HTF2: {2}", timeframe.period, yard.getHigherTimeframe(1, htfMagnitude), yard.getHigherTimeframe(2, htfMagnitude)))
 
-// int htfOrder = 4*4
-int htfOrder1 = 4 // 1 order up timeframe i.e. 4x of current timeframe
-int htfOrder2 = 4 * htfOrder1 // 2 orders up timeframe i.e. 16x of current timeframe
+[openHtf1, highHtf1, lowHtf1, closeHtf1, tenkanHtf1, kijunHtf1, senkouSpanAHtf1, senkouSpanBHtf1, chikouHtf1] = getEquilibriumOnHtf(1, htfMagnitude)
 
-int displacementHtf1 = getDisplacementForHtf(displacement, htfOrder1)
+
+int displacementHtf1 = getDisplacementForHtf(displacement, htfOrder1, htfMagnitude)
 plot(chikouHtf1, offset = - displacementHtf1 + 1, color=color.orange, title="Lagging Price Action (HTF 1)")
 
 // int displacementHtf1 = displacement * htfOrder - 4 - 4 - 4 - 4 - 4 - 4 - 4 - 4
-int htfProjection = getProjectionForHtf(displacement, htfOrder1)
+int htfProjection = getProjectionForHtf(displacement, htfOrder1, htfMagnitude)
 ssa1 = plot(senkouSpanAHtf1, offset = htfProjection - 1, color=#A5D6A7, title="HTF Senkou-Span A")
 ssb1 = plot(senkouSpanBHtf1, offset = htfProjection - 1, color=#EF9A9A, title="HTF Senkou-Span B")
 fill(ssa1, ssb1, color = senkouSpanAHtf1 > senkouSpanBHtf1 ? color.rgb(67, 160, 71, 90) : color.rgb(244, 67, 54, 90))
@@ -340,6 +348,70 @@ fill(ssa1, ssb1, color = senkouSpanAHtf1 > senkouSpanBHtf1 ? color.rgb(67, 160, 
 plot(tenkanHtf1, "Short-Term Equilibrium (HTF 1)", color.gray)
 plot(kijunHtf1, "Mid-Term Equilibrium (HTF 1)", color.maroon)
 
+// How is current kumo in 1st order HTF?
+string kumoBiasInHtf1 = yard.getBias(senkouSpanAHtf1[displacementHtf1-1], senkouSpanBHtf1[displacementHtf1-1])
+
+// Where is price w.r.t kumo in 1st order HTF?
+string priceWrtKumoInHtf1 = yard.getPositionRelativeToRange(closeHtf1, senkouSpanAHtf1[displacementHtf1-1], senkouSpanBHtf1[displacementHtf1-1])
+
+// Where is price w.r.t tenkan in 1st order HTF?
+string priceWrtTenkanInHtf1 = yard.getPositionRelativeToLevel(closeHtf1, tenkanHtf1)
+
+// Where is tenkan w.r.t kijun in 1st order HTF?
+string tenkanWrtKijunInHtf1 = yard.getPositionRelativeToLevel(tenkanHtf1, kijunHtf1)
+
+// Did TK cross occur in 1st order HTF?
+var string recentTkCrossInHtf1 = na
+tkCrossStrengthIfOccurredHtf1 = yard.getBiasFromCrossover(tenkanHtf1, kijunHtf1, true)  // The fn will return na if no TK cross occurred
+
+// Where is TK cross w.r.t kumo in 1st order HTF? <--- This is not a filter. Ignore!
+var string tkCrossWrtKumoInHtf1 = "within"
+if tkCrossStrengthIfOccurredHtf1 != na
+    recentTkCrossInHtf1 := tkCrossStrengthIfOccurredHtf1
+    tkCrossWrtKumoInHtf1 := yard.getPositionRelativeToRange(kijunHtf1, senkouSpanAHtf1[displacementHtf1-1], senkouSpanBHtf1[displacementHtf1-1])
+
+// Where is chikou w.r.t price in 1st order HTF?
+string chikouWrtPriceInHtf1 = yard.getPositionRelativeToRange(closeHtf1, highHtf1[displacementHtf1-1], lowHtf1[displacementHtf1-1])
+
+// Where is chikou w.r.t kumo in 1st order HTF?
+string laggingKumoBiasInHtf1 = yard.getBias(senkouSpanAHtf1[2*displacementHtf1-1], senkouSpanBHtf1[2*displacementHtf1-1])
+string chikouWrtKumoInHtf1 = yard.getPositionRelativeToRange(closeHtf1, senkouSpanAHtf1[2*displacementHtf1-1], senkouSpanBHtf1[2*displacementHtf1-1])
+
+// Where is chikou w.r.t a flat Senkou-Span-B ahead in 1st order HTF?
+congestionProximityHtf1 = getCongestionForHtf(congestionProximity, htfOrder1, htfMagnitude)
+[chicouToSsbGapHtf1, highestSsbHtf1, lowestSsbHtf1] = yard.getGap(closeHtf1, senkouSpanBHtf1[displacementHtf1*2 - 1 - congestionProximityHtf1], congestionProximityHtf1, recentTkCrossInHtf1, priceWrtKumoInHtf1)
+bool isChikouSafeFromImmediateObstaclesInHtf1 = chicouToSsbGapHtf1 >= 0
+                                                 or (chicouToSsbGapHtf1/closeHtf1 <= (-1 * criticalChikouToSsbGap/100))
+
+// Is chikou free from congestion ahead in 1st order HTF? Is it heading into price?
+// int cphtf1 = 10*16//congestionProximityHtf1
+// bool isChikouSpanFreeInHtf1 = yard.isLaggingSpanCongestionFree(closeHtf1, displacementHtf1, cphtf1, congestionTolerance, recentTkCrossInHtf1, chikouWrtPriceInHtf1)
+
+//log(str.format("kumoBiasInHtf1, priceWrtKumoInHtf1, priceWrtTenkanInHtf1, tenkanWrtKijunInHtf1, recentTkCrossInHtf1, tkCrossWrtKumoInHtf1, chikouWrtPriceInHtf1, laggingKumoBiasInHtf1, chikouWrtKumoInHtf1, isChikouSafeFromImmediateObstaclesInHtf1, isChikouSpanFreeInHtf1\n{0}, {1}, {2}, {3}, {4}, {5}, {6}, {7}, {8}, {9}, {10}", kumoBiasInHtf1, priceWrtKumoInHtf1, priceWrtTenkanInHtf1, tenkanWrtKijunInHtf1, recentTkCrossInHtf1, tkCrossWrtKumoInHtf1, chikouWrtPriceInHtf1, laggingKumoBiasInHtf1, chikouWrtKumoInHtf1, isChikouSafeFromImmediateObstaclesInHtf1, isChikouSpanFreeInHtf1))
+
+// Establish market view in 1st order higher timeframe
+string marketViewInHtf1 = "conslidating"
+if useMtf
+    if (disregardPriceBeyondKumo
+             or (not disregardPriceBeyondKumo and priceWrtKumoInHtf1 == "above")
+             )
+         and priceWrtTenkanInHtf1 == "above"
+         and (tenkanWrtKijunInHtf1 == "above" or tenkanWrtKijunInHtf1 == "at")
+         and chikouWrtPriceInHtf1 == "above"
+         and isChikouSafeFromImmediateObstaclesInHtf1
+        //  and isChikouSpanFreeInHtf1
+        marketViewInHtf1 := "bullish"
+    else if (disregardPriceBeyondKumo
+                 or (not disregardPriceBeyondKumo and priceWrtKumoInHtf1 == "below")
+                 )
+         and priceWrtTenkanInHtf1 == "below"
+         and (tenkanWrtKijunInHtf1 == "below" or tenkanWrtKijunInHtf1 == "at")
+         and chikouWrtPriceInHtf1 == "below"
+         and isChikouSafeFromImmediateObstaclesInHtf1
+        //  and isChikouSpanFreeInHtf1
+        marketViewInHtf1 := "bearish"
+    else
+        marketViewInHtf1 := "conslidating"
 
 //░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░
 //░░░█████╗░████████╗███████╗░░░█████╗░░██████╗░██████╗███████╗░██████╗░██████╗███╗░░░███╗███████╗███╗░░██╗████████╗░░
@@ -473,6 +545,7 @@ canPrepareForLong := withinTestRange
                          and not inLongTrade
                          and not inShortTrade
                          and marketView == "bullish"
+                         and (not useMtf or marketViewInHtf1 == "bullish")
 
 if showSignalsUponBreakout
     if not canPrepareForLong
@@ -543,6 +616,7 @@ canPrepareForShort :=  withinTestRange
                          and not inShortTrade
                          and not inLongTrade
                          and marketView == "bearish"
+                         and (not useMtf or marketViewInHtf1 == "bearish")
 
 if showSignalsUponBreakout
     if not canPrepareForShort
