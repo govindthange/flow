@@ -74,11 +74,11 @@ export getEquilibriumPeriods(string scheme) =>
 // @returns longTermEquilibriumB float, the midpoint of highest-high and lowest-low of the candles in last longTermPeriod.
 //
 export findEquilibrium(int shortTermPeriod, int midTermPeriod, int longTermPeriod) =>
-    shortTermEquilirium = getHighestHighAndLowestLow(shortTermPeriod)
+    shortTermEquilibrium = getHighestHighAndLowestLow(shortTermPeriod)
     mideTermEquilibrium = getHighestHighAndLowestLow(midTermPeriod)
-    longTermEquilibriumA = math.avg(shortTermEquilirium, mideTermEquilibrium)
+    longTermEquilibriumA = math.avg(shortTermEquilibrium, mideTermEquilibrium)
     longTermEquilibriumB = getHighestHighAndLowestLow(longTermPeriod)
-    [shortTermEquilirium, mideTermEquilibrium, longTermEquilibriumA, longTermEquilibriumB]
+    [shortTermEquilibrium, mideTermEquilibrium, longTermEquilibriumA, longTermEquilibriumB]
 
 
 //
@@ -235,4 +235,44 @@ export getStopLossFromRange(float price, float fromLevel, float toLevel) =>
                 stop := toLevel
     
     stop
+
+
+//
+// @function provides all the popular timeframes along with their resolution in minutes.
+// @returns array, popular timeframes as an array of strings.
+// @ returns array, resolutions as an array of integers.
+//
+export getResolutions() =>
+    timeframes = array.from("1", "5", "15", "30", "45", "60", "120", "180", "240", "360", "720", "D", "2D", "3D", "5D",   "W",  "2W",   "M",   "3M")
+    resolutions = array.from( 1,   5,   15,   30,   45,   60,   120,   180,   240,   360,  720, 1440, 2880, 4320, 7200, 10080, 20160, 43200, 129600)
+    
+    [timeframes, resolutions]
+
+
+//
+// @function determines the higher timeframe for the required order and magnitude.
+// @param order float, the factor to go higher by from the current timeframe.
+// @param magnitude int, the multiplier.
+// @returns string, the higher timeframe identifier.
+//
+export getHigherTimeframe(float order=1, int magnitude=4) =>
+    string htf = na
+    
+    [timeframes, resolutions] = getResolutions()
+    
+    ctfIndex = array.indexof(timeframes, timeframe.period)
+    size = array.size(resolutions)
+    if ctfIndex != -1 and size > 1
+        ctfResolution = array.get(resolutions, ctfIndex)
+        htfResolution = ctfResolution * math.pow(magnitude, order)
+        for i = 1 to size by 1
+            r = array.get(resolutions, i)
+            if r >= htfResolution
+                if (r-htfResolution)/ctfResolution>= 1
+                     and i-1 > 0
+                    htf := array.get(timeframes, i-1)
+                else
+                    htf := array.get(timeframes, i)
+                break
+    htf
 
