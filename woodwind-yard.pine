@@ -17,11 +17,11 @@ library("WoodwindYard", overlay=true)
 
 //
 // @function determines the highest-high and the lowest-low value for the specified interval.
+// @param index, used to pick the last data point for using higher timeframe data in lower timeframe.
 // @param period int, the time interval.
 // @returns float, the highest-high and lowest-low value.
 //
-export getHighestHighAndLowestLow(int period) => math.avg(ta.lowest(period), ta.highest(period))
-
+export getHighestHighAndLowestLow(int index, int period) => math.avg(ta.lowest(low[index], period), ta.highest(high[index], period))
 
 //
 // @function determines the highest-high and the lowest-low value for the specified interval.
@@ -65,6 +65,7 @@ export getEquilibriumPeriods(string scheme) =>
 
 //
 // @function projects a one glance view of the entire resistance net faced by the price. It does so by computing different equilibrium points for the price.
+// @param index, used to pick the last data point for using higher timeframe data in lower timeframe.
 // @param shortTermPeriod int, the period for computing the short-term equilibrium point.
 // @param midTermPeriod int, the period for computing the intermediate-term equilibrium point.
 // @param longTermPeriod int, the period for computing the 2 additional long-term equilibrium points.
@@ -73,12 +74,12 @@ export getEquilibriumPeriods(string scheme) =>
 // @returns longTermEquilibriumA float, the midpoint of the shortTermEquilibrium and midTermEquilibrium points.
 // @returns longTermEquilibriumB float, the midpoint of highest-high and lowest-low of the candles in last longTermPeriod.
 //
-export findEquilibrium(int shortTermPeriod, int midTermPeriod, int longTermPeriod) =>
-    shortTermEquilibrium = getHighestHighAndLowestLow(shortTermPeriod)
-    mideTermEquilibrium = getHighestHighAndLowestLow(midTermPeriod)
-    longTermEquilibriumA = math.avg(shortTermEquilibrium, mideTermEquilibrium)
-    longTermEquilibriumB = getHighestHighAndLowestLow(longTermPeriod)
-    [shortTermEquilibrium, mideTermEquilibrium, longTermEquilibriumA, longTermEquilibriumB]
+export findEquilibrium(int index, int shortTermPeriod, int midTermPeriod, int longTermPeriod) =>
+    shortTermEquilibrium = getHighestHighAndLowestLow(index, shortTermPeriod)
+    midTermEquilibrium = getHighestHighAndLowestLow(index, midTermPeriod)
+    longTermEquilibriumA = math.avg(shortTermEquilibrium, midTermEquilibrium)
+    longTermEquilibriumB = getHighestHighAndLowestLow(index, longTermPeriod)
+    [shortTermEquilibrium, midTermEquilibrium, longTermEquilibriumA, longTermEquilibriumB]
 
 
 //
