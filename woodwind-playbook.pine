@@ -20,7 +20,7 @@
 // @description is a strategy based trading program.
 //
 indicator("Thange Woodwind Playbook v3.0", shorttitle="Thange/Clarinet", overlay=true, max_labels_count=250, max_lines_count=500)
-import govindthange/WoodwindYardDev/25 as yard
+import govindthange/WoodwindYardDev/27 as yard
 import govindthange/WoodwindVault/3 as vault
 import govindthange/ThangeVault/1 as util
 //import ed56/debugger/2 as debug
@@ -45,7 +45,7 @@ toDateInput = input.time(timestamp("8 Jun 2021 05:30 +0300"), title="Backtest To
 float accountSize = input.float(1000, minval=0.0, title="Account Size")
 float maxRisk = input.float(25, minval=0.0, title="Maximum Risk Per Position") / 100
 float riskToRewardRatio = input.float(1.0, minval=1.0, title="Risk/Reward Ratio")
-float ratioWrtRiskToBeginTrailingSL = input.float (1.0, minval=0.0, title="Nurture Phase Ratio", tooltip="It is a ratio w.r.t R/R. Until this level the programme will not show any exit signals. You should start trailing stop-loss only after the price crosses this level. This level shown by a red/green dotted line above/below the entry signal.")
+float ratioWrtRiskToBeginTrailingSL = input.float (2.0, minval=0.0, title="Nurture Phase Ratio", tooltip="It is a ratio w.r.t R/R. Until this level the programme will not show any exit signals. You should start trailing stop-loss only after the price crosses this level. This level shown by a red/green dotted line above/below the entry signal.")
 float exitPercent = input.float(20, minval=0.0, title="Scale-Out %") / 100
 float chikouExitPercent = input.float(0, minval=0.0, title="Lagging-Span Exit %", tooltip="This signal will only appear once.") / 100
 float takeProfitPercent = input.float(20, minval=0.0, title="Take-Profit %") / 100
@@ -58,6 +58,7 @@ bool allowTkCrossExitInNurturePhase = input.bool(true, title="Show exit signals 
 bool disregardPriceBeyondKumo = input.bool(false, title="Do not require price to be beyond resistance band for entry signals")
 bool disregardLeadingKumoColor = input.bool(false, title="Disregard leading resistance band bias for entry signals", tooltip="Enable it in BTC for 5m/15m/1H/D/3D. Disable it in BTC for 4H/6H/12H.")
 bool allowNeutralLeadingKumo = input.bool(true, title="Allow neutral leading resistance band valid for entry signals")
+bool disregardKumoBiasInHtf = input.bool(true, title="Disregard resistance band bias in higher timeframes for entry signals")
 bool requireChikouBeyondKumo = input.bool(false, title="Mandate lagging-span be beyond kumo for entry signals", tooltip="Enable it in BTC for 5m/15m/1H/4H.")
 float criticalChikouToSsbGap = input.float(0.0, minval=0.0, title="Critical Lagging-Span to SSB % Gap", tooltip="If lagging-span is not required beyond kumo then how close in %age it can get to SSB before an entry singal is invalidated?", tooltip="This is the gap between the lagging-span and the long-term resistance level in percentage. If the above checkbox is turned OFF then no entry signal will be shown while the lagging-span is within the specified percent range from the long-term resistance.")
 bool allowTenkanExitToCascade = input.bool(true, title="Allow crossover of short-term equilibrium-point (STEP) to cascade exit signals", tooltip="When false and price reverses to cross the short-term equilibrium point then only one exit signal will appear. The next signal can only come if price again reverses in your favor and touches or goes beyond the short-term equilibrium point. Essentially by turning OFF you will be able to ride the trend better and longer but at a risk of not scaling out.")
@@ -155,23 +156,7 @@ f_tradeDirection(long, short) => long ? 1 : (short ? -1 : 0)
 findEquilibriumOnHtf(resolution, tenkanSenPeriod, kijunSenPeriod, senkouSpanPeriod) =>
     htfIndex = barstate.isrealtime ? 1 : 0
     ctfIndex = barstate.isrealtime ? 0 : 1
-
-    // o = request.security(symbol=syminfo.tickerid, timeframe=resolution, expression=open[htfIndex])[ctfIndex]
-    // h = request.security(symbol=syminfo.tickerid, timeframe=resolution, expression=high[htfIndex])[ctfIndex]
-    // l = request.security(symbol=syminfo.tickerid, timeframe=resolution, expression=low[htfIndex])[ctfIndex]
-    // c = request.security(symbol=syminfo.tickerid, timeframe=resolution, expression=close[htfIndex])[ctfIndex]
-    // ch = request.security(symbol=syminfo.tickerid, timeframe=resolution, expression=close[htfIndex])[ctfIndex]
-    
-    o = request.security(symbol=syminfo.tickerid, timeframe=resolution, expression=open)
-    h = request.security(symbol=syminfo.tickerid, timeframe=resolution, expression=high)
-    l = request.security(symbol=syminfo.tickerid, timeframe=resolution, expression=low)
-    c = request.security(symbol=syminfo.tickerid, timeframe=resolution, expression=close)
-    ch = request.security(symbol=syminfo.tickerid, timeframe=resolution, expression=close)
-    
-    
-    // [t, k, sSA1, sSB1] = request.security(symbol=syminfo.tickerid, timeframe=resolution, expression=yard.findEquilibrium(htfIndex, 9, 26, 52)[htfIndex])[ctfIndex]
-    [t, k, ssA, ssB] = request.security(symbol=syminfo.tickerid, timeframe=resolution, expression=yard.findEquilibrium(htfIndex, tenkanSenPeriod, kijunSenPeriod, senkouSpanPeriod))
-    [o, h, l, c, t, k, ssA, ssB, ch]
+    request.security(symbol=syminfo.tickerid, timeframe=resolution, expression=yard.getAllStrategyParameters(htfIndex, tenkanSenPeriod, kijunSenPeriod, senkouSpanPeriod))
 
 
 getEquilibriumOnHtf(order=1, magnitude=4) =>
@@ -246,6 +231,8 @@ var float remainingExitQty = 0.0
 var int totalTrades = 0
 var float tradeSize = 0.0
 var float pnl = 0.0
+
+var hasSignaled = false
 
 var inLongTrade = false
 var inShortTrade = false
@@ -341,8 +328,13 @@ float htfOrder1 = 1 // 1 order up timeframe i.e. 4x of current timeframe
 float htfOrder2 = 2 * htfOrder1 // 2 orders up timeframe i.e. 16x of current timeframe
 //log(str.format("CTF: {0}, HTF1: {1}, HTF2: {2}", timeframe.period, yard.getHigherTimeframe(1, htfMagnitude), yard.getHigherTimeframe(2, htfMagnitude)))
 
-[openHtf1, highHtf1, lowHtf1, closeHtf1, tenkanHtf1, kijunHtf1, senkouSpanAHtf1, senkouSpanBHtf1, chikouHtf1] = getEquilibriumOnHtf(1, htfMagnitude)
+[openHtf1, highHtf1, lowHtf1, closeHtf1, tenkanHtf1, kijunHtf1, senkouSpanAHtf1, senkouSpanBHtf1, highestTenkanSenBarHtf1, lowestTenkanSenBarHtf1, highestKijunSenBarHtf1, lowestKijunSenBarHtf1] = getEquilibriumOnHtf(1, htfMagnitude)
 
+chikouHtf1 = closeHtf1
+highestTenkanValueHtf1 = highHtf1[highestTenkanSenBarHtf1]
+lowestTenkanValueHtf1 = lowHtf1[lowestTenkanSenBarHtf1]
+highestKijunValueHtf1 = highHtf1[highestKijunSenBarHtf1]
+lowestKijunValueHtf1 = lowHtf1[lowestKijunSenBarHtf1]
 
 int displacementHtf1 = getDisplacementForHtf(displacement, htfOrder1, htfMagnitude)
 plot(chikouHtf1, offset = - displacementHtf1 + 1, color=color.orange, title="Lagging Price Action (HTF 1)")
@@ -404,7 +396,7 @@ log(str.format("kumoBiasInHtf1, priceWrtKumoInHtf1, priceWrtTenkanInHtf1, tenkan
 // Establish market view in 1st order higher timeframe
 string marketViewInHtf1 = "conslidating"
 if useMtf
-    if (kumoBiasInHtf1 == "bullish" or leadingKumoBiasInHtf1 == "bullish")
+    if (disregardKumoBiasInHtf or kumoBiasInHtf1 == "bullish" or leadingKumoBiasInHtf1 == "bullish")
          and (disregardPriceBeyondKumo
              or (not disregardPriceBeyondKumo and priceWrtKumoInHtf1 == "above")
              )
@@ -414,7 +406,7 @@ if useMtf
          and isChikouSafeFromImmediateObstaclesInHtf1
         //  and isChikouSpanFreeInHtf1
         marketViewInHtf1 := "bullish"
-    else if (kumoBiasInHtf1 == "bearish" or leadingKumoBiasInHtf1 == "bearish")
+    else if (disregardKumoBiasInHtf or kumoBiasInHtf1 == "bearish" or leadingKumoBiasInHtf1 == "bearish")
          and (disregardPriceBeyondKumo
                  or (not disregardPriceBeyondKumo and priceWrtKumoInHtf1 == "below")
                  )
@@ -556,12 +548,13 @@ bool didCandleGap = (open > high[1] and low > high[1]) or (open < low[1] and hig
 //
 // Long Entry Strategy
 //
-canPrepareForLong := withinTestRange
+canPrepareForLong := (hasSignaled and false)
+                     or (withinTestRange
                          and (allowEntryUponGaps or not didCandleGap)
                          and not inLongTrade
                          and not inShortTrade
                          and marketView == "bullish"
-                         and (not useMtf or marketViewInHtf1 == "bullish")
+                         and (not useMtf or marketViewInHtf1 == "bullish"))
 
 if showSignalsUponBreakout
     if not canPrepareForLong
@@ -579,6 +572,8 @@ else if canPrepareForLong
 
 if canPrepareForLong
      and (not showSignalsUponBreakout or high >= longBreakoutPrice)
+
+    hasSignaled := true
     
     shouldGoLong := true
     hasSignaledForLong := false
@@ -627,12 +622,13 @@ if canPrepareForLong
 //
 // Short Entry Strategy
 //
-canPrepareForShort :=  withinTestRange
+canPrepareForShort := (hasSignaled and false)
+                         or (withinTestRange
                          and (allowEntryUponGaps or not didCandleGap)
                          and not inShortTrade
                          and not inLongTrade
                          and marketView == "bearish"
-                         and (not useMtf or marketViewInHtf1 == "bearish")
+                         and (not useMtf or marketViewInHtf1 == "bearish"))
 
 if showSignalsUponBreakout
     if not canPrepareForShort
@@ -650,6 +646,8 @@ else if canPrepareForShort
 
 if canPrepareForShort
      and (not showSignalsUponBreakout or low <= shortBreakoutPrice)
+    
+    hasSignaled := true
     
     shouldGoShort := true
     hasSignaledForShort := false
@@ -1183,6 +1181,8 @@ if withinTestRange
     tkCrossExitGains := 0.0
     preemptiveExitGains := 0.0
     chikouExitGains := 0.0
+
+    hasSignaled := false
 
 
 //░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░
