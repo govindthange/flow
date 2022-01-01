@@ -23,15 +23,16 @@ indicator("Thange Woodwind Playbook v3.0", shorttitle="Thange/Clarinet", overlay
 import govindthange/WoodwindYardDev/25 as yard
 import govindthange/WoodwindVault/3 as vault
 import govindthange/ThangeVault/1 as util
-import ed56/debugger/2 as debug
+//import ed56/debugger/2 as debug
 
 //
 // Debug utility
 //
-[console, frame] = debug.debugger(5)
+//[console, frame] = debug.debugger(5)
 
 log(string msg) =>
-    debug.print(console, frame, msg, barstate.islast)
+    dummy = msg
+    // debug.print(console, frame, msg, barstate.islast)
 
 
 //
@@ -39,28 +40,28 @@ log(string msg) =>
 //
 
 fromDateInput = input.time(timestamp("1 Apr 2021 05:30 +0300"), title="Backtest From Date")
-toDateInput = input.time(timestamp("31 Dec 2021 05:30 +0300"), title="Backtest To Date")
+toDateInput = input.time(timestamp("8 Jun 2021 05:30 +0300"), title="Backtest To Date")
 
 float accountSize = input.float(1000, minval=0.0, title="Account Size")
 float maxRisk = input.float(25, minval=0.0, title="Maximum Risk Per Position") / 100
-float riskToRewardRatio = input.float(2.0, minval=1.0, title="Risk/Reward Ratio")
-float ratioWrtRiskToBeginTrailingSL = input.float (3.0, minval=0.0, title="Nurture Phase Ratio", tooltip="It is a ratio w.r.t R/R. Until this level the programme will not show any exit signals. You should start trailing stop-loss only after the price crosses this level. This level shown by a red/green dotted line above/below the entry signal.")
-float exitPercent = input.float(10, minval=0.0, title="Scale-Out %") / 100
+float riskToRewardRatio = input.float(1.0, minval=1.0, title="Risk/Reward Ratio")
+float ratioWrtRiskToBeginTrailingSL = input.float (1.0, minval=0.0, title="Nurture Phase Ratio", tooltip="It is a ratio w.r.t R/R. Until this level the programme will not show any exit signals. You should start trailing stop-loss only after the price crosses this level. This level shown by a red/green dotted line above/below the entry signal.")
+float exitPercent = input.float(20, minval=0.0, title="Scale-Out %") / 100
 float chikouExitPercent = input.float(0, minval=0.0, title="Lagging-Span Exit %", tooltip="This signal will only appear once.") / 100
-float takeProfitPercent = input.float(10, minval=0.0, title="Take-Profit %") / 100
+float takeProfitPercent = input.float(20, minval=0.0, title="Take-Profit %") / 100
 int atrLength = input.int(30, minval=0, title="ATR Length", tooltip="Choose higher values for lower timeframes. In BTC use 30 for 5m/15m/1H/4H and 9 for 4H/12H.")
-float atrStopMultiplier = input.float(5, minval=0.0, title="ATR x ?", tooltip="In BTC use 5 for 5m/15m/1H/4H/6H, 3 for 12H and 3/1 for D/2D.")
+float atrStopMultiplier = input.float(3, minval=0.0, title="ATR x ?", tooltip="In BTC use 5 for 5m/15m/1H/4H/6H, 3 for 12H and 3/1 for D/2D.")
 
-bool allowPrematureTkCrossForTrade = input.bool(true, title="Show entry signal even when short-term MA crosses mid-term MA prematurely", tooltip="A premature cross occurs when short-term moving-average (MA) overlaps mid-term moving-average but does not cross it.")
-bool tkCrossExitEnabled = input.bool(true, title="Show exit signals when short-term MA crosses mid-term MA")
+bool allowPrematureTkCrossForTrade = input.bool(false, title="Show entry signal even when short-term MA crosses mid-term MA prematurely", tooltip="A premature cross occurs when short-term moving-average (MA) overlaps mid-term moving-average but does not cross it.")
+bool tkCrossExitEnabled = input.bool(false, title="Show exit signals when short-term MA crosses mid-term MA")
 bool allowTkCrossExitInNurturePhase = input.bool(true, title="Show exit signals when short-term MA crosses mid-term MA in nurture phase")
 bool disregardPriceBeyondKumo = input.bool(false, title="Do not require price to be beyond resistance band for entry signals")
-bool disregardLeadingKumoColor = input.bool(true, title="Disregard leading resistance band bias for entry signals", tooltip="Enable it in BTC for 5m/15m/1H/D/3D. Disable it in BTC for 4H/6H/12H.")
-bool allowNeutralLeadingKumo = input.bool(false, title="Allow neutral leading resistance band valid for entry signals")
-bool requireChikouBeyondKumo = input.bool(true, title="Mandate lagging-span be beyond kumo for entry signals", tooltip="Enable it in BTC for 5m/15m/1H/4H.")
+bool disregardLeadingKumoColor = input.bool(false, title="Disregard leading resistance band bias for entry signals", tooltip="Enable it in BTC for 5m/15m/1H/D/3D. Disable it in BTC for 4H/6H/12H.")
+bool allowNeutralLeadingKumo = input.bool(true, title="Allow neutral leading resistance band valid for entry signals")
+bool requireChikouBeyondKumo = input.bool(false, title="Mandate lagging-span be beyond kumo for entry signals", tooltip="Enable it in BTC for 5m/15m/1H/4H.")
 float criticalChikouToSsbGap = input.float(0.0, minval=0.0, title="Critical Lagging-Span to SSB % Gap", tooltip="If lagging-span is not required beyond kumo then how close in %age it can get to SSB before an entry singal is invalidated?", tooltip="This is the gap between the lagging-span and the long-term resistance level in percentage. If the above checkbox is turned OFF then no entry signal will be shown while the lagging-span is within the specified percent range from the long-term resistance.")
 bool allowTenkanExitToCascade = input.bool(true, title="Allow crossover of short-term equilibrium-point (STEP) to cascade exit signals", tooltip="When false and price reverses to cross the short-term equilibrium point then only one exit signal will appear. The next signal can only come if price again reverses in your favor and touches or goes beyond the short-term equilibrium point. Essentially by turning OFF you will be able to ride the trend better and longer but at a risk of not scaling out.")
-bool requireHiLoBreachToInvalidateTenkanExit = input.bool(false, title="Enforce Rule: After price reverses and crosses-over the STEP to open below/above it then show next STEP exit signal only after the price again attempts to breach the STEP to the up/down side for long/short position respectively.", tooltip="Disabling improves performance as you get early exit signals to minimize losses. Disable it in BTC for 5m/15m/1H/4H/6H/12H/1D.")
+bool requireHiLoBreachToInvalidateTenkanExit = input.bool(true, title="Enforce Rule: After price reverses and crosses-over the STEP to open below/above it then show next STEP exit signal only after the price again attempts to breach the STEP to the up/down side for long/short position respectively.", tooltip="Disabling improves performance as you get early exit signals to minimize losses. Disable it in BTC for 5m/15m/1H/4H/6H/12H/1D.")
 
 bool showSignalsUponBreakout = input.bool(true, "Show entry signal upon 9-period high/low breakout", tooltip="Do not disable it! When enabled you should place a limit order for entry right at the price dipicted by the gray/green/red line.")
 bool allowEntryUponGaps = input.bool(false, "Show entry signals even on gap-up/down candles ( ! )", tooltip="This is not recommended!. This setting is only for study purposes.")
@@ -70,7 +71,7 @@ bool useTenkanPeriodFarthestPointAsStop = input.bool(false, title="Use short-ter
 float breakevenRatio = input.float(0, minval = 0, title="Stop-Loss Breakeven Ratio 9 ( ! )", tooltip="It is a ratio w.r.t the risk. When price reaches this level in nurture phase the stop-loss should be shifted to breakeven. 0 means no breakeven concept to be used. This setting is for study purpose and performance drops drastically for values greater than 0.")
 int congestionProximity = input.int(10, minval=1, title="Congestion Candle Span", tooltip="How many bars far should the lagging-span be and called safe before it bumps into the price?")
 float congestionTolerance = input.float(0, minval=0.0, title="Congestion Tolerance", tooltip="What percent of the highest-high/lowest-low of candles in congestion-span be treated as noise for determining congestion for the lagging-span?")
-bool useMtf = input.bool(false, "Use Multi Timeframe Analysis")
+bool useMtf = input.bool(true, "Use Multi Timeframe Analysis")
 
 string equilibriumScheme = input.string("Custom", title="Equilibrium Scheme", options=["Custom", "Standard", "Scalper", "5 Day Week", "Popular", "Ideal", "Trend Finder", "Conservative"], tooltip="In BTC use Scalper or 5-Day-Week for 5m/15m/1H, Popular or Ideal for 15m/1H/4H, and Standard for 6H.")
 int tenkanSenPeriod = input.int(9, minval=1, title="Short-Term Period")
@@ -79,7 +80,7 @@ int senkouSpanPeriod = input.int(52, minval=1, title="Long-Term Period")
 int displacement = input.int(26, minval=1, title="Displacement")
 
 bool showPnl = input.bool(true, title="Show profit & loss summary")
-bool showConfluenceInfo = input.bool(false, title="Show confluence Summary")
+bool showConfluenceInfo = input.bool(true, title="Show confluence Summary")
 bool showTradePlan = input.bool(false, title="Show realtime trade plan in a separate table")
 bool horizontalTradePlan = input.bool(true, title="Show trade plan table horizontally")
 bool highlightTradesWithBackgroundColor = input.bool(true, "Highlight trades with background colors")
@@ -1327,7 +1328,7 @@ else if showTradePlan
         table.cell(tradeTable, 2, 16, str.format("{0, number, percent}", (pnl+realtime)/tradeSize), text_color = (pnl+realtime > 0 ? color.green : color.red), text_size = size.small)
 
 // Display confluence information
-var table confluenceTable = table.new(position.middle_left, 3, 19, bgcolor = color.rgb(0, 0, 0, 30), frame_width = 2, frame_color = color.black)
+var table confluenceTable = table.new(position.top_right, 3, 19, bgcolor = color.rgb(0, 0, 0, 30), frame_width = 2, frame_color = color.black)
 if (barstate.islast and showConfluenceInfo)
     table.cell(confluenceTable, 0, 0, "1. Future kumo is " + leadingKumoView + ".", text_color = (leadingKumoView == "bullish" ? color.green : (leadingKumoView == "bearish" ? color.red : color.white)), text_halign = text.align_left, text_size = size.small)
     table.cell(confluenceTable, 0, 1, "2. Price is " + priceWrtKumo + " kumo.", text_color = (priceWrtKumo == "above" ? color.green : (priceWrtKumo == "below" ? color.red : color.white)), text_halign = text.align_left, text_size = size.small)
