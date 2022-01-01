@@ -108,7 +108,7 @@ export getAllStrategyParameters(int index, int shortTermPeriod, int midTermPerio
          highestMidTermBar,
          highestMidTermValue,
          lowestMidTermBar,
-         lowestMidTermValue] = getHighestHighAndLowestLowSet(shortTermPeriod, midTermPeriod, 1)
+         lowestMidTermValue] = getHighestHighAndLowestLowSet(shortTermPeriod, midTermPeriod, true)
 
     [open, high, low, close,
          shortTermEquilibrium, midTermEquilibrium, longTermEquilibriumA, longTermEquilibriumB,
