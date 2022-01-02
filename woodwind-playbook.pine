@@ -50,7 +50,7 @@ float exitPercent = input.float(20, minval=0.0, title="Scale-Out %") / 100
 float chikouExitPercent = input.float(0, minval=0.0, title="Lagging-Span Exit %", tooltip="This signal will only appear once.") / 100
 float takeProfitPercent = input.float(20, minval=0.0, title="Take-Profit %") / 100
 int atrLength = input.int(30, minval=0, title="ATR Length", tooltip="Choose higher values for lower timeframes. In BTC use 30 for 5m/15m/1H/4H and 9 for 4H/12H.")
-float atrStopMultiplier = input.float(3, minval=0.0, title="ATR x ?", tooltip="In BTC use 5 for 5m/15m/1H/4H/6H, 3 for 12H and 3/1 for D/2D.")
+float atrStopMultiplier = input.float(1, minval=0.0, title="ATR x ?", tooltip="In BTC use 5 for 5m/15m/1H/4H/6H, 3 for 12H and 3/1 for D/2D.")
 
 bool allowPrematureTkCrossForTrade = input.bool(false, title="Show entry signal even when short-term MA crosses mid-term MA prematurely", tooltip="A premature cross occurs when short-term moving-average (MA) overlaps mid-term moving-average but does not cross it.")
 bool tkCrossExitEnabled = input.bool(false, title="Show exit signals when short-term MA crosses mid-term MA")
@@ -58,12 +58,14 @@ bool allowTkCrossExitInNurturePhase = input.bool(true, title="Show exit signals 
 bool disregardPriceBeyondKumo = input.bool(false, title="Do not require price to be beyond resistance band for entry signals")
 bool disregardLeadingKumoColor = input.bool(false, title="Disregard leading resistance band bias for entry signals", tooltip="Enable it in BTC for 5m/15m/1H/D/3D. Disable it in BTC for 4H/6H/12H.")
 bool allowNeutralLeadingKumo = input.bool(false, title="Allow neutral leading resistance band valid for entry signals")
+bool disregardKumoBiasInHtf = input.bool(true, title="Disregard resistance band bias in higher timeframes for entry signals")
 bool requireChikouBeyondKumo = input.bool(false, title="Mandate lagging-span be beyond long-term resistance band for entry signals", tooltip="Enable it in BTC for 5m/15m/1H/4H.")
 float criticalChikouToSsbGap = input.float(0.0, minval=0.0, title="Critical Lagging-Span to SSB % Gap", tooltip="If lagging-span is not required beyond long-term resistance band then how close in %age it can get to SSB before an entry singal is invalidated?", tooltip="This is the gap between the lagging-span and the long-term resistance level in percentage. If the above checkbox is turned OFF then no entry signal will be shown while the lagging-span is within the specified percent range from the long-term resistance.")
 bool allowTenkanExitToCascade = input.bool(false, title="Allow crossover of short-term equilibrium-point (STEP) to cascade exit signals", tooltip="When false and price reverses to cross the short-term equilibrium point then only one exit signal will appear. The next signal can only come if price again reverses in your favor and touches or goes beyond the short-term equilibrium point. Essentially by turning OFF you will be able to ride the trend better and longer but at a risk of not scaling out.")
 bool requireHiLoBreachToInvalidateTenkanExit = input.bool(false, title="Enforce Rule: After price reverses and crosses-over the STEP to open below/above it then show next STEP exit signal only after the price again attempts to breach the STEP to the up/down side for long/short position respectively.", tooltip="Disabling improves performance as you get early exit signals to minimize losses. Disable it in BTC for 5m/15m/1H/4H/6H/12H/1D.")
 
 bool showSignalsUponBreakout = input.bool(true, "Show entry signal upon 9-period high/low breakout", tooltip="Do not disable it! When enabled you should place a limit order for entry right at the price dipicted by the gray/green/red line.")
+bool showSignalsUponBreakoutOfHtf = input.bool(true, "Show entry signal upon 9-period high/low breakout of higher timeframe")
 bool allowEntryUponGaps = input.bool(false, "Show entry signals even on gap-up/down candles ( ! )", tooltip="This is not recommended! This setting is only for study purposes.")
 bool allowManualExitOnLimitOrderCandles = input.bool(true, "Show exit signals on candles that triggerred Entry, Stop-Loss, or Take-Profit limit-orders", tooltip="Although enabling this shows high profitability it is very difficult to catch the volatility of the market and do entries and exits on the same candle. Disable it if you want more realistic entry/exit signals.")
 bool includeCurrentBarFor9PeriodHighLow = input.bool(false, title="Include current bar to show 9-period highs/lows ( ! )", tooltip="This is not recommended! This setting is only for study purposes.")
@@ -398,37 +400,33 @@ bool isChikouSafeFromImmediateObstaclesInHtf1 = chicouToSsbGapHtf1 >= 0
                                                  or (chicouToSsbGapHtf1/closeHtf1 <= (-1 * criticalChikouToSsbGap/100))
 
 // Is chikou free from congestion ahead in 1st order HTF? Is it heading into price?
-// int cphtf1 = 10*16//congestionProximityHtf1 // TODO: This needs to be fixed!
-// bool isChikouSpanFreeInHtf1 = yard.isLaggingSpanCongestionFree(closeHtf1, displacementHtf1, cphtf1, congestionTolerance, recentTkCrossInHtf1, chikouWrtPriceInHtf1)
+cphtf1 = 10 * 4  // TODO: This needs to be fixed!
+bool isChikouSpanFreeInHtf1 = yard.isLaggingSpanCongestionFree(closeHtf1, displacementHtf1, cphtf1, congestionTolerance, recentTkCrossInHtf1, chikouWrtPriceInHtf1)
 
-log(str.format("kumoBiasInHtf1, priceWrtKumoInHtf1, priceWrtTenkanInHtf1, tenkanWrtKijunInHtf1, recentTkCrossInHtf1, tkCrossWrtKumoInHtf1, chikouWrtPriceInHtf1, laggingKumoBiasInHtf1, chikouWrtKumoInHtf1, isChikouSafeFromImmediateObstaclesInHtf1, leadingKumoBiasInHtf1\n{0}, {1}, {2}, {3}, {4}, {5}, {6}, {7}, {8}, {9}, {10}", kumoBiasInHtf1, priceWrtKumoInHtf1, priceWrtTenkanInHtf1, tenkanWrtKijunInHtf1, recentTkCrossInHtf1, tkCrossWrtKumoInHtf1, chikouWrtPriceInHtf1, laggingKumoBiasInHtf1, chikouWrtKumoInHtf1, isChikouSafeFromImmediateObstaclesInHtf1, leadingKumoBiasInHtf1))
+log(str.format("kumoBiasInHtf1, priceWrtKumoInHtf1, priceWrtTenkanInHtf1, tenkanWrtKijunInHtf1, recentTkCrossInHtf1, tkCrossWrtKumoInHtf1, chikouWrtPriceInHtf1, laggingKumoBiasInHtf1, chikouWrtKumoInHtf1, isChikouSafeFromImmediateObstaclesInHtf1, leadingKumoBiasInHtf1,isChikouSpanFreeInHtf1\n{0}, {1}, {2}, {3}, {4}, {5}, {6}, {7}, {8}, {9}, {10}, {11}", kumoBiasInHtf1, priceWrtKumoInHtf1, priceWrtTenkanInHtf1, tenkanWrtKijunInHtf1, recentTkCrossInHtf1, tkCrossWrtKumoInHtf1, chikouWrtPriceInHtf1, laggingKumoBiasInHtf1, chikouWrtKumoInHtf1, isChikouSafeFromImmediateObstaclesInHtf1, leadingKumoBiasInHtf1, isChikouSpanFreeInHtf1))
 
 // Establish market view in 1st order higher timeframe
 string marketViewInHtf1 = "conslidating"
 if useMtf
     if (disregardKumoBiasInHtf or kumoBiasInHtf1 == "bullish" or leadingKumoBiasInHtf1 == "bullish")
-         and (disregardPriceBeyondKumo
-             or (not disregardPriceBeyondKumo and priceWrtKumoInHtf1 == "above")
-             )
-         //and priceWrtTenkanInHtf1 == "above"
+         and (disregardPriceBeyondKumo or (not disregardPriceBeyondKumo and priceWrtKumoInHtf1 == "above"))
+         and priceWrtTenkanInHtf1 == "above"
          and (tenkanWrtKijunInHtf1 == "above" or tenkanWrtKijunInHtf1 == "at")
-         and chikouWrtPriceInHtf1 == "above" // TODO: chikou can be below price as long as it has enough room between itself and the price.
+         and isChikouSpanFreeInHtf1
          and isChikouSafeFromImmediateObstaclesInHtf1
-        //  and isChikouSpanFreeInHtf1
+         and (chikouWrtPriceInHtf1 == "above" or true)
         marketViewInHtf1 := "bullish"
     else if (disregardKumoBiasInHtf or kumoBiasInHtf1 == "bearish" or leadingKumoBiasInHtf1 == "bearish")
-         and (disregardPriceBeyondKumo
-                 or (not disregardPriceBeyondKumo and priceWrtKumoInHtf1 == "below")
-                 )
-         //and priceWrtTenkanInHtf1 == "below"
+         and (disregardPriceBeyondKumo or (not disregardPriceBeyondKumo and priceWrtKumoInHtf1 == "below"))
+         and priceWrtTenkanInHtf1 == "below"
          and (tenkanWrtKijunInHtf1 == "below" or tenkanWrtKijunInHtf1 == "at")
-         and chikouWrtPriceInHtf1 == "below" // TODO: chikou can be above price as long as it has enough room between itself and the price.
+         and isChikouSpanFreeInHtf1
          and isChikouSafeFromImmediateObstaclesInHtf1
-        //  and isChikouSpanFreeInHtf1
+         and (chikouWrtPriceInHtf1 == "below" or true)
         marketViewInHtf1 := "bearish"
     else
         marketViewInHtf1 := "conslidating"
-log("HTF1: " + marketViewInHtf1)
+log(str.format("HTF1: {0}, chikou free? {1} ", marketViewInHtf1, isChikouSpanFreeInHtf1))
 
 
 //░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░
@@ -538,7 +536,6 @@ else if (disregardPriceBeyondKumo
      lowestKijunValue] = yard.getHighestHighAndLowestLowSet(tenkanSenPeriod, kijunSenPeriod, includeCurrentBarFor9PeriodHighLow)
 
 log(str.format("Before highest Bar: {0} ({1}), lowest Bar: {2}({3})", highestTenkanValue, highestTenkanSenBar, lowestTenkanValue, lowestTenkanSenBar))
-
 
 if useMtf and showSignalsUponBreakoutOfHtf
     highestTenkanSenBar := -highestTenkanSenBarHtf1
