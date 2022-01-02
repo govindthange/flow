@@ -57,20 +57,19 @@ bool tkCrossExitEnabled = input.bool(false, title="Show exit signals when short-
 bool allowTkCrossExitInNurturePhase = input.bool(true, title="Show exit signals when short-term MA crosses mid-term MA in nurture phase")
 bool disregardPriceBeyondKumo = input.bool(false, title="Do not require price to be beyond resistance band for entry signals")
 bool disregardLeadingKumoColor = input.bool(false, title="Disregard leading resistance band bias for entry signals", tooltip="Enable it in BTC for 5m/15m/1H/D/3D. Disable it in BTC for 4H/6H/12H.")
-bool allowNeutralLeadingKumo = input.bool(true, title="Allow neutral leading resistance band valid for entry signals")
-bool disregardKumoBiasInHtf = input.bool(true, title="Disregard resistance band bias in higher timeframes for entry signals")
-bool requireChikouBeyondKumo = input.bool(false, title="Mandate lagging-span be beyond kumo for entry signals", tooltip="Enable it in BTC for 5m/15m/1H/4H.")
-float criticalChikouToSsbGap = input.float(0.0, minval=0.0, title="Critical Lagging-Span to SSB % Gap", tooltip="If lagging-span is not required beyond kumo then how close in %age it can get to SSB before an entry singal is invalidated?", tooltip="This is the gap between the lagging-span and the long-term resistance level in percentage. If the above checkbox is turned OFF then no entry signal will be shown while the lagging-span is within the specified percent range from the long-term resistance.")
-bool allowTenkanExitToCascade = input.bool(true, title="Allow crossover of short-term equilibrium-point (STEP) to cascade exit signals", tooltip="When false and price reverses to cross the short-term equilibrium point then only one exit signal will appear. The next signal can only come if price again reverses in your favor and touches or goes beyond the short-term equilibrium point. Essentially by turning OFF you will be able to ride the trend better and longer but at a risk of not scaling out.")
-bool requireHiLoBreachToInvalidateTenkanExit = input.bool(true, title="Enforce Rule: After price reverses and crosses-over the STEP to open below/above it then show next STEP exit signal only after the price again attempts to breach the STEP to the up/down side for long/short position respectively.", tooltip="Disabling improves performance as you get early exit signals to minimize losses. Disable it in BTC for 5m/15m/1H/4H/6H/12H/1D.")
+bool allowNeutralLeadingKumo = input.bool(false, title="Allow neutral leading resistance band valid for entry signals")
+bool requireChikouBeyondKumo = input.bool(false, title="Mandate lagging-span be beyond long-term resistance band for entry signals", tooltip="Enable it in BTC for 5m/15m/1H/4H.")
+float criticalChikouToSsbGap = input.float(0.0, minval=0.0, title="Critical Lagging-Span to SSB % Gap", tooltip="If lagging-span is not required beyond long-term resistance band then how close in %age it can get to SSB before an entry singal is invalidated?", tooltip="This is the gap between the lagging-span and the long-term resistance level in percentage. If the above checkbox is turned OFF then no entry signal will be shown while the lagging-span is within the specified percent range from the long-term resistance.")
+bool allowTenkanExitToCascade = input.bool(false, title="Allow crossover of short-term equilibrium-point (STEP) to cascade exit signals", tooltip="When false and price reverses to cross the short-term equilibrium point then only one exit signal will appear. The next signal can only come if price again reverses in your favor and touches or goes beyond the short-term equilibrium point. Essentially by turning OFF you will be able to ride the trend better and longer but at a risk of not scaling out.")
+bool requireHiLoBreachToInvalidateTenkanExit = input.bool(false, title="Enforce Rule: After price reverses and crosses-over the STEP to open below/above it then show next STEP exit signal only after the price again attempts to breach the STEP to the up/down side for long/short position respectively.", tooltip="Disabling improves performance as you get early exit signals to minimize losses. Disable it in BTC for 5m/15m/1H/4H/6H/12H/1D.")
 
 bool showSignalsUponBreakout = input.bool(true, "Show entry signal upon 9-period high/low breakout", tooltip="Do not disable it! When enabled you should place a limit order for entry right at the price dipicted by the gray/green/red line.")
-bool showSignalsUponBreakoutOfHtf = input.bool(true, "Show entry signal upon 9-period high/low breakout of higher timeframe")
-bool allowEntryUponGaps = input.bool(false, "Show entry signals even on gap-up/down candles ( ! )", tooltip="This is not recommended!. This setting is only for study purposes.")
-bool includeCurrentBarFor9PeriodHighLow = input.bool(false, title="Include current bar to show 9-period highs/lows ( ! )", tooltip="This is not recommended!. This setting is only for study purposes.")
+bool allowEntryUponGaps = input.bool(false, "Show entry signals even on gap-up/down candles ( ! )", tooltip="This is not recommended! This setting is only for study purposes.")
+bool allowManualExitOnLimitOrderCandles = input.bool(true, "Show exit signals on candles that triggerred Entry, Stop-Loss, or Take-Profit limit-orders", tooltip="Although enabling this shows high profitability it is very difficult to catch the volatility of the market and do entries and exits on the same candle. Disable it if you want more realistic entry/exit signals.")
+bool includeCurrentBarFor9PeriodHighLow = input.bool(false, title="Include current bar to show 9-period highs/lows ( ! )", tooltip="This is not recommended! This setting is only for study purposes.")
 bool useKumoAsStop = input.bool(false, title="Use long-term moving-average (MA) resistance band for stop-loss")
 bool useTenkanPeriodFarthestPointAsStop = input.bool(false, title="Use short-term period's farthest high/low point for stop-loss ( ! )", tooltip="This is for study purpose. Enabling this gives mixed performance.")
-float breakevenRatio = input.float(0, minval = 0, title="Stop-Loss Breakeven Ratio 9 ( ! )", tooltip="It is a ratio w.r.t the risk. When price reaches this level in nurture phase the stop-loss should be shifted to breakeven. 0 means no breakeven concept to be used. This setting is for study purpose and performance drops drastically for values greater than 0.")
+float breakevenRatio = input.float(0, minval = 0, title="Stop-Loss Breakeven Ratio ( ! )", tooltip="It is a ratio w.r.t the risk. When price reaches this level in nurture phase the stop-loss should be shifted to breakeven. 0 means no breakeven concept to be used. This setting is for study purpose and performance drops drastically for values greater than 0.")
 int congestionProximity = input.int(10, minval=1, title="Congestion Candle Span", tooltip="How many bars far should the lagging-span be and called safe before it bumps into the price?")
 float congestionTolerance = input.float(0, minval=0.0, title="Congestion Tolerance", tooltip="What percent of the highest-high/lowest-low of candles in congestion-span be treated as noise for determining congestion for the lagging-span?")
 bool useMtf = input.bool(true, "Use Multi Timeframe Analysis")
@@ -263,10 +262,13 @@ var shouldExitOnChikou = false
 var didExitOnChikou = false
 
 var entryPrice = 0.0
+var entryBar = -1
 
 var stopLoss = 0.0
+var stopLossBar = -1
 var breakevenTrigger = 0.0
 var takeProfit = 0.0
+var takeProfitBar = -1
 var tenkanExit1 = 0.0
 var tenkanExit2 = 0.0
 var tenkanExit3 = 0.0
@@ -602,6 +604,7 @@ if canPrepareForLong
     shouldGoLong := true
     hasSignaledForLong := false
     inLongTrade := true
+    entryBar := bar_index
     shouldExitOnKijun := false
     
     entryPrice := showSignalsUponBreakout ? longBreakoutPrice : close
@@ -676,6 +679,7 @@ if canPrepareForShort
     shouldGoShort := true
     hasSignaledForShort := false
     inShortTrade := true
+    entryBar := bar_index
     shouldExitOnKijun := false
     
     entryPrice := showSignalsUponBreakout ? shortBreakoutPrice : close
@@ -733,7 +737,7 @@ if ((inLongTrade and high >= takeProfit)
      and remainingExitQty > 0
     
     shouldTakeProfit := true
-    
+    takeProfitBar := bar_index
     [_qty, _remainingQty, _gains] = vault.computeExitGains(entryPrice, takeProfit, qtyPerTakeProfit, remainingExitQty, f_tradeDirection(inLongTrade, inShortTrade))
     takeProfitQty := _qty
     takeProfitGains := _gains
@@ -784,6 +788,7 @@ if ((inLongTrade and low <= stopLoss)
     
     f_set(IDX_ShouldExitOnStopLoss, YES)
     shouldExitOnStop := true
+    stopLossBar := bar_index
     stopLossGains := (stopLoss - entryPrice) * remainingExitQty * f_tradeDirection(inLongTrade, inShortTrade)
     pnl := pnl + stopLossGains
     activeTradeInfo += str.format("\nSL {0} @ {1, number, currency} = {2, number, currency}/{3, number, currency}", str.tostring(remainingExitQty), stopLoss, stopLossGains, pnl)
@@ -793,6 +798,9 @@ if ((inLongTrade and low <= stopLoss)
 else if ((inLongTrade and priceWrtKijun == "below")
          or (inShortTrade and priceWrtKijun == "above"))
      and f_true(IDX_CanExitAfterKijunOrTkCross)
+     and (allowManualExitOnLimitOrderCandles
+             or kijunSen[1] == kijunSen[0]
+             or (bar_index != entryBar and bar_index != stopLossBar and bar_index != takeProfitBar))
     
     shouldExitOnKijun := true
     kijunExit := kijunSen
@@ -866,6 +874,9 @@ else if ((allowTenkanExitToCascade
                                  and ((requireHiLoBreachToInvalidateTenkanExit and low >= tenkanSen) or not requireHiLoBreachToInvalidateTenkanExit)
                                  and low[1] < tenkanSen[1]))))
      and remainingExitQty > 0
+     and (allowManualExitOnLimitOrderCandles
+             or tenkanSen[1] == tenkanSen[0]
+             or (bar_index != entryBar and bar_index != stopLossBar and bar_index != takeProfitBar))
     
     shouldExitOnTenkan := true
     [_qty, _remainingQty, _gains] = vault.computeExitGains(entryPrice, close, qtyPerExit, remainingExitQty, f_tradeDirection(inLongTrade, inShortTrade))
@@ -1153,10 +1164,13 @@ if withinTestRange
     didExitOnChikou := false
     
     entryPrice := 0.0
+    entryBar := -1
     
     stopLoss := 0.0
+    stopLossBar := -1
     breakevenTrigger := 0.0
     takeProfit := 0.0
+    takeProfitBar := -1
     tenkanExit1 := 0.0
     tenkanExit2 := 0.0
     tenkanExit3 := 0.0
