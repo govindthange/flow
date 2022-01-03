@@ -409,7 +409,7 @@ log(str.format("kumoBiasInHtf1, priceWrtKumoInHtf1, priceWrtTenkanInHtf1, tenkan
 string marketViewInHtf1 = "conslidating"
 if useMtf
     if (disregardKumoBiasInHtf or kumoBiasInHtf1 == "bullish" or leadingKumoBiasInHtf1 == "bullish")
-         and (disregardPriceBeyondKumo or (not disregardPriceBeyondKumo and priceWrtKumoInHtf1 == "above"))
+         and (priceWrtKumoInHtf1 == "above" or priceWrtKumoInHtf1 == "within")
          and priceWrtTenkanInHtf1 == "above"
          and (tenkanWrtKijunInHtf1 == "above" or tenkanWrtKijunInHtf1 == "at")
          and isChikouSpanFreeInHtf1
@@ -417,7 +417,7 @@ if useMtf
          and (chikouWrtPriceInHtf1 == "above" or true)
         marketViewInHtf1 := "bullish"
     else if (disregardKumoBiasInHtf or kumoBiasInHtf1 == "bearish" or leadingKumoBiasInHtf1 == "bearish")
-         and (disregardPriceBeyondKumo or (not disregardPriceBeyondKumo and priceWrtKumoInHtf1 == "below"))
+         and (priceWrtKumoInHtf1 == "below" or priceWrtKumoInHtf1 == "within")
          and priceWrtTenkanInHtf1 == "below"
          and (tenkanWrtKijunInHtf1 == "below" or tenkanWrtKijunInHtf1 == "at")
          and isChikouSpanFreeInHtf1
@@ -549,6 +549,16 @@ if useMtf and showSignalsUponBreakoutOfHtf
     log("changed.")
 
 log(str.format("After highest Bar: {0} ({1}), lowest Bar: {2}({3})", highestTenkanValue, highestTenkanSenBar, lowestTenkanValue, lowestTenkanSenBar))
+
+// if useMtf and priceWrtKumoInHtf1 == "within"
+//     if ((kumoBiasInHtf1 == "bullish" or kumoBiasInHtf1 == "neutral") and highestTenkanValue <= senkouSpanAHtf1)
+//         highestTenkanValue := senkouSpanAHtf1 // TODO: add 0.25% of ATR
+//     else if ((kumoBiasInHtf1 == "bearish" or kumoBiasInHtf1 == "neutral") and highestTenkanValue <= senkouSpanBHtf1)
+//         highestTenkanValue := senkouSpanBHtf1 // TODO: add 0.25% of ATR
+//     else if ((kumoBiasInHtf1 == "bullish" or kumoBiasInHtf1 == "neutral") and highestTenkanValue >= senkouSpanBHtf1)
+//         lowestTenkanValue := senkouSpanBHtf1 // TODO: add 0.25% of ATR
+//     else if ((kumoBiasInHtf1 == "bearish" or kumoBiasInHtf1 == "neutral") and highestTenkanValue >= senkouSpanAHtf1)
+//         lowestTenkanValue := senkouSpanAHtf1 // TODO: add 0.25% of ATR
 
 // Determine stop-loss factor using ATR
 float atr = yard.getAtrFactor(atrLength, atrStopMultiplier)
