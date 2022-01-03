@@ -19,7 +19,7 @@
 // @version=5
 // @description is a strategy based trading program.
 //
-indicator("Thange Woodwind Playbook v2.1.2", shorttitle="Thange/Piccolo+ v2.1.2", overlay=true, max_labels_count=250, max_lines_count=500)
+indicator("Thange Woodwind Playbook v2.1.3", shorttitle="Thange/Piccolo+ v3", overlay=true, max_labels_count=250, max_lines_count=500)
 import govindthange/WoodwindYard/1 as yard
 import govindthange/WoodwindVault/3 as vault
 import govindthange/ThangeVault/1 as util
@@ -58,7 +58,7 @@ bool disregardPriceBeyondKumo = input.bool(false, title="Do not require price to
 bool disregardLeadingKumoColor = input.bool(true, title="Disregard leading resistance band bias for entry signals", tooltip="Enable it in BTC for 5m/15m/1H/D/3D. Disable it in BTC for 4H/6H/12H.")
 bool allowNeutralLeadingKumo = input.bool(false, title="Allow neutral leading resistance band valid for entry signals")
 bool requireChikouBeyondKumo = input.bool(false, title="Mandate lagging-span be beyond long-term resistance band for entry signals", tooltip="Enable it in BTC for 5m/15m/1H/4H.")
-float criticalChikouToSsbGap = input.float(0.0, minval=0.0, title="Critical Lagging-Span to SSB % Gap", tooltip="If lagging-span is not required beyond long-term resistance band then how close in %age it can get to SSB before an entry singal is invalidated?", tooltip="This is the gap between the lagging-span and the long-term resistance level in percentage. If the above checkbox is turned OFF then no entry signal will be shown while the lagging-span is within the specified percent range from the long-term resistance.")
+float criticalChikouToSsbGap = input.float(0.0, minval=0.0, title="Critical Lagging-Span to SSB % Gap", tooltip="This is the gap between the lagging-span and the long-term resistance level in percentage. If the above checkbox is turned OFF then no entry signal will be shown while the lagging-span is within the specified percent range from the long-term resistance.")
 bool allowTenkanExitToCascade = input.bool(false, title="Allow crossover of short-term equilibrium-point (STEP) to cascade exit signals", tooltip="When false and price reverses to cross the short-term equilibrium point then only one exit signal will appear. The next signal can only come if price again reverses in your favor and touches or goes beyond the short-term equilibrium point. Essentially by turning OFF you will be able to ride the trend better and longer but at a risk of not scaling out.")
 bool requireHiLoBreachToInvalidateTenkanExit = input.bool(false, title="Enforce Rule: After price reverses and crosses-over the STEP to open below/above it then show next STEP exit signal only after the price again attempts to breach the STEP to the up/down side for long/short position respectively.", tooltip="Disabling improves performance as you get early exit signals to minimize losses. Disable it in BTC for 5m/15m/1H/4H/6H/12H/1D.")
 
@@ -384,7 +384,7 @@ bool withinTestRange = (time >= fromDateInput and time <= toDateInput)
                              and not na(senkouSpanB[displacement]) // This condition ensures that test-range is valid if the "Last available bar" by the TradingView accomodates computing of senkou-span-B for the last displacment period.
 
 bool didCandleGap = (open > high[1] and low > high[1]) or (open < low[1] and high < low[1])
-//plotshape(not allowEntryUponGaps and didCandleGap, title= "Candle Gap Up/Down", location=location.belowbar, color=color.gray, transp=0, style=shape.arrowup, text="", size=size.normal, editable=false)
+//plotshape(not allowEntryUponGaps and didCandleGap, title= "Candle Gap Up/Down", location=location.belowbar, color=color.gray, style=shape.arrowup, text="", size=size.normal, editable=false)
 
 //
 // Long Entry Strategy
@@ -755,52 +755,52 @@ else
 //░░╚═════╝░╚═╝░╚═════╝░╚═╝░░╚══╝╚═╝░░╚═╝╚══════╝╚═════╝░░░
 //░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░
 
-plotshape(inLongTrade and marketView == "bearish" and shouldExitPreemptively, title= "Preeemptive Long Exit", location=location.belowbar, color=longPrimarySignalColor, transp=0, style=shape.flag, text="", size=size.small, editable=false)
-plotshape(inShortTrade and marketView == "bullish" and shouldExitPreemptively, title= "Preeemptive Short Exit", location=location.belowbar, color=shortPrimarySignalColor, transp=0, style=shape.flag, text="", size=size.small, editable=false)
+plotshape(inLongTrade and marketView == "bearish" and shouldExitPreemptively, title= "Preeemptive Long Exit", location=location.belowbar, color=longPrimarySignalColor, style=shape.flag, text="", size=size.small, editable=false)
+plotshape(inShortTrade and marketView == "bullish" and shouldExitPreemptively, title= "Preeemptive Short Exit", location=location.belowbar, color=shortPrimarySignalColor, style=shape.flag, text="", size=size.small, editable=false)
 
-plotshape(showSignalsUponBreakout and canPrepareForLong and not hasSignaledForLong and not shouldGoLong, title= "Prepare to go long", location=location.belowbar, color=color.teal, transp=0, style=shape.triangleup, text="", size=size.tiny, editable=false)
+plotshape(showSignalsUponBreakout and canPrepareForLong and not hasSignaledForLong and not shouldGoLong, title= "Prepare to go long", location=location.belowbar, color=color.teal, style=shape.triangleup, text="", size=size.tiny, editable=false)
 if showSignalsUponBreakout and canPrepareForLong
     canPrepareForLong := false // reset flag
     if showSignalsUponBreakout
         hasSignaledForLong := true
 
-plotshape(showSignalsUponBreakout and canPrepareForShort and not hasSignaledForShort and not shouldGoShort, title= "Prepare to go short", location=location.abovebar, color=color.red, transp=0, style=shape.triangledown, text="", size=size.tiny, editable=false)
+plotshape(showSignalsUponBreakout and canPrepareForShort and not hasSignaledForShort and not shouldGoShort, title= "Prepare to go short", location=location.abovebar, color=color.red, style=shape.triangledown, text="", size=size.tiny, editable=false)
 if showSignalsUponBreakout and canPrepareForShort
     canPrepareForShort := false // reset flag
     if showSignalsUponBreakout
         hasSignaledForShort := true
 
-plotshape(inLongTrade and ((showSignalsUponBreakout and shouldGoLong) or (not showSignalsUponBreakout and canPrepareForLong)), title="Long Entry A", location=location.belowbar, color=longPrimarySignalColor, transp=0, style=shape.triangleup, text="", size=size.small, editable=false)
-plotshape(inLongTrade and ((showSignalsUponBreakout and shouldGoLong) or (not showSignalsUponBreakout and canPrepareForLong)), title="Long Entry B", location=location.belowbar, color=longPrimarySignalColor, transp=0, style=shape.triangleup, text="", size=size.tiny, editable=false)
+plotshape(inLongTrade and ((showSignalsUponBreakout and shouldGoLong) or (not showSignalsUponBreakout and canPrepareForLong)), title="Long Entry A", location=location.belowbar, color=longPrimarySignalColor, style=shape.triangleup, text="", size=size.small, editable=false)
+plotshape(inLongTrade and ((showSignalsUponBreakout and shouldGoLong) or (not showSignalsUponBreakout and canPrepareForLong)), title="Long Entry B", location=location.belowbar, color=longPrimarySignalColor, style=shape.triangleup, text="", size=size.tiny, editable=false)
 if not showSignalsUponBreakout
     canPrepareForLong := false
 else if shouldGoLong
     shouldGoLong := false
 
-plotshape(inShortTrade and ((showSignalsUponBreakout and shouldGoShort) or (not showSignalsUponBreakout and canPrepareForShort)), title= "Short Entry A", location=location.abovebar, color=shortPrimarySignalColor, transp=0, style=shape.triangledown, text="", size=size.small, editable=false)
-plotshape(inShortTrade and ((showSignalsUponBreakout and shouldGoShort) or (not showSignalsUponBreakout and canPrepareForShort)), title= "Short Entry B", location=location.abovebar, color=shortPrimarySignalColor, transp=0, style=shape.triangledown, text="", size=size.tiny, editable=false)
+plotshape(inShortTrade and ((showSignalsUponBreakout and shouldGoShort) or (not showSignalsUponBreakout and canPrepareForShort)), title= "Short Entry A", location=location.abovebar, color=shortPrimarySignalColor, style=shape.triangledown, text="", size=size.small, editable=false)
+plotshape(inShortTrade and ((showSignalsUponBreakout and shouldGoShort) or (not showSignalsUponBreakout and canPrepareForShort)), title= "Short Entry B", location=location.abovebar, color=shortPrimarySignalColor, style=shape.triangledown, text="", size=size.tiny, editable=false)
 if not showSignalsUponBreakout
     canPrepareForShort := false
 else if shouldGoShort
     shouldGoShort := false
 
-plotshape(inLongTrade and shouldExitOnTenkan, title= "Tenkan Long Exit", location=location.abovebar, color= (remainingExitQty <= 0 ? exitSignalColor : longSecondarySignalColor), transp=0, style=shape.diamond, text="", size=size.tiny, editable=false)
-plotshape(inShortTrade and shouldExitOnTenkan, title= "Tenkan Short Exit", location=location.belowbar, color= (remainingExitQty <= 0 ? exitSignalColor : shortSecondarySignalColor), transp=0, style=shape.diamond, text="", size=size.tiny, editable=false)
+plotshape(inLongTrade and shouldExitOnTenkan, title= "Tenkan Long Exit", location=location.abovebar, color= (remainingExitQty <= 0 ? exitSignalColor : longSecondarySignalColor), style=shape.diamond, text="", size=size.tiny, editable=false)
+plotshape(inShortTrade and shouldExitOnTenkan, title= "Tenkan Short Exit", location=location.belowbar, color= (remainingExitQty <= 0 ? exitSignalColor : shortSecondarySignalColor), style=shape.diamond, text="", size=size.tiny, editable=false)
 
-plotshape(inLongTrade and shouldExitOnKijun, title= "Kijun Long Exit", location=location.abovebar, color=longSecondarySignalColor, transp=0, style=shape.circle, text="", size=size.tiny, editable=false)
-plotshape(inShortTrade and shouldExitOnKijun, title= "Kijun Short Exit", location=location.belowbar, color=shortSecondarySignalColor, transp=0, style=shape.circle, text="", size=size.tiny, editable=false)
+plotshape(inLongTrade and shouldExitOnKijun, title= "Kijun Long Exit", location=location.abovebar, color=longSecondarySignalColor, style=shape.circle, text="", size=size.tiny, editable=false)
+plotshape(inShortTrade and shouldExitOnKijun, title= "Kijun Short Exit", location=location.belowbar, color=shortSecondarySignalColor, style=shape.circle, text="", size=size.tiny, editable=false)
 
-plotshape(inLongTrade and shouldExitOnTkCross, title= "TK Cross Long Exit", location=location.abovebar, color=longSecondarySignalColor, transp=0, style=shape.xcross, text="", size=size.small, editable=false)
-plotshape(inShortTrade and shouldExitOnTkCross, title= "TK Cross Short Exit", location=location.belowbar, color=shortSecondarySignalColor, transp=0, style=shape.xcross, text="", size=size.small, editable=false)
+plotshape(inLongTrade and shouldExitOnTkCross, title= "TK Cross Long Exit", location=location.abovebar, color=longSecondarySignalColor, style=shape.xcross, text="", size=size.small, editable=false)
+plotshape(inShortTrade and shouldExitOnTkCross, title= "TK Cross Short Exit", location=location.belowbar, color=shortSecondarySignalColor, style=shape.xcross, text="", size=size.small, editable=false)
 
-plotshape(inLongTrade and (f_true(IDX_ShouldExitOnStopLoss) or shouldExitOnStop), title= "Stop Loss Long Exit", location=location.belowbar, color=longPrimarySignalColor, transp=0, style=shape.flag, text="", size=size.small, editable=false)
-plotshape(inShortTrade and inShortTrade and (f_true(IDX_ShouldExitOnStopLoss) or shouldExitOnStop), title= "Stop Loss Short Exit", location=location.abovebar, color=shortPrimarySignalColor, transp=0, style=shape.flag, text="", size=size.small, editable=false)
+plotshape(inLongTrade and (f_true(IDX_ShouldExitOnStopLoss) or shouldExitOnStop), title= "Stop Loss Long Exit", location=location.belowbar, color=longPrimarySignalColor, style=shape.flag, text="", size=size.small, editable=false)
+plotshape(inShortTrade and inShortTrade and (f_true(IDX_ShouldExitOnStopLoss) or shouldExitOnStop), title= "Stop Loss Short Exit", location=location.abovebar, color=shortPrimarySignalColor, style=shape.flag, text="", size=size.small, editable=false)
 
-plotshape(inLongTrade and shouldTakeProfit, title= "Fixed Long Exit", location=location.abovebar, color= (remainingExitQty <= 0 ? exitSignalColor : longSecondarySignalColor), transp=0, style=shape.square, text="", size=size.tiny, editable=false)
-plotshape(inShortTrade and shouldTakeProfit, title= "Fixed Short Exit", location=location.belowbar, color= (remainingExitQty <= 0 ? exitSignalColor : shortSecondarySignalColor), transp=0, style=shape.square, text="", size=size.tiny, editable=false)
+plotshape(inLongTrade and shouldTakeProfit, title= "Fixed Long Exit", location=location.abovebar, color= (remainingExitQty <= 0 ? exitSignalColor : longSecondarySignalColor), style=shape.square, text="", size=size.tiny, editable=false)
+plotshape(inShortTrade and shouldTakeProfit, title= "Fixed Short Exit", location=location.belowbar, color= (remainingExitQty <= 0 ? exitSignalColor : shortSecondarySignalColor), style=shape.square, text="", size=size.tiny, editable=false)
 
-plotshape(inLongTrade and shouldExitOnChikou, title= "Chikou Long Exit", location=location.abovebar, color= (remainingExitQty <= 0 ? exitSignalColor : color.white), transp=0, style=shape.diamond, text="", size=size.tiny, editable=false)
-plotshape(inShortTrade and shouldExitOnChikou, title= "Chikou Short Exit", location=location.belowbar, color= (remainingExitQty <= 0 ? exitSignalColor : color.white), transp=0, style=shape.diamond, text="", size=size.tiny, editable=false)
+plotshape(inLongTrade and shouldExitOnChikou, title= "Chikou Long Exit", location=location.abovebar, color= (remainingExitQty <= 0 ? exitSignalColor : color.white), style=shape.diamond, text="", size=size.tiny, editable=false)
+plotshape(inShortTrade and shouldExitOnChikou, title= "Chikou Short Exit", location=location.belowbar, color= (remainingExitQty <= 0 ? exitSignalColor : color.white), style=shape.diamond, text="", size=size.tiny, editable=false)
 
 if shouldTakeProfit
     didTakeProfit := true
@@ -990,8 +990,8 @@ if withinTestRange
     tenkanExit10 := 0.0
     kijunExit := 0.0
     tkCrossExit := 0.0
-    preemptiveExit = 0.0
-    chikouExit = 0.0
+    preemptiveExit := 0.0
+    chikouExit := 0.0
     
     stopLossQty := 0.0
     takeProfitQty := 0.0
@@ -1058,7 +1058,7 @@ if (barstate.islast and showPnl)
     table.cell(pnlTable, 5, 0, "Total PnL (*)", text_halign = text.align_center, text_color = color.white, text_size = size.small)
     table.cell(pnlTable, 5, 1, str.format("{0, number, currency}", totalPnl), text_halign = text.align_center, text_color =  (totalPnl > 0 ? color.rgb(182, 209, 186) : color.rgb(182, 153, 153)), text_size = size.small)
     table.cell(pnlTable, 5, 2, str.format("{0, number, #0.00%}\n({1, number, #0.00%})", totalPnlPercent, totalPnl/maxCapital), text_halign = text.align_center, text_color =   (totalPnl > 0 ? color.green : color.red), text_size = size.small)
-    table.cell(pnlTable, 6, 0, "Days", text_halign = text.align_center, text_color = color.white, text_size = size.small, text_size = size.small)
+    table.cell(pnlTable, 6, 0, "Days", text_halign = text.align_center, text_color = color.white, text_size = size.small)
     table.cell(pnlTable, 6, 1, str.format("{0, number}", (toDateInput - fromDateInput)/ (24 * 60 * 60 * 1000)), text_halign = text.align_center, text_color = color.silver, text_size = size.small)
     table.cell(pnlTable, 6, 2, str.tostring(totalCandles), text_halign = text.align_center, text_color = color.gray, text_size = size.small)
 
