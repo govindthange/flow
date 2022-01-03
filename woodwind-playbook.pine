@@ -381,6 +381,7 @@ float atr = yard.getAtrFactor(atrLength, atrStopMultiplier)
 //░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░
 
 bool withinTestRange = (time >= fromDateInput and time <= toDateInput)
+                             and not na(senkouSpanB[displacement]) // This condition ensures that test-range is valid if the "Last available bar" by the TradingView accomodates computing of senkou-span-B for the last displacment period.
 
 bool didCandleGap = (open > high[1] and low > high[1]) or (open < low[1] and high < low[1])
 //plotshape(not allowEntryUponGaps and didCandleGap, title= "Candle Gap Up/Down", location=location.belowbar, color=color.gray, transp=0, style=shape.arrowup, text="", size=size.normal, editable=false)
@@ -1037,7 +1038,7 @@ if withinTestRange
 //░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░
 
 // Display PnL summary
-var table pnlTable = table.new(position.bottom_left, 7, 3, bgcolor = color.rgb(0, 0, 0, 30), frame_color = color.black)
+var table pnlTable = table.new(position.bottom_left, 7, 3, bgcolor = color.new(color.black, 80), frame_color = color.black)
 if (barstate.islast and showPnl)
     table.cell(pnlTable, 0, 0, "Winners (HS)", text_halign = text.align_center, text_color = color.white, text_size = size.small)
     table.cell(pnlTable, 0, 1, str.format("{0} ({1})", winners, maxHotStreak), text_color = color.green, text_halign = text.align_center, text_size = size.small)
@@ -1062,7 +1063,7 @@ if (barstate.islast and showPnl)
     table.cell(pnlTable, 6, 2, str.tostring(totalCandles), text_halign = text.align_center, text_color = color.gray, text_size = size.small)
 
 // Display trade information
-if horizontalTradePlan
+if showTradePlan and horizontalTradePlan
     var table tradeTable = table.new(position.bottom_right, 17, 4, bgcolor = color.rgb(0, 0, 0, 30), frame_width = 2, frame_color = color.black)
     if (barstate.islast and showTradePlan)
         table.cell(tradeTable, 1, 0, "Entry", text_color = color.white, text_size = size.small)
@@ -1115,7 +1116,7 @@ if horizontalTradePlan
         table.cell(tradeTable, 14, 2, str.tostring(kijunExitGains, str.tostring(util.tickFormat())), text_color = (kijunExitGains > 0 ? color.rgb(182, 209, 186) : color.rgb(182, 153, 153)), text_size = size.small)
         table.cell(tradeTable, 15, 2, str.format("{0, number, currency}", pnl+realtime), text_color = (pnl+realtime > 0 ? color.green : color.red), text_size = size.small)
         table.cell(tradeTable, 16, 2, str.format("{0, number, #0.00%}", (pnl+realtime)/tradeSize), text_color = (pnl+realtime > 0 ? color.green : color.red), text_size = size.small)
-else
+else if showTradePlan
     var table tradeTable = table.new(position.bottom_right, 4, 17, bgcolor = color.rgb(0, 0, 0, 30), frame_width = 2, frame_color = color.black)
     if (barstate.islast and showTradePlan)
         table.cell(tradeTable, 0, 1, "Entry", text_color = color.white, text_size = size.small)
