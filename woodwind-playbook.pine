@@ -564,6 +564,7 @@ float atr = yard.getAtrFactor(atrLength, atrStopMultiplier)
 //░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░
 
 bool withinTestRange = (time >= fromDateInput and time <= toDateInput)
+                             and not na(senkouSpanB[displacement]) // This condition ensures that test-range is valid if the "Last available bar" by the TradingView accomodates computing of senkou-span-B for the last displacment period.
 
 bool didCandleGap = (open > high[1] and low > high[1]) or (open < low[1] and high < low[1])
 //plotshape(not allowEntryUponGaps and didCandleGap, title= "Candle Gap Up/Down", location=location.belowbar, color=color.gray, transp=0, style=shape.arrowup, text="", size=size.normal, editable=false)
