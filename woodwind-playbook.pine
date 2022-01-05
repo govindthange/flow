@@ -20,7 +20,7 @@
 // @description is a strategy based trading program.
 //
 indicator("Thange Woodwind Playbook v3.0", shorttitle="Thange/Clarinet", overlay=true, max_labels_count=250, max_lines_count=500)
-import govindthange/WoodwindYardDev/30 as yard
+import govindthange/WoodwindYardDev/36 as yard
 import govindthange/WoodwindVault/3 as vault
 import govindthange/ThangeVault/1 as util
 import ed56/debugger/2 as debug
@@ -157,66 +157,7 @@ f_reset() =>
 
 f_tradeDirection(long, short) => long ? 1 : (short ? -1 : 0)
 
-findEquilibriumOnHtf(resolution, tenkanSenPeriod, kijunSenPeriod, senkouSpanPeriod) =>
-    htfIndex = barstate.isrealtime ? 1 : 0
-    ctfIndex = barstate.isrealtime ? 0 : 1
-    request.security(symbol=syminfo.tickerid, timeframe=resolution, expression=yard.getAllStrategyParameters(htfIndex, tenkanSenPeriod, kijunSenPeriod, senkouSpanPeriod))
-
-
-getEquilibriumOnHtf(order=1, magnitude=4) =>
-    htf = yard.getHigherTimeframe(order, magnitude)
-    switch htf
-        // "1" =>
-        //     findEquilibriumOnHtf("1", 7, 22, 44)
-        
-        // "5" =>
-        //     findEquilibriumOnHtf("5", 7, 22, 44)
-        
-        // "15" =>
-        //     findEquilibriumOnHtf("15", 7, 22, 44)
-        
-        // "30" =>
-        //     findEquilibriumOnHtf("30", 7, 22, 44)
-        
-        // "45" =>
-        //     findEquilibriumOnHtf("45", 7, 22, 44)
-        
-        // "60" =>
-        //     findEquilibriumOnHtf("60", 7, 22, 44)
-        
-        // "120" =>
-        //     findEquilibriumOnHtf("120", 9, 30, 60)
-        
-        "240" =>
-            findEquilibriumOnHtf("240", 9, 26, 52) // THIS IS JUST FOR COMPARISON w/ MANUAL PAPER TRADES
-        
-        // "360" =>
-        //     findEquilibriumOnHtf("360", 9, 26, 52)
-        
-        // "720" =>
-        //     findEquilibriumOnHtf("720", 9, 26, 52)
-        
-        // "D" =>
-        //     findEquilibriumOnHtf("D", 9, 26, 52)
-        
-        // "2D" =>
-        //     findEquilibriumOnHtf("2D", 9, 26, 52)
-        
-        // "3D" =>
-        //     findEquilibriumOnHtf("3D", 9, 26, 52)
-        
-        // "5D" =>
-        //     findEquilibriumOnHtf("5D", 9, 26, 52)
-        
-        // "240" =>
-        //     findEquilibriumOnHtf("240", 9, 26, 52)
-        
-        // =>
-        //     findEquilibriumOnHtf("3M", 9, 26, 52)
-
 getDisplacementForHtf(int displacement, float order, int magnitude) => math.round(displacement * math.pow(magnitude, order))
-
-getProjectionForHtf(int displacement, float order, int magnitude) => math.round(getDisplacementForHtf(displacement, order, magnitude) - magnitude)
 
 getCongestionForHtf(int proximity, float order, int magnitude) => math.round(proximity * math.pow(magnitude, order))
 
@@ -332,25 +273,28 @@ var chikouExitGains = 0.0
 //░░╚═╝░░╚═╝░░░╚═╝░░░╚═╝░░░░░░░╚═╝░░╚═╝╚═════╝░╚═════╝░╚══════╝╚═════╝░╚═════╝░╚═╝░░░░░╚═╝╚══════╝╚═╝░░╚══╝░░░╚═╝░░░░░
 //░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░
 
-int htfMagnitude = 4
+int htfIndex = barstate.isrealtime ? 1 : 0
+int ctfIndex = barstate.isrealtime ? 0 : 1
+highHtf1 = request.security(symbol=syminfo.tickerid, timeframe="240", expression=high[htfIndex])[ctfIndex]
+lowHtf1 = request.security(symbol=syminfo.tickerid, timeframe="240", expression=low[htfIndex])[ctfIndex]
+closeHtf1 = request.security(symbol=syminfo.tickerid, timeframe="240", expression=close[htfIndex])[ctfIndex]
+
+int htfMagnitude1 = 4
 float htfOrder1 = 1 // 1 order up timeframe i.e. 4x of current timeframe
 float htfOrder2 = 2 * htfOrder1 // 2 orders up timeframe i.e. 16x of current timeframe
-//log(str.format("CTF: {0}, HTF1: {1}, HTF2: {2}", timeframe.period, yard.getHigherTimeframe(1, htfMagnitude), yard.getHigherTimeframe(2, htfMagnitude)))
-
-[openHtf1, highHtf1, lowHtf1, closeHtf1, tenkanHtf1, kijunHtf1, senkouSpanAHtf1, senkouSpanBHtf1, htsHtf1, ltsHtf1, hksHtf1, lksHtf1] = getEquilibriumOnHtf(1, htfMagnitude)
-
+[tenkanHtf1, kijunHtf1, senkouSpanAHtf1, senkouSpanBHtf1] = yard.findEquilibrium(highHtf1, lowHtf1, tenkanSenPeriod * htfMagnitude1, kijunSenPeriod * htfMagnitude1, senkouSpanPeriod * htfMagnitude1)
 chikouHtf1 = closeHtf1
-highestTenkanSenBarHtf1 = getBarForHtf(htsHtf1, htfOrder1, htfMagnitude)
-lowestTenkanSenBarHtf1 = getBarForHtf(ltsHtf1, htfOrder1, htfMagnitude)
-highestKijunSenBarHtf1 = getBarForHtf(hksHtf1, htfOrder1, htfMagnitude)
-lowestKijunSenBarHtf1 = getBarForHtf(lksHtf1, htfOrder1, htfMagnitude)
 
-highestTenkanValueHtf1 = highHtf1[highestTenkanSenBarHtf1]
-lowestTenkanValueHtf1 = lowHtf1[lowestTenkanSenBarHtf1]
-highestKijunValueHtf1 = highHtf1[highestKijunSenBarHtf1]
-lowestKijunValueHtf1 = lowHtf1[lowestKijunSenBarHtf1]
+[highestTenkanSenBarHtf1,
+     highestTenkanValueHtf1,
+     lowestTenkanSenBarHtf1,
+     lowestTenkanValueHtf1,
+     highestKijunSenBarHtf1,
+     highestKijunValueHtf1,
+     lowestKijunSenBarHtf1,
+     lowestKijunValueHtf1] = yard.getHighestHighAndLowestLowSet(highHtf1, lowHtf1, tenkanSenPeriod * htfMagnitude1, kijunSenPeriod * htfMagnitude1)
 
-int displacementHtf1 = getDisplacementForHtf(displacement-1, htfOrder1, htfMagnitude)
+int displacementHtf1 = getDisplacementForHtf(displacement-1, htfOrder1, htfMagnitude1)
 
 // How is current kumo in 1st order HTF?
 string kumoBiasInHtf1 = yard.getBias(senkouSpanAHtf1[displacementHtf1-1], senkouSpanBHtf1[displacementHtf1-1])
@@ -387,7 +331,7 @@ string laggingKumoBiasInHtf1 = yard.getBias(senkouSpanAHtf1[2*displacementHtf1-1
 string chikouWrtKumoInHtf1 = yard.getPositionRelativeToRange(closeHtf1, senkouSpanAHtf1[2*displacementHtf1-1], senkouSpanBHtf1[2*displacementHtf1-1])
 
 // Where is chikou w.r.t a flat Senkou-Span-B ahead in 1st order HTF?
-congestionProximityHtf1 = getCongestionForHtf(congestionProximity, htfOrder1, htfMagnitude)
+congestionProximityHtf1 = getCongestionForHtf(congestionProximity, htfOrder1, htfMagnitude1)
 [chicouToSsbGapHtf1, highestSsbHtf1, lowestSsbHtf1] = yard.getGap(closeHtf1, senkouSpanBHtf1[displacementHtf1*2 - 1 - congestionProximityHtf1], congestionProximityHtf1, recentTkCrossInHtf1, priceWrtKumoInHtf1)
 bool isChikouSafeFromImmediateObstaclesInHtf1 = chicouToSsbGapHtf1 >= 0
                                                  or (chicouToSsbGapHtf1/closeHtf1 <= (-1 * criticalChikouToSsbGap/100))
@@ -421,10 +365,11 @@ if useMtf
 log(str.format("HTF1: {0} ( kumoBiasInHtf1={1}, priceWrtKumoInHtf1={2}, priceWrtTenkanInHtf1={3}, tenkanWrtKijunInHtf1={4},\n      recentTkCrossInHtf1={5}, tkCrossWrtKumoInHtf1={6}, laggingKumoBiasInHtf1={7}, leadingKumoBiasInHtf1={8},\n      chikouWrtPriceInHtf1={9}, isChikouSpanFreeInHtf1={10}, chikouWrtKumoInHtf1={11}, isChikouSafeFromImmediateObstaclesInHtf1={12})", marketViewInHtf1, kumoBiasInHtf1, priceWrtKumoInHtf1, priceWrtTenkanInHtf1, tenkanWrtKijunInHtf1, recentTkCrossInHtf1, tkCrossWrtKumoInHtf1, laggingKumoBiasInHtf1, leadingKumoBiasInHtf1, chikouWrtPriceInHtf1, isChikouSpanFreeInHtf1, chikouWrtKumoInHtf1, isChikouSafeFromImmediateObstaclesInHtf1))
 
 // Render equilibrium for CTF
-plot(chikouHtf1, offset = - displacementHtf1 + 1, color=color.orange, title="Lagging Price Action (HTF 1)")
-int htfProjection = getProjectionForHtf(displacement, htfOrder1, htfMagnitude)
-ssa1 = plot(senkouSpanAHtf1, offset = htfProjection - 1, color=color.blue, title="HTF Senkou-Span A")
-ssb1 = plot(senkouSpanBHtf1, offset = htfProjection - 1, color=color.rgb(245,170,244), title="HTF Senkou-Span B")
+
+plot(chikouHtf1, offset = - (displacement * htfMagnitude1), color=color.orange, title="Lagging Price Action (HTF 1)")
+int htfProjection = displacementHtf1 - htfMagnitude1
+ssa1 = plot(senkouSpanAHtf1, offset = htfProjection, color=color.blue, title="HTF Senkou-Span A")
+ssb1 = plot(senkouSpanBHtf1, offset = htfProjection, color=color.rgb(245,170,244), title="HTF Senkou-Span B")
 fill(ssa1, ssb1, color = senkouSpanAHtf1 > senkouSpanBHtf1 ? color.new(color.blue, 90) : color.new(color.purple, 90))
 plot(tenkanHtf1, "Short-Term Equilibrium (HTF 1)", color.gray)
 plot(kijunHtf1, "Mid-Term Equilibrium (HTF 1)", color.aqua)
@@ -446,7 +391,7 @@ if equilibriumScheme != "Custom"
     senkouSpanPeriod := sp
     displacement := d
 
-[tenkanSen, kijunSen, senkouSpanA, senkouSpanB] = yard.findEquilibrium(0, tenkanSenPeriod, kijunSenPeriod, senkouSpanPeriod)
+[tenkanSen, kijunSen, senkouSpanA, senkouSpanB] = yard.findEquilibrium(high, low, tenkanSenPeriod, kijunSenPeriod, senkouSpanPeriod)
 
 // How is current kumo?
 string kumoView = yard.getBias(senkouSpanA[displacement-1], senkouSpanB[displacement-1])
@@ -534,7 +479,7 @@ else if (disregardPriceBeyondKumo
      highestKijunSenBar,
      highestKijunValue,
      lowestKijunSenBar,
-     lowestKijunValue] = yard.getHighestHighAndLowestLowSet(tenkanSenPeriod, kijunSenPeriod, includeCurrentBarFor9PeriodHighLow)
+     lowestKijunValue] = yard.getHighestHighAndLowestLowSet(high, low, tenkanSenPeriod, kijunSenPeriod)
 // log(str.format("Before highest Bar: {0} ({1}), lowest Bar: {2}({3})", highestTenkanValue, highestTenkanSenBar, lowestTenkanValue, lowestTenkanSenBar))
 
 if useMtf and showSignalsUponBreakoutOfHtf
