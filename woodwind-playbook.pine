@@ -68,6 +68,7 @@ bool requireHiLoBreachToInvalidateTenkanExit = input.bool(false, title="Enforce 
 
 bool showSignalsUponBreakout = input.bool(true, "Show entry signal upon 9-period high/low breakout", tooltip="Do not disable it! When enabled you should place a limit order for entry right at the price dipicted by the gray/green/red line.")
 bool showSignalsUponBreakoutOfHtf = input.bool(true, "Show entry signal upon 9-period high/low breakout of higher timeframe")
+bool allowPriceWithinKumoOnHtf = input.bool(false, "Show entry signal even if price is within long-term resistance band on higher timeframe")
 bool allowEntryUponGaps = input.bool(false, "Show entry signals even on gap-up/down candles ( ! )", tooltip="This is not recommended! This setting is only for study purposes.")
 bool allowManualExitOnLimitOrderCandles = input.bool(true, "Show exit signals on candles that triggerred Entry, Stop-Loss, or Take-Profit limit-orders", tooltip="Although enabling this shows high profitability it is very difficult to catch the volatility of the market and do entries and exits on the same candle. Disable it if you want more realistic entry/exit signals.")
 bool includeCurrentBarFor9PeriodHighLow = input.bool(false, title="Include current bar to show 9-period highs/lows ( ! )", tooltip="This is not recommended! This setting is only for study purposes.")
@@ -344,20 +345,20 @@ bool isChikouSpanFreeInHtf1 = yard.isLaggingSpanCongestionFree(closeHtf1, displa
 string marketViewInHtf1 = "conslidating"
 if useMtf
     if (disregardKumoBiasInHtf or kumoBiasInHtf1 == "bullish" or leadingKumoBiasInHtf1 == "bullish")
-         and (priceWrtKumoInHtf1 == "above" or priceWrtKumoInHtf1 == "within")
+         and (priceWrtKumoInHtf1 == "above" or (allowPriceWithinKumoOnHtf and priceWrtKumoInHtf1 == "within"))
          and priceWrtTenkanInHtf1 == "above"
          and (tenkanWrtKijunInHtf1 == "above" or tenkanWrtKijunInHtf1 == "at")
          and isChikouSpanFreeInHtf1
          and isChikouSafeFromImmediateObstaclesInHtf1
-         and (chikouWrtPriceInHtf1 == "above" or true)
+         and (chikouWrtPriceInHtf1 == "above")
         marketViewInHtf1 := "bullish"
     else if (disregardKumoBiasInHtf or kumoBiasInHtf1 == "bearish" or leadingKumoBiasInHtf1 == "bearish")
-         and (priceWrtKumoInHtf1 == "below" or priceWrtKumoInHtf1 == "within")
+         and (priceWrtKumoInHtf1 == "below" or (allowPriceWithinKumoOnHtf and priceWrtKumoInHtf1 == "within"))
          and priceWrtTenkanInHtf1 == "below"
          and (tenkanWrtKijunInHtf1 == "below" or tenkanWrtKijunInHtf1 == "at")
          and isChikouSpanFreeInHtf1
          and isChikouSafeFromImmediateObstaclesInHtf1
-         and (chikouWrtPriceInHtf1 == "below" or true)
+         and (chikouWrtPriceInHtf1 == "below")
         marketViewInHtf1 := "bearish"
     else
         marketViewInHtf1 := "conslidating"
@@ -493,7 +494,7 @@ if useMtf and showSignalsUponBreakoutOfHtf
     lowestKijunValue := lowestKijunValueHtf1
     // log(str.format("After highest Bar: {0} ({1}), lowest Bar: {2}({3})", highestTenkanValue, highestTenkanSenBar, lowestTenkanValue, lowestTenkanSenBar))
 
-if useMtf and priceWrtKumoInHtf1 == "within"
+if useMtf and allowPriceWithinKumoOnHtf and priceWrtKumoInHtf1 == "within"
     if ((kumoBiasInHtf1 == "bullish" or kumoBiasInHtf1 == "neutral") and highestTenkanValue <= senkouSpanAHtf1[displacementHtf1-1])
         highestTenkanSenBar := -5
         highestTenkanValue := senkouSpanAHtf1[displacementHtf1-1] // TODO: add 0.25% of ATR
