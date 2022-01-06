@@ -483,14 +483,28 @@ else if (disregardPriceBeyondKumo
      lowestKijunValue] = yard.getHighestHighAndLowestLowSet(high, low, tenkanSenPeriod, kijunSenPeriod)
 // log(str.format("Before highest Bar: {0} ({1}), lowest Bar: {2}({3})", highestTenkanValue, highestTenkanSenBar, lowestTenkanValue, lowestTenkanSenBar))
 
+
+int breakoutCandleRange = tenkanSenPeriod + 1
+float highestBreakoutPrice = highestTenkanValue
+int highestBreakoutCandleoffset = highestTenkanSenBar - 1
+float lowestBreakoutPrice = lowestTenkanValue
+int lowestBreakoutCandleOffset = lowestTenkanSenBar - 1
+
 if useMtf and showSignalsUponBreakoutOfHtf
-    highestTenkanSenBar := -highestTenkanSenBarHtf1
+         and (highestTenkanValue <= highestTenkanValueHtf1
+                 or lowestTenkanValue >= lowestTenkanValueHtf1)
+    breakoutCandleRange := tenkanSenPeriod * htfMagnitude1 + htfMagnitude1
+    highestBreakoutPrice := highestTenkanValueHtf1
+    highestBreakoutCandleoffset := highestTenkanSenBarHtf1 - htfMagnitude1
+    lowestBreakoutPrice := lowestTenkanValueHtf1
+    lowestBreakoutCandleOffset := lowestTenkanSenBarHtf1 - htfMagnitude1
+    highestTenkanSenBar := highestTenkanSenBarHtf1
     highestTenkanValue := highestTenkanValueHtf1
-    lowestTenkanSenBar := -lowestTenkanSenBarHtf1
+    lowestTenkanSenBar := lowestTenkanSenBarHtf1
     lowestTenkanValue := lowestTenkanValueHtf1
-    highestKijunSenBar := -highestKijunSenBarHtf1
+    highestKijunSenBar := highestKijunSenBarHtf1
     highestKijunValue := highestKijunValueHtf1
-    lowestKijunSenBar := -lowestKijunSenBarHtf1
+    lowestKijunSenBar := lowestKijunSenBarHtf1
     lowestKijunValue := lowestKijunValueHtf1
     // log(str.format("After highest Bar: {0} ({1}), lowest Bar: {2}({3})", highestTenkanValue, highestTenkanSenBar, lowestTenkanValue, lowestTenkanSenBar))
 
@@ -552,14 +566,14 @@ if showSignalsUponBreakout
         hasSignaledForLong := false
         longBreakoutPrice := 0.0
     else if canPrepareForLong and not hasSignaledForLong
-        longBreakoutPrice := highestTenkanValue
+        longBreakoutPrice := highestBreakoutPrice
         // Draw 9-period high line to indicate the best entry point
-        line.new(bar_index-tenkanSenPeriod, highestTenkanValue, bar_index, highestTenkanValue, width=1, color=color.silver, style=line.style_dotted)
-        line.new(bar_index+highestTenkanSenBar-1, highestTenkanValue, bar_index, highestTenkanValue, width=1, color=longLineColor, style=line.style_solid)
+        line.new(bar_index-breakoutCandleRange, highestBreakoutPrice, bar_index, highestBreakoutPrice, width=1, color=color.silver, style=line.style_dotted)
+        line.new(bar_index+highestBreakoutCandleoffset, highestBreakoutPrice, bar_index, highestBreakoutPrice, width=1, color=color.gray, style=line.style_solid)
 else if canPrepareForLong
     // Draw 9-period high line to indicate the best entry point
-    line.new(bar_index-tenkanSenPeriod, highestTenkanValue, bar_index, highestTenkanValue, width=1, color=color.silver, style=line.style_dotted)
-    line.new(bar_index+highestTenkanSenBar-1, highestTenkanValue, bar_index, highestTenkanValue, width=1, color=longLineColor, style=line.style_solid)
+    line.new(bar_index-tenkanSenPeriod, highestBreakoutPrice, bar_index, highestBreakoutPrice, width=1, color=color.silver, style=line.style_dotted)
+    line.new(bar_index+highestBreakoutCandleoffset, highestBreakoutPrice, bar_index, highestBreakoutPrice, width=1, color=color.gray, style=line.style_solid)
 
 if canPrepareForLong
      and (not showSignalsUponBreakout or high >= longBreakoutPrice)
@@ -627,14 +641,14 @@ if showSignalsUponBreakout
         hasSignaledForShort := false
         shortBreakoutPrice := 0.0
     else if canPrepareForShort and not hasSignaledForShort
-        shortBreakoutPrice := lowestTenkanValue
+        shortBreakoutPrice := lowestBreakoutPrice
         // Draw 9-period high line to indicate the best entry point
-        line.new(bar_index-tenkanSenPeriod, lowestTenkanValue, bar_index, lowestTenkanValue, width=1, color=color.silver, style=line.style_dotted)
-        line.new(bar_index+lowestTenkanSenBar-1, lowestTenkanValue, bar_index, lowestTenkanValue, width=1, color=shortLineColor, style=line.style_solid)
+        line.new(bar_index-breakoutCandleRange, lowestBreakoutPrice, bar_index, lowestBreakoutPrice, width=1, color=color.silver, style=line.style_dotted)
+        line.new(bar_index+lowestBreakoutCandleOffset, lowestBreakoutPrice, bar_index, lowestBreakoutPrice, width=1, color=color.gray, style=line.style_solid)
 else if canPrepareForShort
     // Draw 9-period high line to indicate the best entry point
-    line.new(bar_index-tenkanSenPeriod, lowestTenkanValue, bar_index, lowestTenkanValue, width=1, color=color.silver, style=line.style_dotted)
-    line.new(bar_index+lowestTenkanSenBar-1, lowestTenkanValue, bar_index, lowestTenkanValue, width=1, color=shortLineColor, style=line.style_solid)
+    line.new(bar_index-breakoutCandleRange, lowestBreakoutPrice, bar_index, lowestBreakoutPrice, width=1, color=color.silver, style=line.style_dotted)
+    line.new(bar_index+lowestBreakoutCandleOffset, lowestBreakoutPrice, bar_index, lowestBreakoutPrice, width=1, color=color.gray, style=line.style_solid)
 
 if canPrepareForShort
      and (not showSignalsUponBreakout or low <= shortBreakoutPrice)
