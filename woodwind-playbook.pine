@@ -304,11 +304,11 @@ string kumoBiasInHtf1 = yard.getBias(senkouSpanAHtf1[displacementHtf1-1], senkou
 string leadingKumoBiasInHtf1 = yard.getBias(senkouSpanAHtf1, senkouSpanBHtf1)
 
 // Where is price w.r.t kumo in 1st order HTF?
-string priceWrtKumoInHtf1 = yard.getPositionRelativeToRange(close, senkouSpanAHtf1[displacementHtf1-1], senkouSpanBHtf1[displacementHtf1-1])
+string priceWrtKumoInHtf1 = yard.getPositionRelativeToRange(close, senkouSpanAHtf1[displacementHtf1-1], senkouSpanBHtf1[displacementHtf1-1]) // passing realtime close value instead of closeHtf1 prevents delay in entry signal.
 // log(str.format("HTF close: {0}, ssA: {1}, ssB: {2}, displacement: {3}", close, senkouSpanAHtf1[displacementHtf1-1], senkouSpanBHtf1[displacementHtf1-1], displacementHtf1-1))
 
 // Where is price w.r.t tenkan in 1st order HTF?
-string priceWrtTenkanInHtf1 = yard.getPositionRelativeToLevel(close, tenkanHtf1)
+string priceWrtTenkanInHtf1 = yard.getPositionRelativeToLevel(close, tenkanHtf1) // passing realtime close value instead of closeHtf1 prevents delay in entry signal.
 //log(str.format("closeHtf1: {0}, tenkanHtf1: {1}", closeHtf1, tenkanHtf1))
 
 // Where is tenkan w.r.t kijun in 1st order HTF?
