@@ -338,8 +338,7 @@ bool isChikouSafeFromImmediateObstaclesInHtf1 = chicouToSsbGapHtf1 >= 0
                                                  or (chicouToSsbGapHtf1/closeHtf1 <= (-1 * criticalChikouToSsbGap/100))
 
 // Is chikou free from congestion ahead in 1st order HTF? Is it heading into price?
-cphtf1 = 10 * 4  // TODO: This needs to be fixed!
-bool isChikouSpanFreeInHtf1 = yard.isLaggingSpanCongestionFree(closeHtf1, displacementHtf1, cphtf1, congestionTolerance, recentTkCrossInHtf1, chikouWrtPriceInHtf1)
+bool isChikouSpanFreeInHtf1 = yard.isLaggingSpanCongestionFree(closeHtf1, (displacement * htfMagnitude1), congestionProximity * htfMagnitude1, congestionTolerance, recentTkCrossInHtf1, chikouWrtPriceInHtf1)
 
 // Establish market view in 1st order higher timeframe
 string marketViewInHtf1 = "conslidating"
