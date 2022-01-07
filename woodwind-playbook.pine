@@ -325,20 +325,22 @@ if tkCrossStrengthIfOccurredHtf1 != na
     tkCrossWrtKumoInHtf1 := yard.getPositionRelativeToRange(kijunHtf1, senkouSpanAHtf1[displacementHtf1-1], senkouSpanBHtf1[displacementHtf1-1])
 
 // Where is chikou w.r.t price in 1st order HTF?
-string chikouWrtPriceInHtf1 = yard.getPositionRelativeToRange(closeHtf1, highHtf1[displacementHtf1-1], lowHtf1[displacementHtf1-1])
+int chikouDisplacementHtf1 = displacement * htfMagnitude1
+string chikouWrtPriceInHtf1 = yard.getPositionRelativeToRange(chikouHtf1, highHtf1[chikouDisplacementHtf1-htfMagnitude1], lowHtf1[chikouDisplacementHtf1-htfMagnitude1])
+// log(str.format("HTF chikou: {0}, price-high: {1}, price-low: {2}", chikouHtf1, highHtf1[chikouDisplacementHtf1-htfMagnitude1], lowHtf1[chikouDisplacementHtf1-htfMagnitude1]))
 
 // Where is chikou w.r.t kumo in 1st order HTF?
 string laggingKumoBiasInHtf1 = yard.getBias(senkouSpanAHtf1[2*displacementHtf1-1], senkouSpanBHtf1[2*displacementHtf1-1])
-string chikouWrtKumoInHtf1 = yard.getPositionRelativeToRange(closeHtf1, senkouSpanAHtf1[2*displacementHtf1-1], senkouSpanBHtf1[2*displacementHtf1-1])
+string chikouWrtKumoInHtf1 = yard.getPositionRelativeToRange(chikouHtf1, senkouSpanAHtf1[2*displacementHtf1-1], senkouSpanBHtf1[2*displacementHtf1-1])
 
 // Where is chikou w.r.t a flat Senkou-Span-B ahead in 1st order HTF?
 congestionProximityHtf1 = getCongestionForHtf(congestionProximity, htfOrder1, htfMagnitude1)
-[chicouToSsbGapHtf1, highestSsbHtf1, lowestSsbHtf1] = yard.getGap(closeHtf1, senkouSpanBHtf1[displacementHtf1*2 - 1 - congestionProximityHtf1], congestionProximityHtf1, recentTkCrossInHtf1, priceWrtKumoInHtf1)
+[chicouToSsbGapHtf1, highestSsbHtf1, lowestSsbHtf1] = yard.getGap(chikouHtf1, senkouSpanBHtf1[displacementHtf1*2 - 1 - congestionProximityHtf1], congestionProximityHtf1, recentTkCrossInHtf1, priceWrtKumoInHtf1)
 bool isChikouSafeFromImmediateObstaclesInHtf1 = chicouToSsbGapHtf1 >= 0
-                                                 or (chicouToSsbGapHtf1/closeHtf1 <= (-1 * criticalChikouToSsbGap/100))
+                                                 or (chicouToSsbGapHtf1/chikouHtf1 <= (-1 * criticalChikouToSsbGap/100))
 
 // Is chikou free from congestion ahead in 1st order HTF? Is it heading into price?
-bool isChikouSpanFreeInHtf1 = yard.isLaggingSpanCongestionFree(closeHtf1, (displacement * htfMagnitude1), congestionProximity * htfMagnitude1, congestionTolerance, recentTkCrossInHtf1, chikouWrtPriceInHtf1)
+bool isChikouSpanFreeInHtf1 = yard.isLaggingSpanCongestionFree(chikouHtf1, chikouDisplacementHtf1, congestionProximity * htfMagnitude1, congestionTolerance, recentTkCrossInHtf1, chikouWrtPriceInHtf1)
 
 // Establish market view in 1st order higher timeframe
 string marketViewInHtf1 = "conslidating"
@@ -366,7 +368,7 @@ log(str.format("HTF1: {0} ( kumoBiasInHtf1={1}, priceWrtKumoInHtf1={2}, priceWrt
 
 // Render equilibrium for CTF
 
-plot(chikouHtf1, offset = - (displacement * htfMagnitude1), color=color.orange, title="Lagging Price Action (HTF 1)")
+plot(chikouHtf1, offset = -chikouDisplacementHtf1, color=color.orange, title="Lagging Price Action (HTF 1)")
 int htfProjection = displacementHtf1 - htfMagnitude1
 ssa1 = plot(senkouSpanAHtf1, offset = htfProjection, color=color.blue, title="HTF Senkou-Span A")
 ssb1 = plot(senkouSpanBHtf1, offset = htfProjection, color=color.rgb(245,170,244), title="HTF Senkou-Span B")
@@ -433,6 +435,7 @@ string chikouWrtPrice = yard.getPositionRelativeToRange(close, high[displacement
 // Where is chikou w.r.t kumo?
 string laggingKumoView = yard.getBias(senkouSpanA[2*displacement-1], senkouSpanB[2*displacement-1])
 string chikouWrtKumo = yard.getPositionRelativeToRange(close, senkouSpanA[2*displacement-1], senkouSpanB[2*displacement-1])
+// log(str.format("CTF chikou: {0}, ssA: {1}, ssB: {2}", close, senkouSpanA[2*displacement], senkouSpanB[2*displacement]))
 
 // Where is chikou w.r.t a flat Senkou-Span-B ahead?
 [chicouToSsbGap, highestSsb, lowestSsb] = yard.getGap(close, senkouSpanB[displacement*2 - 1 - congestionProximity], congestionProximity, recentTkCross, priceWrtKumo)
