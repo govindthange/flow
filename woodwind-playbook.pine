@@ -130,6 +130,22 @@ pnlLabelLossBgColor = color.new(shortPrimarySignalColor, 85)
 pnlLabelMaxCapitalColor =  color.new(color.blue, 45)
 pnlLabelMaxCapitalTextColor =  color.yellow
 
+chikouColor = color.yellow
+tenkanColor = color.white
+kijunColor = color.purple
+ssALineColor = #A5D6A7
+ssBLineColor = #EF9A9A
+ssBullishColor = color.rgb(67, 160, 71, 80)
+ssBearishColor = color.rgb(244, 67, 54, 80)
+
+chikouColorInHtf1 = color.orange
+tenkanColorInHtf1 = color.gray
+kijunColorInHtf1 = color.aqua
+ssALineColorInHtf1 = color.blue
+ssBLineColorInHtf1 = color.rgb(245,170,244)
+ssBullishColorInHtf1 = color.new(color.blue, 90)
+ssBearishColorInHtf1 = color.new(color.purple, 90)
+
 // Initialize an empty array to store trading parameters
 
 var context = array.new_float(15)
@@ -286,6 +302,14 @@ float htfOrder2 = 2 * htfOrder1 // 2 orders up timeframe i.e. 16x of current tim
 [tenkanHtf1, kijunHtf1, senkouSpanAHtf1, senkouSpanBHtf1] = yard.findEquilibrium(highHtf1, lowHtf1, tenkanSenPeriod * htfMagnitude1, kijunSenPeriod * htfMagnitude1, senkouSpanPeriod * htfMagnitude1)
 chikouHtf1 = closeHtf1
 
+lastCloseoffsetInHtf1 = bar_index % htfMagnitude1
+// int htfIndex = lastCloseoffsetInHtf1 == 0 ? (not barstate.isrealtime and barstate.isconfirmed ? 0 : htfMagnitude1) : lastCloseoffsetInHtf1
+// highHtf1 = high[htfIndex]
+// lowHtf1 = low[htfIndex]
+// closeHtf1 = close[htfIndex]
+// [tenkanHtf1, kijunHtf1, senkouSpanAHtf1, senkouSpanBHtf1] = yard.findEquilibrium(highHtf1[htfIndex], lowHtf1[htfIndex], tenkanSenPeriod * htfMagnitude1, kijunSenPeriod * htfMagnitude1, senkouSpanPeriod * htfMagnitude1)
+// chikouHtf1 = closeHtf1
+
 [highestTenkanSenBarHtf1,
      highestTenkanValueHtf1,
      lowestTenkanSenBarHtf1,
@@ -295,17 +319,24 @@ chikouHtf1 = closeHtf1
      lowestKijunSenBarHtf1,
      lowestKijunValueHtf1] = yard.getHighestHighAndLowestLowSet(highHtf1, lowHtf1, tenkanSenPeriod * htfMagnitude1, kijunSenPeriod * htfMagnitude1)
 
-int displacementHtf1 = getDisplacementForHtf(displacement-1, htfOrder1, htfMagnitude1)
+int displacementHtf1 = displacement * htfMagnitude1 - 2 * htfMagnitude1
 
 // How is current kumo in 1st order HTF?
-string kumoBiasInHtf1 = yard.getBias(senkouSpanAHtf1[displacementHtf1-1], senkouSpanBHtf1[displacementHtf1-1])
+int currentKumoDisplacementInHtf1 = displacementHtf1-1 + lastCloseoffsetInHtf1
+string kumoBiasInHtf1 = yard.getBias(senkouSpanAHtf1[currentKumoDisplacementInHtf1], senkouSpanBHtf1[currentKumoDisplacementInHtf1])
 
 // How is future kumo?
 string leadingKumoBiasInHtf1 = yard.getBias(senkouSpanAHtf1, senkouSpanBHtf1)
 
 // Where is price w.r.t kumo in 1st order HTF?
-string priceWrtKumoInHtf1 = yard.getPositionRelativeToRange(close, senkouSpanAHtf1[displacementHtf1-1], senkouSpanBHtf1[displacementHtf1-1]) // passing realtime close value instead of closeHtf1 prevents delay in entry signal.
-// log(str.format("HTF close: {0}, ssA: {1}, ssB: {2}, displacement: {3}", close, senkouSpanAHtf1[displacementHtf1-1], senkouSpanBHtf1[displacementHtf1-1], displacementHtf1-1))
+string priceWrtKumoInHtf1 = yard.getPositionRelativeToRange(close, senkouSpanAHtf1[currentKumoDisplacementInHtf1], senkouSpanBHtf1[currentKumoDisplacementInHtf1]) // passing realtime close value instead of closeHtf1 prevents delay in entry signal.
+log(str.format("HTF price w.r.t kumo >> close: {0}, ssA: {1}, ssB: {2}, displacement: {3}", close, senkouSpanAHtf1[currentKumoDisplacementInHtf1], senkouSpanBHtf1[currentKumoDisplacementInHtf1], currentKumoDisplacementInHtf1))
+
+barOffsetForCurrentKumoInHtf1 = lastCloseoffsetInHtf1
+currentKumoMarkerInHtf1 = line.new(bar_index[barOffsetForCurrentKumoInHtf1], senkouSpanAHtf1[currentKumoDisplacementInHtf1] - close*0.005, bar_index[barOffsetForCurrentKumoInHtf1], senkouSpanBHtf1[currentKumoDisplacementInHtf1] + close*0.005, color=color.gray, style=line.style_dotted)
+line.delete(currentKumoMarkerInHtf1[1])
+log(str.format("bar: {0}, bar[offset]: {1}, offset: {2}, htf1-ssA: {3}", bar_index, bar_index[barOffsetForCurrentKumoInHtf1], barOffsetForCurrentKumoInHtf1, senkouSpanAHtf1[currentKumoDisplacementInHtf1]))
+
 
 // Where is price w.r.t tenkan in 1st order HTF?
 string priceWrtTenkanInHtf1 = yard.getPositionRelativeToLevel(close, tenkanHtf1) // passing realtime close value instead of closeHtf1 prevents delay in entry signal.
@@ -322,7 +353,7 @@ tkCrossStrengthIfOccurredHtf1 = yard.getBiasFromCrossover(tenkanHtf1, kijunHtf1,
 var string tkCrossWrtKumoInHtf1 = "within"
 if tkCrossStrengthIfOccurredHtf1 != na
     recentTkCrossInHtf1 := tkCrossStrengthIfOccurredHtf1
-    tkCrossWrtKumoInHtf1 := yard.getPositionRelativeToRange(kijunHtf1, senkouSpanAHtf1[displacementHtf1-1], senkouSpanBHtf1[displacementHtf1-1])
+    tkCrossWrtKumoInHtf1 := yard.getPositionRelativeToRange(kijunHtf1, senkouSpanAHtf1[currentKumoDisplacementInHtf1], senkouSpanBHtf1[currentKumoDisplacementInHtf1])
 
 // Where is chikou w.r.t price in 1st order HTF?
 int chikouDisplacementHtf1 = displacement * htfMagnitude1
@@ -330,12 +361,17 @@ string chikouWrtPriceInHtf1 = yard.getPositionRelativeToRange(chikouHtf1, highHt
 // log(str.format("HTF chikou: {0}, price-high: {1}, price-low: {2}", chikouHtf1, highHtf1[chikouDisplacementHtf1-htfMagnitude1], lowHtf1[chikouDisplacementHtf1-htfMagnitude1]))
 
 // Where is chikou w.r.t kumo in 1st order HTF?
-string laggingKumoBiasInHtf1 = yard.getBias(senkouSpanAHtf1[2*displacementHtf1-1], senkouSpanBHtf1[2*displacementHtf1-1])
-string chikouWrtKumoInHtf1 = yard.getPositionRelativeToRange(chikouHtf1, senkouSpanAHtf1[2*displacementHtf1-1], senkouSpanBHtf1[2*displacementHtf1-1])
+int laggingKumoDisplacementInHtf1 = 2 * (currentKumoDisplacementInHtf1 + htfMagnitude1) + lastCloseoffsetInHtf1
+string laggingKumoBiasInHtf1 = yard.getBias(senkouSpanAHtf1[laggingKumoDisplacementInHtf1], senkouSpanBHtf1[laggingKumoDisplacementInHtf1])
+string chikouWrtKumoInHtf1 = yard.getPositionRelativeToRange(chikouHtf1, senkouSpanAHtf1[laggingKumoDisplacementInHtf1], senkouSpanBHtf1[laggingKumoDisplacementInHtf1])
+
+int barOffsetForLaggingKumoInHtf1 = displacement * htfMagnitude1 + lastCloseoffsetInHtf1
+laggingKumoMarketInHtf1 = line.new(bar_index[barOffsetForLaggingKumoInHtf1], senkouSpanAHtf1[laggingKumoDisplacementInHtf1] - close*0.005, bar_index[barOffsetForLaggingKumoInHtf1], senkouSpanBHtf1[laggingKumoDisplacementInHtf1] + close*0.005, color=color.gray, style=line.style_dotted)
+line.delete(laggingKumoMarketInHtf1[1])
 
 // Where is chikou w.r.t a flat Senkou-Span-B ahead in 1st order HTF?
 congestionProximityHtf1 = getCongestionForHtf(congestionProximity, htfOrder1, htfMagnitude1)
-[chicouToSsbGapHtf1, highestSsbHtf1, lowestSsbHtf1] = yard.getGap(chikouHtf1, senkouSpanBHtf1[displacementHtf1*2 - 1 - congestionProximityHtf1], congestionProximityHtf1, recentTkCrossInHtf1, priceWrtKumoInHtf1)
+[chicouToSsbGapHtf1, highestSsbHtf1, lowestSsbHtf1] = yard.getGap(chikouHtf1, senkouSpanBHtf1[laggingKumoDisplacementInHtf1 - congestionProximityHtf1], congestionProximityHtf1, recentTkCrossInHtf1, priceWrtKumoInHtf1)
 bool isChikouSafeFromImmediateObstaclesInHtf1 = chicouToSsbGapHtf1 >= 0
                                                  or (chicouToSsbGapHtf1/chikouHtf1 <= (-1 * criticalChikouToSsbGap/100))
 
@@ -366,15 +402,14 @@ if useMtf
 
 log(str.format("HTF1: {0} ( kumoBiasInHtf1={1}, priceWrtKumoInHtf1={2}, priceWrtTenkanInHtf1={3}, tenkanWrtKijunInHtf1={4},\n      recentTkCrossInHtf1={5}, tkCrossWrtKumoInHtf1={6}, laggingKumoBiasInHtf1={7}, leadingKumoBiasInHtf1={8},\n      chikouWrtPriceInHtf1={9}, isChikouSpanFreeInHtf1={10}, chikouWrtKumoInHtf1={11}, isChikouSafeFromImmediateObstaclesInHtf1={12})", marketViewInHtf1, kumoBiasInHtf1, priceWrtKumoInHtf1, priceWrtTenkanInHtf1, tenkanWrtKijunInHtf1, recentTkCrossInHtf1, tkCrossWrtKumoInHtf1, laggingKumoBiasInHtf1, leadingKumoBiasInHtf1, chikouWrtPriceInHtf1, isChikouSpanFreeInHtf1, chikouWrtKumoInHtf1, isChikouSafeFromImmediateObstaclesInHtf1))
 
-// Render equilibrium for CTF
-
-plot(chikouHtf1, offset = -chikouDisplacementHtf1, color=color.orange, title="Lagging Price Action (HTF 1)")
-int htfProjection = displacementHtf1 - htfMagnitude1
-ssa1 = plot(senkouSpanAHtf1, offset = htfProjection, color=color.blue, title="HTF Senkou-Span A")
-ssb1 = plot(senkouSpanBHtf1, offset = htfProjection, color=color.rgb(245,170,244), title="HTF Senkou-Span B")
-fill(ssa1, ssb1, color = senkouSpanAHtf1 > senkouSpanBHtf1 ? color.new(color.blue, 90) : color.new(color.purple, 90))
-plot(tenkanHtf1, "Short-Term Equilibrium (HTF 1)", color.gray)
-plot(kijunHtf1, "Mid-Term Equilibrium (HTF 1)", color.aqua)
+// Render equilibrium for HTF (Order 1)
+plot(chikouHtf1, offset = -chikouDisplacementHtf1, color=chikouColorInHtf1, title="Lagging Price Action (HTF 1)")
+int htfProjection = displacementHtf1
+ssa1 = plot(senkouSpanAHtf1, offset = htfProjection, color=ssALineColorInHtf1, title="HTF Senkou-Span A")
+ssb1 = plot(senkouSpanBHtf1, offset = htfProjection, color=ssBLineColorInHtf1, title="HTF Senkou-Span B")
+fill(ssa1, ssb1, color = senkouSpanAHtf1 > senkouSpanBHtf1 ? ssBullishColorInHtf1 : ssBearishColorInHtf1)
+plot(tenkanHtf1, "Short-Term Equilibrium (HTF 1)", tenkanColorInHtf1)
+plot(kijunHtf1, "Mid-Term Equilibrium (HTF 1)", kijunColorInHtf1)
 
 
 //░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░
@@ -511,27 +546,27 @@ if useMtf and showSignalsUponBreakoutOfHtf
     // log(str.format("After highest Bar: {0} ({1}), lowest Bar: {2}({3})", highestTenkanValue, highestTenkanSenBar, lowestTenkanValue, lowestTenkanSenBar))
 
 if useMtf and allowPriceWithinKumoOnHtf and priceWrtKumoInHtf1 == "within"
-    if ((kumoBiasInHtf1 == "bullish" or kumoBiasInHtf1 == "neutral") and highestTenkanValue <= senkouSpanAHtf1[displacementHtf1-1])
+    if ((kumoBiasInHtf1 == "bullish" or kumoBiasInHtf1 == "neutral") and highestTenkanValue <= senkouSpanAHtf1[currentKumoDisplacementInHtf1])
         highestTenkanSenBar := -5
-        highestTenkanValue := senkouSpanAHtf1[displacementHtf1-1] // TODO: add 0.25% of ATR
-    else if ((kumoBiasInHtf1 == "bearish" or kumoBiasInHtf1 == "neutral") and highestTenkanValue <= senkouSpanBHtf1[displacementHtf1-1])
+        highestTenkanValue := senkouSpanAHtf1[currentKumoDisplacementInHtf1] // TODO: add 0.25% of ATR
+    else if ((kumoBiasInHtf1 == "bearish" or kumoBiasInHtf1 == "neutral") and highestTenkanValue <= senkouSpanBHtf1[currentKumoDisplacementInHtf1])
         highestTenkanSenBar := -5
-        highestTenkanValue := senkouSpanBHtf1[displacementHtf1-1] // TODO: add 0.25% of ATR
-    else if ((kumoBiasInHtf1 == "bullish" or kumoBiasInHtf1 == "neutral") and lowestTenkanValue >= senkouSpanBHtf1[displacementHtf1-1])
+        highestTenkanValue := senkouSpanBHtf1[currentKumoDisplacementInHtf1] // TODO: add 0.25% of ATR
+    else if ((kumoBiasInHtf1 == "bullish" or kumoBiasInHtf1 == "neutral") and lowestTenkanValue >= senkouSpanBHtf1[currentKumoDisplacementInHtf1])
         lowestTenkanSenBar := -5
-        lowestTenkanValue := senkouSpanBHtf1[displacementHtf1-1] // TODO: add 0.25% of ATR
-    else if ((kumoBiasInHtf1 == "bearish" or kumoBiasInHtf1 == "neutral") and lowestTenkanValue >= senkouSpanAHtf1[displacementHtf1-1])
+        lowestTenkanValue := senkouSpanBHtf1[currentKumoDisplacementInHtf1] // TODO: add 0.25% of ATR
+    else if ((kumoBiasInHtf1 == "bearish" or kumoBiasInHtf1 == "neutral") and lowestTenkanValue >= senkouSpanAHtf1[currentKumoDisplacementInHtf1])
         lowestTenkanSenBar := -5
-        lowestTenkanValue := senkouSpanAHtf1[displacementHtf1-1] // TODO: add 0.25% of ATR
+        lowestTenkanValue := senkouSpanAHtf1[currentKumoDisplacementInHtf1] // TODO: add 0.25% of ATR
     // log(str.format("MTF highest Bar: {0} ({1}), lowest Bar: {2}({3})", highestTenkanValue, highestTenkanSenBar, lowestTenkanValue, lowestTenkanSenBar))
 
 // Render equilibrium for CTF
-plot(close, offset = - displacement + 1, color=color.yellow, title="Lagging Price Action (CTF)")
-ssa = plot(senkouSpanA, offset = displacement - 1, color=#A5D6A7, title="CTF Senkou-Span A")
-ssb = plot(senkouSpanB, offset = displacement - 1, color=#EF9A9A, title="CTF Senkou-Span B")
-fill(ssa, ssb, color = senkouSpanA > senkouSpanB ? color.rgb(67, 160, 71, 80) : color.rgb(244, 67, 54, 80))
-plot(tenkanSen, "Short-Term Equilibrium (CTF)", color.white)
-plot(kijunSen, "Mid-Term Equilibrium (CTF)", color.purple)
+plot(close, offset = - displacement + 1, color=chikouColor, title="Lagging Price Action (CTF)")
+ssa = plot(senkouSpanA, offset = displacement - 1, color=ssALineColor, title="CTF Senkou-Span A")
+ssb = plot(senkouSpanB, offset = displacement - 1, color=ssBLineColor, title="CTF Senkou-Span B")
+fill(ssa, ssb, color = senkouSpanA > senkouSpanB ? ssBullishColor : ssBearishColor)
+plot(tenkanSen, "Short-Term Equilibrium (CTF)", tenkanColor)
+plot(kijunSen, "Mid-Term Equilibrium (CTF)", kijunColor)
 
 
 //░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░
