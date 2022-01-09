@@ -290,25 +290,94 @@ var chikouExitGains = 0.0
 //░░╚═╝░░╚═╝░░░╚═╝░░░╚═╝░░░░░░░╚═╝░░╚═╝╚═════╝░╚═════╝░╚══════╝╚═════╝░╚═════╝░╚═╝░░░░░╚═╝╚══════╝╚═╝░░╚══╝░░░╚═╝░░░░░
 //░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░
 
-int htfIndex = barstate.isrealtime ? 1 : 0
-int ctfIndex = barstate.isrealtime ? 0 : 1
-highHtf1 = request.security(symbol=syminfo.tickerid, timeframe="240", expression=high[htfIndex])[ctfIndex]
-lowHtf1 = request.security(symbol=syminfo.tickerid, timeframe="240", expression=low[htfIndex])[ctfIndex]
-closeHtf1 = request.security(symbol=syminfo.tickerid, timeframe="240", expression=close[htfIndex])[ctfIndex]
-
 int htfMagnitude1 = 4
 float htfOrder1 = 1 // 1 order up timeframe i.e. 4x of current timeframe
 float htfOrder2 = 2 * htfOrder1 // 2 orders up timeframe i.e. 16x of current timeframe
-[tenkanHtf1, kijunHtf1, senkouSpanAHtf1, senkouSpanBHtf1] = yard.findEquilibrium(highHtf1, lowHtf1, tenkanSenPeriod * htfMagnitude1, kijunSenPeriod * htfMagnitude1, senkouSpanPeriod * htfMagnitude1)
-chikouHtf1 = closeHtf1
-
 lastCloseoffsetInHtf1 = bar_index % htfMagnitude1
-// int htfIndex = lastCloseoffsetInHtf1 == 0 ? (not barstate.isrealtime and barstate.isconfirmed ? 0 : htfMagnitude1) : lastCloseoffsetInHtf1
-// highHtf1 = high[htfIndex]
-// lowHtf1 = low[htfIndex]
-// closeHtf1 = close[htfIndex]
-// [tenkanHtf1, kijunHtf1, senkouSpanAHtf1, senkouSpanBHtf1] = yard.findEquilibrium(highHtf1[htfIndex], lowHtf1[htfIndex], tenkanSenPeriod * htfMagnitude1, kijunSenPeriod * htfMagnitude1, senkouSpanPeriod * htfMagnitude1)
-// chikouHtf1 = closeHtf1
+
+//
+// Optional Logic (Comment/Uncomment Code Blocks)
+// ---------------------------------------------------------------------------------------
+//
+// Approach 1: Obtain candle's close in higher timeframe by calling request.security() fn
+// Known Issue: Senkou-Span-A/B and Chikou positions are accurate but the graph has spikes due to random price. Ideally graph should change its level after 4 bars only!
+// Conclusion: This is the best approach as Senkou-Span-A/B and Chikou locations are correct.
+//
+int htfOffset = lastCloseoffsetInHtf1 == 0 ? (not barstate.isrealtime and barstate.isconfirmed ? 0 : htfMagnitude1) : lastCloseoffsetInHtf1
+int htfIndex = barstate.isrealtime and not barstate.isconfirmed ? 1 : 0
+int ctfIndex = barstate.isrealtime and not barstate.isconfirmed ? 0 : 1
+highHtf1 = request.security(symbol=syminfo.tickerid, timeframe="240", expression=high[htfIndex])[ctfIndex]
+lowHtf1 = request.security(symbol=syminfo.tickerid, timeframe="240", expression=low[htfIndex])[ctfIndex]
+closeHtf1 = request.security(symbol=syminfo.tickerid, timeframe="240", expression=close[htfIndex])[ctfIndex]
+[tenkanHtf1, kijunHtf1, senkouSpanAHtf1, senkouSpanBHtf1] = yard.findEquilibrium(highHtf1, lowHtf1, tenkanSenPeriod * htfMagnitude1, kijunSenPeriod * htfMagnitude1, senkouSpanPeriod * htfMagnitude1)
+int displacementHtf1 = displacement * htfMagnitude1 - 2*htfMagnitude1 + 1
+int currentKumoDisplacementInHtf1 = displacementHtf1-1 + lastCloseoffsetInHtf1
+int laggingKumoDisplacementInHtf1 = 2 * (currentKumoDisplacementInHtf1 + htfMagnitude1) + lastCloseoffsetInHtf1
+int chikouDisplacementHtf1 = displacement * htfMagnitude1 + htfMagnitude1
+
+//
+// Approach 2: Obtain candle's close in higher timeframe by calling request.security() fn and then calculate candle's close in higher timeframe using offsets after calling yard.findEquilibrium() fn.
+// Known Issue: Senkou-Span-A/B and Chikou positions sometimes don't match but the graph change its level accurately after 4 bars only!
+// Conclusion: This is the 2nd best approach after Approach 1.
+//
+// int htfOffset = lastCloseoffsetInHtf1 == 0 ? (not barstate.isrealtime and barstate.isconfirmed ? 0 : htfMagnitude1) : lastCloseoffsetInHtf1
+// int htfIndex = barstate.isrealtime and not barstate.isconfirmed ? 1 : 0
+// int ctfIndex = barstate.isrealtime and not barstate.isconfirmed ? 0 : 1
+// hHtf1 = request.security(symbol=syminfo.tickerid, timeframe="240", expression=high[htfIndex])[ctfIndex]
+// lHtf1 = request.security(symbol=syminfo.tickerid, timeframe="240", expression=low[htfIndex])[ctfIndex]
+// cHtf1 = request.security(symbol=syminfo.tickerid, timeframe="240", expression=close[htfIndex])[ctfIndex]
+// [tHtf1, kHtf1, ssAHtff1, ssBHtff1] = yard.findEquilibrium(hHtf1, lHtf1, tenkanSenPeriod * htfMagnitude1, kijunSenPeriod * htfMagnitude1, senkouSpanPeriod * htfMagnitude1)
+// highHtf1 = hHtf1[htfOffset]
+// lowHtf1 = lHtf1[htfOffset]
+// closeHtf1 = cHtf1[htfOffset]
+// tenkanHtf1 = tHtf1[htfOffset]
+// kijunHtf1 = kHtf1[htfOffset]
+// senkouSpanAHtf1 = ssAHtff1[htfOffset]
+// senkouSpanBHtf1 = ssBHtff1[htfOffset]
+// int displacementHtf1 = displacement * htfMagnitude1 - 2*htfMagnitude1
+// int currentKumoDisplacementInHtf1 = displacementHtf1 + htfMagnitude1 + lastCloseoffsetInHtf1
+// int laggingKumoDisplacementInHtf1 = 2*currentKumoDisplacementInHtf1 + lastCloseoffsetInHtf1
+// int chikouDisplacementHtf1 = displacementHtf1 + 2*htfMagnitude1 + htfMagnitude1
+
+// Approach 3: Calculate candle's close in higher timeframe using offsets before calling yard.findEquilibrium() fn.
+// // int htfOffset = lastCloseoffsetInHtf1 == 0 ? (not barstate.isrealtime and barstate.isconfirmed ? 0 : htfMagnitude1) : lastCloseoffsetInHtf1
+// // int htfOffset = lastCloseoffsetInHtf1 == 0 ? (barstate.ishistory ? lastCloseoffsetInHtf1 : (barstate.isconfirmed ? 0 : htfMagnitude1)) : lastCloseoffsetInHtf1
+// // int htfOffset = lastCloseoffsetInHtf1 == 0 ? (barstate.ishistory ? lastCloseoffsetInHtf1 : (barstate.isrealtime ? htfMagnitude1 : 0)) : lastCloseoffsetInHtf1
+// int htfOffset = lastCloseoffsetInHtf1 != 0 ? lastCloseoffsetInHtf1 : (barstate.isrealtime ? htfMagnitude1 : 0)
+// highHtf1 = high[htfOffset]
+// lowHtf1 = low[htfOffset]
+// closeHtf1 = close[htfOffset]
+// [tenkanHtf1, kijunHtf1, senkouSpanAHtf1, senkouSpanBHtf1] = yard.findEquilibrium(highHtf1[htfOffset], lowHtf1[htfOffset], tenkanSenPeriod * htfMagnitude1, kijunSenPeriod * htfMagnitude1, senkouSpanPeriod * htfMagnitude1)
+// int displacementHtf1 = displacement * htfMagnitude1 - 2*htfMagnitude1
+// int currentKumoDisplacementInHtf1 = displacementHtf1-1 + lastCloseoffsetInHtf1
+// int laggingKumoDisplacementInHtf1 = 2*currentKumoDisplacementInHtf1 + lastCloseoffsetInHtf1
+// int chikouDisplacementHtf1 = displacementHtf1 + 2*htfMagnitude1 + htfMagnitude1
+
+// Approach 4: Calculate candle's close in higher timeframe using offsets after calling yard.findEquilibrium() fn.
+// // int htfOffset = lastCloseoffsetInHtf1
+// // int htfOffset = lastCloseoffsetInHtf1 == 0 ? htfMagnitude1 : lastCloseoffsetInHtf1
+// // int htfOffset = lastCloseoffsetInHtf1 == 0 ? (not barstate.isrealtime and barstate.isconfirmed ? 0 : 1) : lastCloseoffsetInHtf1
+// // int htfOffset = lastCloseoffsetInHtf1 == 0 ? (not barstate.isrealtime and barstate.isconfirmed ? 1 : htfMagnitude1) : lastCloseoffsetInHtf1
+// int htfOffset = lastCloseoffsetInHtf1 == 0 ? (not barstate.isrealtime and barstate.isconfirmed ? 0 : htfMagnitude1) : lastCloseoffsetInHtf1
+// // int htfOffset = lastCloseoffsetInHtf1 != 0 ? lastCloseoffsetInHtf1 : (barstate.isrealtime ? htfMagnitude1 : 0)
+// [tHtf1, kHtf1, ssAHtff1, ssBHtff1] = yard.findEquilibrium(high, low, tenkanSenPeriod * htfMagnitude1, kijunSenPeriod * htfMagnitude1, senkouSpanPeriod * htfMagnitude1)
+// highHtf1 = high[htfOffset]
+// lowHtf1 = low[htfOffset]
+// closeHtf1 = close[htfOffset]
+// tenkanHtf1 = tHtf1[htfOffset]
+// kijunHtf1 = kHtf1[htfOffset]
+// senkouSpanAHtf1 = ssAHtff1[htfOffset]
+// senkouSpanBHtf1 = ssBHtff1[htfOffset]
+// int displacementHtf1 = displacement * htfMagnitude1 - htfMagnitude1
+// int currentKumoDisplacementInHtf1 = displacementHtf1-1 + lastCloseoffsetInHtf1
+// int laggingKumoDisplacementInHtf1 = 2*currentKumoDisplacementInHtf1 + lastCloseoffsetInHtf1
+// int chikouDisplacementHtf1 = displacementHtf1 + 2*htfMagnitude1
+
+// ---------------------------------------------------------------------------------------
+
+// log(str.format("HTF close: {0}, t: {1}, k: {2}, htfOffset: {3}", close, tenkanHtf1, kijunHtf1, htfOffset))
+
+chikouHtf1 = closeHtf1
 
 [highestTenkanSenBarHtf1,
      highestTenkanValueHtf1,
@@ -319,10 +388,7 @@ lastCloseoffsetInHtf1 = bar_index % htfMagnitude1
      lowestKijunSenBarHtf1,
      lowestKijunValueHtf1] = yard.getHighestHighAndLowestLowSet(highHtf1, lowHtf1, tenkanSenPeriod * htfMagnitude1, kijunSenPeriod * htfMagnitude1)
 
-int displacementHtf1 = displacement * htfMagnitude1 - 2 * htfMagnitude1
-
 // How is current kumo in 1st order HTF?
-int currentKumoDisplacementInHtf1 = displacementHtf1-1 + lastCloseoffsetInHtf1
 string kumoBiasInHtf1 = yard.getBias(senkouSpanAHtf1[currentKumoDisplacementInHtf1], senkouSpanBHtf1[currentKumoDisplacementInHtf1])
 
 // How is future kumo?
@@ -330,13 +396,13 @@ string leadingKumoBiasInHtf1 = yard.getBias(senkouSpanAHtf1, senkouSpanBHtf1)
 
 // Where is price w.r.t kumo in 1st order HTF?
 string priceWrtKumoInHtf1 = yard.getPositionRelativeToRange(close, senkouSpanAHtf1[currentKumoDisplacementInHtf1], senkouSpanBHtf1[currentKumoDisplacementInHtf1]) // passing realtime close value instead of closeHtf1 prevents delay in entry signal.
-log(str.format("HTF price w.r.t kumo >> close: {0}, ssA: {1}, ssB: {2}, displacement: {3}", close, senkouSpanAHtf1[currentKumoDisplacementInHtf1], senkouSpanBHtf1[currentKumoDisplacementInHtf1], currentKumoDisplacementInHtf1))
+// log(str.format("HTF price w.r.t kumo >> close: {0}, ssA: {1}, ssB: {2}, displacement: {3}", close, senkouSpanAHtf1[currentKumoDisplacementInHtf1], senkouSpanBHtf1[currentKumoDisplacementInHtf1], currentKumoDisplacementInHtf1))
 
-barOffsetForCurrentKumoInHtf1 = lastCloseoffsetInHtf1
-currentKumoMarkerInHtf1 = line.new(bar_index[barOffsetForCurrentKumoInHtf1], senkouSpanAHtf1[currentKumoDisplacementInHtf1] - close*0.005, bar_index[barOffsetForCurrentKumoInHtf1], senkouSpanBHtf1[currentKumoDisplacementInHtf1] + close*0.005, color=color.gray, style=line.style_dotted)
+int barOffsetForCurrentKumoInHtf1 = lastCloseoffsetInHtf1
+float currentKumoMarkerExtInHtf1 = kumoBiasInHtf1 == "bullish" ? close*0.005 : -close*0.005
+currentKumoMarkerInHtf1 = line.new(bar_index[barOffsetForCurrentKumoInHtf1], senkouSpanAHtf1[currentKumoDisplacementInHtf1] + currentKumoMarkerExtInHtf1, bar_index[barOffsetForCurrentKumoInHtf1], senkouSpanBHtf1[currentKumoDisplacementInHtf1] - currentKumoMarkerExtInHtf1, color=color.gray, style=line.style_dotted)
 line.delete(currentKumoMarkerInHtf1[1])
-log(str.format("bar: {0}, bar[offset]: {1}, offset: {2}, htf1-ssA: {3}", bar_index, bar_index[barOffsetForCurrentKumoInHtf1], barOffsetForCurrentKumoInHtf1, senkouSpanAHtf1[currentKumoDisplacementInHtf1]))
-
+// log(str.format("bar: {0}, bar[offset]: {1}, offset: {2}, htf1-ssA: {3}", bar_index, bar_index[barOffsetForCurrentKumoInHtf1], barOffsetForCurrentKumoInHtf1, senkouSpanAHtf1[currentKumoDisplacementInHtf1]))
 
 // Where is price w.r.t tenkan in 1st order HTF?
 string priceWrtTenkanInHtf1 = yard.getPositionRelativeToLevel(close, tenkanHtf1) // passing realtime close value instead of closeHtf1 prevents delay in entry signal.
@@ -356,18 +422,17 @@ if tkCrossStrengthIfOccurredHtf1 != na
     tkCrossWrtKumoInHtf1 := yard.getPositionRelativeToRange(kijunHtf1, senkouSpanAHtf1[currentKumoDisplacementInHtf1], senkouSpanBHtf1[currentKumoDisplacementInHtf1])
 
 // Where is chikou w.r.t price in 1st order HTF?
-int chikouDisplacementHtf1 = displacement * htfMagnitude1
-string chikouWrtPriceInHtf1 = yard.getPositionRelativeToRange(chikouHtf1, highHtf1[chikouDisplacementHtf1-htfMagnitude1], lowHtf1[chikouDisplacementHtf1-htfMagnitude1])
-// log(str.format("HTF chikou: {0}, price-high: {1}, price-low: {2}", chikouHtf1, highHtf1[chikouDisplacementHtf1-htfMagnitude1], lowHtf1[chikouDisplacementHtf1-htfMagnitude1]))
+string chikouWrtPriceInHtf1 = yard.getPositionRelativeToRange(chikouHtf1, highHtf1[chikouDisplacementHtf1], lowHtf1[chikouDisplacementHtf1])
+// log(str.format("HTF chikou: {0}, price-high: {1}, price-low: {2}", chikouHtf1, highHtf1[chikouDisplacementHtf1], lowHtf1[chikouDisplacementHtf1]))
 
 // Where is chikou w.r.t kumo in 1st order HTF?
-int laggingKumoDisplacementInHtf1 = 2 * (currentKumoDisplacementInHtf1 + htfMagnitude1) + lastCloseoffsetInHtf1
 string laggingKumoBiasInHtf1 = yard.getBias(senkouSpanAHtf1[laggingKumoDisplacementInHtf1], senkouSpanBHtf1[laggingKumoDisplacementInHtf1])
 string chikouWrtKumoInHtf1 = yard.getPositionRelativeToRange(chikouHtf1, senkouSpanAHtf1[laggingKumoDisplacementInHtf1], senkouSpanBHtf1[laggingKumoDisplacementInHtf1])
 
 int barOffsetForLaggingKumoInHtf1 = displacement * htfMagnitude1 + lastCloseoffsetInHtf1
-laggingKumoMarketInHtf1 = line.new(bar_index[barOffsetForLaggingKumoInHtf1], senkouSpanAHtf1[laggingKumoDisplacementInHtf1] - close*0.005, bar_index[barOffsetForLaggingKumoInHtf1], senkouSpanBHtf1[laggingKumoDisplacementInHtf1] + close*0.005, color=color.gray, style=line.style_dotted)
-line.delete(laggingKumoMarketInHtf1[1])
+float laggingKumoMarkerExtInHtf1 = laggingKumoBiasInHtf1 == "bullish" ? close*0.005 : -close*0.005
+laggingKumoMarkerInHtf1 = line.new(bar_index[barOffsetForLaggingKumoInHtf1], senkouSpanAHtf1[laggingKumoDisplacementInHtf1] + laggingKumoMarkerExtInHtf1, bar_index[barOffsetForLaggingKumoInHtf1], senkouSpanBHtf1[laggingKumoDisplacementInHtf1] - laggingKumoMarkerExtInHtf1, color=color.gray, style=line.style_dotted)
+line.delete(laggingKumoMarkerInHtf1[1])
 
 // Where is chikou w.r.t a flat Senkou-Span-B ahead in 1st order HTF?
 congestionProximityHtf1 = getCongestionForHtf(congestionProximity, htfOrder1, htfMagnitude1)
@@ -404,9 +469,8 @@ log(str.format("HTF1: {0} ( kumoBiasInHtf1={1}, priceWrtKumoInHtf1={2}, priceWrt
 
 // Render equilibrium for HTF (Order 1)
 plot(chikouHtf1, offset = -chikouDisplacementHtf1, color=chikouColorInHtf1, title="Lagging Price Action (HTF 1)")
-int htfProjection = displacementHtf1
-ssa1 = plot(senkouSpanAHtf1, offset = htfProjection, color=ssALineColorInHtf1, title="HTF Senkou-Span A")
-ssb1 = plot(senkouSpanBHtf1, offset = htfProjection, color=ssBLineColorInHtf1, title="HTF Senkou-Span B")
+ssa1 = plot(senkouSpanAHtf1, offset = displacementHtf1, color=ssALineColorInHtf1, title="HTF Senkou-Span A")
+ssb1 = plot(senkouSpanBHtf1, offset = displacementHtf1, color=ssBLineColorInHtf1, title="HTF Senkou-Span B")
 fill(ssa1, ssb1, color = senkouSpanAHtf1 > senkouSpanBHtf1 ? ssBullishColorInHtf1 : ssBearishColorInHtf1)
 plot(tenkanHtf1, "Short-Term Equilibrium (HTF 1)", tenkanColorInHtf1)
 plot(kijunHtf1, "Mid-Term Equilibrium (HTF 1)", kijunColorInHtf1)
