@@ -317,7 +317,7 @@ int chikouDisplacementHtf1 = displacement * htfMagnitude1 + htfMagnitude1
 
 //
 // Approach 2: Obtain candle's close in higher timeframe by calling request.security() fn and then calculate candle's close in higher timeframe using offsets after calling yard.findEquilibrium() fn.
-// Known Issue: Senkou-Span-A/B and Chikou positions sometimes don't match but the graph change its level accurately after 4 bars only!
+// Known Issue: Tenkan-Sen mostly does not match. Senkou-Span-A/B and Chikou positions too don't match often. The graph however changes its level accurately after 4 bars only!
 // Conclusion: This is the 2nd best approach after Approach 1.
 //
 // int htfOffset = lastCloseoffsetInHtf1 == 0 ? (not barstate.isrealtime and barstate.isconfirmed ? 0 : htfMagnitude1) : lastCloseoffsetInHtf1
@@ -495,13 +495,13 @@ if equilibriumScheme != "Custom"
 [tenkanSen, kijunSen, senkouSpanA, senkouSpanB] = yard.findEquilibrium(high, low, tenkanSenPeriod, kijunSenPeriod, senkouSpanPeriod)
 
 // How is current kumo?
-string kumoView = yard.getBias(senkouSpanA[displacement-1], senkouSpanB[displacement-1])
+string kumoView = yard.getBias(senkouSpanA[displacement], senkouSpanB[displacement])
 
 // How is future kumo?
 string leadingKumoView = yard.getBias(senkouSpanA, senkouSpanB)
 
 // Where is price w.r.t kumo?
-string priceWrtKumo = yard.getPositionRelativeToRange(close, senkouSpanA[displacement-1], senkouSpanB[displacement-1])
+string priceWrtKumo = yard.getPositionRelativeToRange(close, senkouSpanA[displacement], senkouSpanB[displacement])
 
 // Where is price w.r.t tenkan?
 string priceWrtTenkan = yard.getPositionRelativeToLevel(close, tenkanSen)
@@ -526,21 +526,26 @@ tkCrossStrengthIfOccurred = yard.getBiasFromCrossover(tenkanSen, kijunSen, allow
 var string tkCrossWrtKumo = "within"
 if tkCrossStrengthIfOccurred != na
     recentTkCross := tkCrossStrengthIfOccurred
-    tkCrossWrtKumo := yard.getPositionRelativeToRange(kijunSen, senkouSpanA[displacement-1], senkouSpanB[displacement-1])
+    tkCrossWrtKumo := yard.getPositionRelativeToRange(kijunSen, senkouSpanA[displacement], senkouSpanB[displacement])
 
 // Where is chikou w.r.t price?
-string chikouWrtPrice = yard.getPositionRelativeToRange(close, high[displacement-1], low[displacement-1])
+string chikouWrtPrice = yard.getPositionRelativeToRange(close, high[displacement], low[displacement])
 
 // Where is chikou w.r.t kumo?
-string laggingKumoView = yard.getBias(senkouSpanA[2*displacement-1], senkouSpanB[2*displacement-1])
-string chikouWrtKumo = yard.getPositionRelativeToRange(close, senkouSpanA[2*displacement-1], senkouSpanB[2*displacement-1])
-// log(str.format("CTF chikou: {0}, ssA: {1}, ssB: {2}", close, senkouSpanA[2*displacement], senkouSpanB[2*displacement]))
+laggingKumoDisplacement = 2 * displacement
+string laggingKumoView = yard.getBias(senkouSpanA[laggingKumoDisplacement], senkouSpanB[laggingKumoDisplacement])
+string chikouWrtKumo = yard.getPositionRelativeToRange(close, senkouSpanA[laggingKumoDisplacement], senkouSpanB[laggingKumoDisplacement])
+// log(str.format("CTF chikou: {0}, ssA: {1}, ssB: {2}", close, senkouSpanA[laggingKumoDisplacement], senkouSpanB[laggingKumoDisplacement))
+
+float laggingKumoMarkerExt = laggingKumoView == "bullish" ? close*0.005 : -close*0.005
+laggingKumoMarker = line.new(bar_index[displacement], senkouSpanA[laggingKumoDisplacement] + laggingKumoMarkerExt, bar_index[displacement], senkouSpanB[laggingKumoDisplacement] - laggingKumoMarkerExt, color=color.gray, style=line.style_dotted)
+line.delete(laggingKumoMarker[1])
 
 // Where is chikou w.r.t a flat Senkou-Span-B ahead?
-[chicouToSsbGap, highestSsb, lowestSsb] = yard.getGap(close, senkouSpanB[displacement*2 - 1 - congestionProximity], congestionProximity, recentTkCross, priceWrtKumo)
+[chicouToSsbGap, highestSsb, lowestSsb] = yard.getGap(close, senkouSpanB[laggingKumoDisplacement - congestionProximity], congestionProximity, recentTkCross, priceWrtKumo)
 bool isChikouSafeFromImmediateObstacles = chicouToSsbGap >= 0
                                                  or (chicouToSsbGap/close <= (-1 * criticalChikouToSsbGap/100))
-//log(str.format("gap: {0}, safe? {1}, from: [{2}, {3}], to: {4}, recentTkCross: {5}, priceWrtKumo: {6}", chicouToSsbGap, isChikouSafeFromImmediateObstacles, ta.highest(senkouSpanB[displacement*2 - 1 - congestionProximity], congestionProximity), ta.lowest(senkouSpanB[displacement*2 - 1 - congestionProximity], congestionProximity), close, recentTkCross, priceWrtKumo))
+// log(str.format("gap: {0}, safe? {1}, from: [{2}, {3}], to: {4}, recentTkCross: {5}, priceWrtKumo: {6}", chicouToSsbGap, isChikouSafeFromImmediateObstacles, ta.highest(senkouSpanB[laggingKumoDisplacement - congestionProximity], congestionProximity), ta.lowest(senkouSpanB[laggingKumoDisplacement - congestionProximity], congestionProximity), close, recentTkCross, priceWrtKumo))
 
 // Is chikou free from congestion ahead? Is it heading into price?
 bool isChikouSpanFree = yard.isLaggingSpanCongestionFree(close, displacement, congestionProximity, congestionTolerance, recentTkCross, chikouWrtPrice)
@@ -625,9 +630,9 @@ if useMtf and allowPriceWithinKumoOnHtf and priceWrtKumoInHtf1 == "within"
     // log(str.format("MTF highest Bar: {0} ({1}), lowest Bar: {2}({3})", highestTenkanValue, highestTenkanSenBar, lowestTenkanValue, lowestTenkanSenBar))
 
 // Render equilibrium for CTF
-plot(close, offset = - displacement + 1, color=chikouColor, title="Lagging Price Action (CTF)")
-ssa = plot(senkouSpanA, offset = displacement - 1, color=ssALineColor, title="CTF Senkou-Span A")
-ssb = plot(senkouSpanB, offset = displacement - 1, color=ssBLineColor, title="CTF Senkou-Span B")
+plot(close, offset = -displacement, color=chikouColor, title="Lagging Price Action (CTF)")
+ssa = plot(senkouSpanA, offset = displacement, color=ssALineColor, title="CTF Senkou-Span A")
+ssb = plot(senkouSpanB, offset = displacement, color=ssBLineColor, title="CTF Senkou-Span B")
 fill(ssa, ssb, color = senkouSpanA > senkouSpanB ? ssBullishColor : ssBearishColor)
 plot(tenkanSen, "Short-Term Equilibrium (CTF)", tenkanColor)
 plot(kijunSen, "Mid-Term Equilibrium (CTF)", kijunColor)
