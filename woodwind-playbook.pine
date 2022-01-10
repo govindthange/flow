@@ -465,7 +465,7 @@ if useMtf
     else
         marketViewInHtf1 := "conslidating"
 
-log(str.format("HTF1: {0} ( kumoBiasInHtf1={1}, priceWrtKumoInHtf1={2}, priceWrtTenkanInHtf1={3}, tenkanWrtKijunInHtf1={4},\n      recentTkCrossInHtf1={5}, tkCrossWrtKumoInHtf1={6}, laggingKumoBiasInHtf1={7}, leadingKumoBiasInHtf1={8},\n      chikouWrtPriceInHtf1={9}, isChikouSpanFreeInHtf1={10}, chikouWrtKumoInHtf1={11}, isChikouSafeFromImmediateObstaclesInHtf1={12})", marketViewInHtf1, kumoBiasInHtf1, priceWrtKumoInHtf1, priceWrtTenkanInHtf1, tenkanWrtKijunInHtf1, recentTkCrossInHtf1, tkCrossWrtKumoInHtf1, laggingKumoBiasInHtf1, leadingKumoBiasInHtf1, chikouWrtPriceInHtf1, isChikouSpanFreeInHtf1, chikouWrtKumoInHtf1, isChikouSafeFromImmediateObstaclesInHtf1))
+// log(str.format("HTF1: {0} ( kumoBiasInHtf1={1}, priceWrtKumoInHtf1={2}, priceWrtTenkanInHtf1={3}, tenkanWrtKijunInHtf1={4},\n      recentTkCrossInHtf1={5}, tkCrossWrtKumoInHtf1={6}, laggingKumoBiasInHtf1={7}, leadingKumoBiasInHtf1={8},\n      chikouWrtPriceInHtf1={9}, isChikouSpanFreeInHtf1={10}, chikouWrtKumoInHtf1={11}, isChikouSafeFromImmediateObstaclesInHtf1={12})", marketViewInHtf1, kumoBiasInHtf1, priceWrtKumoInHtf1, priceWrtTenkanInHtf1, tenkanWrtKijunInHtf1, recentTkCrossInHtf1, tkCrossWrtKumoInHtf1, laggingKumoBiasInHtf1, leadingKumoBiasInHtf1, chikouWrtPriceInHtf1, isChikouSpanFreeInHtf1, chikouWrtKumoInHtf1, isChikouSafeFromImmediateObstaclesInHtf1))
 
 // Render equilibrium for HTF (Order 1)
 plot(chikouHtf1, offset = -chikouDisplacementHtf1, color=chikouColorInHtf1, title="Lagging Price Action (HTF 1)")
@@ -1451,7 +1451,7 @@ else if showTradePlan
         table.cell(tradeTable, 2, 16, str.format("{0, number, percent}", (pnl+realtime)/tradeSize), text_color = (pnl+realtime > 0 ? color.green : color.red), text_size = size.small)
 
 // Display confluence information
-var table confluenceTable = table.new(position.top_right, 3, 19, bgcolor = color.rgb(0, 0, 0, 30), frame_width = 2, frame_color = color.black)
+var table confluenceTable = table.new(position.top_right, 2, 22, bgcolor = color.rgb(0, 0, 0, 30), frame_width = 2, frame_color = color.black)
 if (barstate.islast and showConfluenceInfo)
     table.cell(confluenceTable, 0, 0, "1. Future kumo is " + leadingKumoView + ".", text_color = (leadingKumoView == "bullish" ? color.green : (leadingKumoView == "bearish" ? color.red : color.white)), text_halign = text.align_left, text_size = size.small)
     table.cell(confluenceTable, 0, 1, "2. Price is " + priceWrtKumo + " kumo.", text_color = (priceWrtKumo == "above" ? color.green : (priceWrtKumo == "below" ? color.red : color.white)), text_halign = text.align_left, text_size = size.small)
@@ -1462,26 +1462,21 @@ if (barstate.islast and showConfluenceInfo)
     table.cell(confluenceTable, 0, 6, "7. Chikou is " + chikouWrtKumo + " kumo.", text_color = (chikouWrtKumo == "above" ? color.green : (chikouWrtKumo == "below" ? color.red : color.gray)), text_halign = text.align_left, text_size = size.small)
     table.cell(confluenceTable, 0, 7, "8. Senkou-Span-B " + (isChikouSafeFromImmediateObstacles ? " won't block Chikou." : str.format(" will block Chikou at {0, number, #0.00%}", chicouToSsbGap/close)), text_color = ( isChikouSafeFromImmediateObstacles and recentTkCross == "bullish" ? color.green : ( isChikouSafeFromImmediateObstacles and recentTkCross == "bearish" ? color.red : color.gray)), text_halign = text.align_left, text_size = size.small)
     table.cell(confluenceTable, 0, 8, "9. Chikou " + (isChikouSpanFree ? "clear from congestion." : " heading into " + str.tostring(congestionProximity) + " candles!"), text_color = (isChikouSpanFree ? (marketView == "bullish" ? color.green : (marketView == "bearish" ? color.red : color.gray)) : color.white), text_halign = text.align_left, text_size = size.small)
+    table.cell(confluenceTable, 0, 9, "10. Overall CTF is " + marketView + ".", text_color = (marketView == "bullish" ? color.green : (marketView == "bearish" ? color.red: color.white)), text_halign = text.align_left, text_size = size.small)
+
+    table.cell(confluenceTable, 0, 10, "11. HTF current kumo is " + kumoBiasInHtf1 + ".", text_color = (kumoBiasInHtf1 == "bullish" ? color.blue : (kumoBiasInHtf1 == "bearish" ? color.rgb(255,36,255): color.white)), text_halign = text.align_left, text_size = size.small)
+    table.cell(confluenceTable, 0, 11, "12. current price is " + priceWrtKumoInHtf1 + " HTF kumo.", text_color = (priceWrtKumoInHtf1 == "above" ? color.blue : (priceWrtKumoInHtf1 == "below" ? color.rgb(255,36,255): color.white)), text_halign = text.align_left, text_size = size.small)
+    table.cell(confluenceTable, 0, 12, "13. current price is " + priceWrtTenkanInHtf1 + " HTF tenkan.", text_color = priceWrtTenkanInHtf1 == "above" ? color.blue : (priceWrtTenkanInHtf1 == "below" ? color.rgb(255,36,255): color.white), text_halign = text.align_left, text_size = size.small)
+    table.cell(confluenceTable, 0, 13, "14. HTF tenkan is " + tenkanWrtKijunInHtf1 + " HTF kijun.", text_color = (tenkanWrtKijunInHtf1 == "above" ? color.blue : (tenkanWrtKijunInHtf1 == "below" ? color.rgb(255,36,255): color.white)), text_halign = text.align_left, text_size = size.small)
+    table.cell(confluenceTable, 0, 14, "15. HTF TK cross was " + recentTkCrossInHtf1 + " & " + tkCrossWrtKumoInHtf1 + " kumo.", text_color = (recentTkCrossInHtf1 == "above" ? (recentTkCrossInHtf1 == "bullish" ? color.blue : (recentTkCrossInHtf1 == "bearish" ? color.rgb(255,148,201) : color.white)) : (recentTkCrossInHtf1 == "below" ? (recentTkCrossInHtf1 == "bullish" ? color.rgb(135,206,250) : (recentTkCrossInHtf1 == "bearish" ? color.rgb(255,36,255): color.white)) : (recentTkCrossInHtf1 == "bullish" ? color.rgb(135,206,250) : ( recentTkCrossInHtf1 == "bearish" ? color.rgb(255,148,201) : color.gray)))), text_halign = text.align_left, text_size = size.small)
+    table.cell(confluenceTable, 0, 15, "16. HTF chikou is " + chikouWrtPriceInHtf1 + " HTF price.", text_color = (chikouWrtPriceInHtf1 == "above" ? color.blue : (chikouWrtPriceInHtf1 == "below" ? color.rgb(255,36,255): color.white)), text_halign = text.align_left, text_size = size.small)
+    table.cell(confluenceTable, 0, 16, "17. HTF chikou is " + chikouWrtKumoInHtf1 + " HTF kumo.", text_color = (chikouWrtKumoInHtf1 == "above" ? color.blue : (chikouWrtKumoInHtf1 == "below" ? color.rgb(255,36,255): color.gray)), text_halign = text.align_left, text_size = size.small)
+    table.cell(confluenceTable, 0, 17, "18. HTF senkou-span-B " + (isChikouSafeFromImmediateObstaclesInHtf1 ? " won't block Chikou." : str.format(" will block Chikou at {0, number, #0.00%}", chicouToSsbGap/close)), text_color = ( isChikouSafeFromImmediateObstaclesInHtf1 and recentTkCrossInHtf1 == "bullish" ? color.blue : ( isChikouSafeFromImmediateObstaclesInHtf1 and recentTkCrossInHtf1 == "bearish" ? color.rgb(255,36,255): color.gray)), text_halign = text.align_left, text_size = size.small)
+    table.cell(confluenceTable, 0, 18, "19. HTF chikou " + (isChikouSpanFreeInHtf1 ? "clear from congestion." : " heading into " + str.tostring(congestionProximityHtf1) + " candles!"), text_color = (isChikouSpanFreeInHtf1 ? (marketView == "bullish" ? color.blue : (marketView == "bearish" ? color.rgb(255,36,255): color.gray)) : color.white), text_halign = text.align_left, text_size = size.small)
+    table.cell(confluenceTable, 0, 19, "20. Overall HTF is " + marketViewInHtf1 + ".", text_color = (marketViewInHtf1 == "bullish" ? color.blue : (marketViewInHtf1 == "bearish" ? color.rgb(255,36,255): color.white)), text_halign = text.align_left, text_size = size.small)
+    table.cell(confluenceTable, 0, 20, "", text_color = color.yellow, text_halign = text.align_left, text_size = size.tiny)
     
     if inShortTrade or inLongTrade
-        table.cell(confluenceTable, 0, 9, "", text_color = color.yellow, text_halign = text.align_left, text_size = size.tiny)
-        table.cell(confluenceTable, 0, 10, "* Your trade is live! Respond to signals proactively.", text_color = color.aqua, text_halign = text.align_left, text_size = size.tiny)
-        table.cell(confluenceTable, 0, 11, "", text_color = color.yellow, text_halign = text.align_left, text_size = size.tiny)
-        table.cell(confluenceTable, 0, 12, "", text_color = color.yellow, text_halign = text.align_left, text_size = size.tiny)
-        table.cell(confluenceTable, 0, 13, "", text_color = color.yellow, text_halign = text.align_left, text_size = size.tiny)
-        table.cell(confluenceTable, 0, 14, "", text_color = color.yellow, text_halign = text.align_left, text_size = size.tiny)
-        table.cell(confluenceTable, 0, 15, "", text_color = color.yellow, text_halign = text.align_left, text_size = size.tiny)
-        table.cell(confluenceTable, 0, 16, "", text_color = color.yellow, text_halign = text.align_left, text_size = size.tiny)
-        table.cell(confluenceTable, 0, 17, "", text_color = color.yellow, text_halign = text.align_left, text_size = size.tiny)
-        table.cell(confluenceTable, 0, 18, "", text_color = color.yellow, text_halign = text.align_left, text_size = size.tiny)
+        table.cell(confluenceTable, 0, 21, "* Your trade is live! Respond to signals proactively.", text_color = color.aqua, text_halign = text.align_left, text_size = size.tiny)
     else
-        table.cell(confluenceTable, 0, 9, "- Is current kumo thick?", text_color = color.yellow, text_halign = text.align_left, text_size = size.tiny)
-        table.cell(confluenceTable, 0, 10, "- Is current kumo in flux?", text_color = color.yellow, text_halign = text.align_left, text_size = size.tiny)
-        table.cell(confluenceTable, 0, 11, "- Is Senkou-Span-B flat & long?", text_color = color.yellow, text_halign = text.align_left, text_size = size.tiny)
-        table.cell(confluenceTable, 0, 12, "- Is future kumo trending?", text_color = color.yellow, text_halign = text.align_left, text_size = size.tiny)
-        table.cell(confluenceTable, 0, 13, "- Is kijun flat & long?", text_color = color.yellow, text_halign = text.align_left, text_size = size.tiny)
-        table.cell(confluenceTable, 0, 14, "- Is 26 period high/low too far from the price?", text_color = color.yellow, text_halign = text.align_left, text_size = size.tiny)
-        table.cell(confluenceTable, 0, 15, "- Does last 26 candle indicate kijun will trend?", text_color = color.yellow, text_halign = text.align_left, text_size = size.tiny)
-        table.cell(confluenceTable, 0, 16, "- Are kumo shadows in the close proximity?", text_color = color.yellow, text_halign = text.align_left, text_size = size.tiny)
-        table.cell(confluenceTable, 0, 17, str.format("{0} {1}", (marketView == "bullish" ? "Go long upon" : (marketView == "bearish" ? "Go short upon" : "Hang on!")), (marketView == "bullish" ? str.tostring(longBreakoutPrice) + " breakout." : (marketView == "bearish" ? str.tostring(shortBreakoutPrice) + " breakout." : " Thange playbook is scanning for signals."))), text_color = color.aqua, text_halign = text.align_left, text_size = size.tiny)
-        table.cell(confluenceTable, 0, 18, "Be ready with a limit-order at 9-period high/low.", text_color = color.aqua, text_halign = text.align_left, text_size = size.tiny)
+        table.cell(confluenceTable, 0, 21, "Be ready with a limit-order at 9-period high/low.", text_color = color.aqua, text_halign = text.align_left, text_size = size.tiny)
