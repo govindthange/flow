@@ -545,19 +545,26 @@ int lowestBreakoutCandleOffset = lowestTenkanSenBar - 1
 if useMtf and showSignalsUponBreakoutOfHtf
          and (highestTenkanValue <= highestTenkanValueHtf1
                  or lowestTenkanValue >= lowestTenkanValueHtf1)
+    
     breakoutCandleRange := tenkanSenPeriod * htfMagnitude1 + htfMagnitude1
-    highestBreakoutPrice := highestTenkanValueHtf1
-    highestBreakoutCandleoffset := highestTenkanSenBarHtf1 - htfMagnitude1
-    lowestBreakoutPrice := lowestTenkanValueHtf1
-    lowestBreakoutCandleOffset := lowestTenkanSenBarHtf1 - htfMagnitude1
-    highestTenkanSenBar := highestTenkanSenBarHtf1
-    highestTenkanValue := highestTenkanValueHtf1
-    lowestTenkanSenBar := lowestTenkanSenBarHtf1
-    lowestTenkanValue := lowestTenkanValueHtf1
-    highestKijunSenBar := highestKijunSenBarHtf1
-    highestKijunValue := highestKijunValueHtf1
-    lowestKijunSenBar := lowestKijunSenBarHtf1
-    lowestKijunValue := lowestKijunValueHtf1
+    if highestTenkanValue < highestTenkanValueHtf1
+        highestBreakoutCandleoffset := highestTenkanSenBarHtf1 - htfMagnitude1
+        highestBreakoutPrice := highestTenkanValueHtf1
+        highestTenkanSenBar := highestTenkanSenBarHtf1 - htfMagnitude1
+        highestTenkanValue := highestTenkanValueHtf1
+    else
+        highestBreakoutCandleoffset := highestTenkanSenBar
+        highestBreakoutPrice := highestTenkanValue
+
+    if lowestTenkanValue > lowestTenkanValueHtf1
+        lowestBreakoutCandleOffset := lowestTenkanSenBarHtf1 - htfMagnitude1
+        lowestBreakoutPrice := lowestTenkanValueHtf1
+        lowestTenkanSenBar := lowestTenkanSenBarHtf1 - htfMagnitude1
+        lowestTenkanValue := lowestTenkanValueHtf1
+    else
+        lowestBreakoutCandleOffset := lowestTenkanSenBar
+        lowestBreakoutPrice := lowestTenkanValue
+    
     // log(str.format("After highest Bar: {0} ({1}), lowest Bar: {2}({3})", highestTenkanValue, highestTenkanSenBar, lowestTenkanValue, lowestTenkanSenBar))
 
 if useMtf and allowPriceWithinKumoOnHtf and priceWrtKumoInHtf1 == "within"
