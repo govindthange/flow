@@ -392,7 +392,7 @@ bool isChikouSpanFreeInHtf1 = yard.isLaggingSpanCongestionFree(chikouHtf1, chiko
 // Establish market view in 1st order higher timeframe
 string marketViewInHtf1 = "conslidating"
 if useMtf
-    if (disregardKumoBiasInHtf or kumoBiasInHtf1 == "bullish" or leadingKumoBiasInHtf1 == "bullish")
+    if (disregardKumoBiasInHtf or kumoBiasInHtf1 == "bullish")
          and (priceWrtKumoInHtf1 == "above" or (allowPriceWithinKumoOnHtf and priceWrtKumoInHtf1 == "within"))
          and priceWrtTenkanInHtf1 == "above"
          and (tenkanWrtKijunInHtf1 == "above" or tenkanWrtKijunInHtf1 == "at")
@@ -400,7 +400,7 @@ if useMtf
          and isChikouSafeFromImmediateObstaclesInHtf1
          and (chikouWrtPriceInHtf1 == "above")
         marketViewInHtf1 := "bullish"
-    else if (disregardKumoBiasInHtf or kumoBiasInHtf1 == "bearish" or leadingKumoBiasInHtf1 == "bearish")
+    else if (disregardKumoBiasInHtf or kumoBiasInHtf1 == "bearish")
          and (priceWrtKumoInHtf1 == "below" or (allowPriceWithinKumoOnHtf and priceWrtKumoInHtf1 == "within"))
          and priceWrtTenkanInHtf1 == "below"
          and (tenkanWrtKijunInHtf1 == "below" or tenkanWrtKijunInHtf1 == "at")
