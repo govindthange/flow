@@ -40,7 +40,7 @@ log(string msg) =>
 //
 
 fromDateInput = input.time(timestamp("1 Apr 2021 05:30 +0300"), title="Backtest From Date")
-toDateInput = input.time(timestamp("8 Jun 2021 05:30 +0300"), title="Backtest To Date")
+toDateInput = input.time(timestamp("31 Dec 2021 05:30 +0300"), title="Backtest To Date")
 
 float accountSize = input.float(1000, minval=0.0, title="Account Size")
 float maxRisk = input.float(25, minval=0.0, title="Maximum Risk Per Position") / 100
@@ -51,7 +51,7 @@ float chikouExitPercent = input.float(0, minval=0.0, title="Lagging-Span Exit %"
 float takeProfitPercent = input.float(100, minval=0.0, title="Take-Profit %") / 100
 int atrLength = input.int(9, minval=0, title="ATR Length", tooltip="Choose higher values for lower timeframes. In BTC use 30 for 4H, and 9 for 5m/15m/1H/6H/12H/D/3D.")
 float atrStopMultiplier = input.float(0.1, minval=0.0, title="ATR Stop Multiplier (ATR x ?)", tooltip="In BTC use 0.1 for 1H, and 1 for 4H/6H/12H/D/3D.")
-float atrBreakoutMultiplier = input.float(0.75, minval=0.0, title="ATR Breakout Multiplier (ATR x ?)")
+float atrBreakoutMultiplier = input.float(0.0, minval=0.0, title="ATR Breakout Multiplier (ATR x ?)")
 
 bool allowPrematureTkCrossForTrade = input.bool(true, title="Show entry signal even when short-term MA crosses mid-term MA prematurely", tooltip="A premature cross occurs when short-term moving-average (MA) overlaps mid-term moving-average but does not cross it.")
 bool tkCrossExitEnabled = input.bool(true, title="Show exit signals when short-term MA crosses mid-term MA")
@@ -63,24 +63,23 @@ bool requireChikouBeyondKumo = input.bool(false, title="Mandate lagging-span be 
 float criticalChikouToSsbGap = input.float(0.0, minval=0.0, title="Critical Lagging-Span to SSB % Gap", tooltip="This is the gap between the lagging-span and the long-term resistance level in percentage. If the above checkbox is turned OFF then no entry signal will be shown while the lagging-span is within the specified percent range from the long-term resistance.")
 bool allowTenkanExitToCascade = input.bool(false, title="Allow crossover of short-term equilibrium-point (STEP) to cascade exit signals", tooltip="When false and price reverses to cross the short-term equilibrium point then only one exit signal will appear. The next signal can only come if price again reverses in your favor and touches or goes beyond the short-term equilibrium point. Essentially by turning OFF you will be able to ride the trend better and longer but at a risk of not scaling out. Enable it in BTC for 4H.")
 
-bool disregardKumoBiasInHtf = input.bool(true, title="Disregard resistance band bias in higher timeframes for entry signals")
+bool disregardKumoBiasInHtf = input.bool(false, title="Disregard resistance band bias in higher timeframes for entry signals")
 
 bool requireHiLoBreachToInvalidateTenkanExit = input.bool(false, title="Enforce Rule: After price reverses and crosses-over the STEP to open below/above it then show next STEP exit signal only after the price again attempts to breach the STEP to the up/down side for long/short position respectively.", tooltip="Disabling improves performance as you get early exit signals to minimize losses. Disable it in BTC for 5m/15m/1H/4H/6H/12H/1D.")
 
 bool showSignalsUponBreakout = input.bool(true, "Show entry signal upon 9-period high/low breakout", tooltip="Do not disable it! When enabled you should place a limit order for entry right at the price dipicted by the gray/green/red line.")
-bool showSignalsUponBreakoutOfHtf = input.bool(true, "Show entry signal upon 9-period high/low breakout of higher timeframe")
+bool showSignalsUponBreakoutOfHtf = input.bool(false, "Show entry signal upon 9-period high/low breakout of higher timeframe")
 bool allowPriceWithinKumoOnHtf = input.bool(false, "Show entry signal even if price is within long-term resistance band on higher timeframe")
 bool allowEntryUponGaps = input.bool(false, "Show entry signals even on gap-up/down candles ( ! )", tooltip="This is not recommended! This setting is only for study purposes.")
 bool allowManualExitOnLimitOrderCandles = input.bool(true, "Show exit signals on candles that triggerred Entry, Stop-Loss, or Take-Profit limit-orders", tooltip="Although enabling this shows high profitability it is very difficult to catch the volatility of the market and do entries and exits on the same candle. Disable it if you want more realistic entry/exit signals.")
-bool includeCurrentBarFor9PeriodHighLow = input.bool(false, title="Include current bar to show 9-period highs/lows ( ! )", tooltip="This is not recommended! This setting is only for study purposes.")
 bool useKumoAsStop = input.bool(true, title="Use long-term moving-average (MA) resistance band for stop-loss")
 bool useTenkanPeriodFarthestPointAsStop = input.bool(false, title="Use short-term period's farthest high/low point for stop-loss ( ! )", tooltip="This is for study purpose. Enabling this gives mixed performance.")
 float breakevenRatio = input.float(0, minval = 0, title="Stop-Loss Breakeven Ratio ( ! )", tooltip="It is a ratio w.r.t the risk. When price reaches this level in nurture phase the stop-loss should be shifted to breakeven. 0 means no breakeven concept to be used. This setting is for study purpose and performance drops drastically for values greater than 0.")
 int congestionProximity = input.int(10, minval=1, title="Congestion Candle Span", tooltip="How many bars far should the lagging-span be and called safe before it bumps into the price?")
 float congestionTolerance = input.float(0, minval=0.0, title="Congestion Tolerance", tooltip="What percent of the highest-high/lowest-low of candles in congestion-span be treated as noise for determining congestion for the lagging-span?")
-bool useMtf = input.bool(true, "Use Multi Timeframe Analysis")
+bool useMtf = input.bool(false, "Use Multi Timeframe Analysis")
 
-string equilibriumScheme = input.string("Scalper", title="Equilibrium Scheme", options=["Custom", "Standard", "Scalper", "5 Day Week", "Popular", "Ideal", "Trend Finder", "Conservative"], tooltip="In BTC use Scalper or 5-Day-Week for 5m/15m/1H, Popular or Ideal for 15m/1H/4H, and Standard for 6H. In BTC 5-Day-Week for 1H works better than Scalper.")
+string equilibriumScheme = input.string("Scalper", title="Equilibrium Scheme", options=["Custom", "Standard", "Scalper", "5 Day Week", "Popular", "Ideal", "Trend Finder", "Conservative"], tooltip="In BTC use Scalper or 5-Day-Week for 5m/15m/1H, Popular or Ideal for 15m/1H/4H, and Standard for 6H. 5-Day-Week w/ 1H perform slightly better than Scalper w/ 1H.")
 int tenkanSenPeriod = input.int(9, minval=1, title="Short-Term Period")
 int kijunSenPeriod = input.int(26, minval=1, title="Mid-Term Period")
 int senkouSpanPeriod = input.int(52, minval=1, title="Long-Term Period")
@@ -302,7 +301,7 @@ int htfOffset = lastCloseoffsetInHtf1 == 0 ? (not barstate.isrealtime and barsta
 // Based on preference following code block can be commented/uncommented.
 //
 int htfIndex = barstate.isrealtime and not barstate.isconfirmed ? 1 : 0
-int ctfIndex = barstate.isrealtime and not barstate.isconfirmed ? 0 : 1
+int ctfIndex = barstate.isrealtime and not barstate.isconfirmed ? 1 : 1
 
 // Approach I: Obtain candle's close in higher timeframe by calling request.security() fn. This gives precise result but you can't change timeframe dynamically!
 cHtf1 = request.security(symbol=syminfo.tickerid, timeframe="240", expression=close[htfIndex])[ctfIndex]
@@ -533,7 +532,7 @@ else if (disregardPriceBeyondKumo
      highestKijunSenBar,
      highestKijunValue,
      lowestKijunSenBar,
-     lowestKijunValue] = yard.getHighestHighAndLowestLowSet(high, low, tenkanSenPeriod, kijunSenPeriod)
+     lowestKijunValue] = yard.getHighestHighAndLowestLowSet(high[1], low[1], tenkanSenPeriod, kijunSenPeriod)
 // log(str.format("Before highest Bar: {0} ({1}), lowest Bar: {2}({3})", highestTenkanValue, highestTenkanSenBar, lowestTenkanValue, lowestTenkanSenBar))
 
 
