@@ -321,7 +321,7 @@ senkouSpanAHtf1 = ssAHtf1//[htfOffset] // Using htfOffset as index would offset 
 senkouSpanBHtf1 = ssBHtf1//[htfOffset] // Using htfOffset as index would offset data by htfMagnitude1 units and display it in stepped format.
 
 int displacementHtf1 = displacement * htfMagnitude1 - htfMagnitude1 + 1
-int currentKumoDisplacementInHtf1 = displacementHtf1-1 + lastCloseoffsetInHtf1
+int currentKumoDisplacementInHtf1 = displacementHtf1 + lastCloseoffsetInHtf1
 int laggingKumoDisplacementInHtf1 = 2 * (currentKumoDisplacementInHtf1 + htfMagnitude1) + lastCloseoffsetInHtf1
 int chikouDisplacementHtf1 = displacement * htfMagnitude1 + htfMagnitude1
 
