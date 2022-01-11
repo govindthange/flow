@@ -50,7 +50,8 @@ float exitPercent = input.float(100, minval=0.0, title="Scale-Out %") / 100
 float chikouExitPercent = input.float(0, minval=0.0, title="Lagging-Span Exit %", tooltip="This signal will only appear once.") / 100
 float takeProfitPercent = input.float(100, minval=0.0, title="Take-Profit %") / 100
 int atrLength = input.int(9, minval=0, title="ATR Length", tooltip="Choose higher values for lower timeframes. In BTC use 30 for 4H, and 9 for 5m/15m/1H/6H/12H/D/3D.")
-float atrStopMultiplier = input.float(0.1, minval=0.0, title="ATR x ?", tooltip="In BTC use 0.1 for 1H, and 1 for 4H/6H/12H/D/3D.")
+float atrStopMultiplier = input.float(0.1, minval=0.0, title="ATR Stop Multiplier (ATR x ?)", tooltip="In BTC use 0.1 for 1H, and 1 for 4H/6H/12H/D/3D.")
+float atrBreakoutMultiplier = input.float(0.75, minval=0.0, title="ATR Breakout Multiplier (ATR x ?)")
 
 bool allowPrematureTkCrossForTrade = input.bool(true, title="Show entry signal even when short-term MA crosses mid-term MA prematurely", tooltip="A premature cross occurs when short-term moving-average (MA) overlaps mid-term moving-average but does not cross it.")
 bool tkCrossExitEnabled = input.bool(true, title="Show exit signals when short-term MA crosses mid-term MA")
@@ -79,7 +80,7 @@ int congestionProximity = input.int(10, minval=1, title="Congestion Candle Span"
 float congestionTolerance = input.float(0, minval=0.0, title="Congestion Tolerance", tooltip="What percent of the highest-high/lowest-low of candles in congestion-span be treated as noise for determining congestion for the lagging-span?")
 bool useMtf = input.bool(true, "Use Multi Timeframe Analysis")
 
-string equilibriumScheme = input.string("Custom", title="Equilibrium Scheme", options=["Custom", "Standard", "Scalper", "5 Day Week", "Popular", "Ideal", "Trend Finder", "Conservative"], tooltip="In BTC use Scalper or 5-Day-Week for 5m/15m/1H, Popular or Ideal for 15m/1H/4H, and Standard for 6H.")
+string equilibriumScheme = input.string("Scalper", title="Equilibrium Scheme", options=["Custom", "Standard", "Scalper", "5 Day Week", "Popular", "Ideal", "Trend Finder", "Conservative"], tooltip="In BTC use Scalper or 5-Day-Week for 5m/15m/1H, Popular or Ideal for 15m/1H/4H, and Standard for 6H. In BTC 5-Day-Week for 1H works better than Scalper.")
 int tenkanSenPeriod = input.int(9, minval=1, title="Short-Term Period")
 int kijunSenPeriod = input.int(26, minval=1, title="Mid-Term Period")
 int senkouSpanPeriod = input.int(52, minval=1, title="Long-Term Period")
@@ -602,6 +603,9 @@ plot(kijunSen, "Mid-Term Equilibrium (CTF)", kijunColor)
 
 // Determine stop-loss factor using ATR
 float atr = yard.getAtrFactor(atrLength, atrStopMultiplier)
+
+highestBreakoutPrice := highestBreakoutPrice + (atr * atrBreakoutMultiplier)
+lowestBreakoutPrice := lowestBreakoutPrice - (atr * atrBreakoutMultiplier)
 
 bool withinTestRange = (time >= fromDateInput and time <= toDateInput)
                              and not na(senkouSpanB[displacement]) // This condition ensures that test-range is valid if the "Last available bar" by the TradingView accomodates computing of senkou-span-B for the last displacment period.
