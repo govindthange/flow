@@ -37,3 +37,64 @@ export computeExitGains(float entry, float exit, float qty, float remainingQty, 
     _remainingQty = remainingQty - _qty
     [_qty, _remainingQty, _gains]
 
+
+//
+// @function calculates brokerage and taxation as per Indian structure.
+// @param entryPrice float, the entry price of the short/long position.
+// @param exit float, the exit price of the short/long position.
+// @param qty float, the quantity by which a position is to be scaled down.
+// @param direction int, its -1 for a short position and +1 for a long position.
+// @param makerFee float, the fee levied on to the market maker who adds liquidity to the order book.
+// @param takerFee float, the fee levied on to the market taker who takes liquidity out from the order book.
+// @param flatFee float, the flat fee per executed order.
+// @param txnFee float, the exchange transaction charges as per NSE/BSE in India.
+// @param stt float, the securities transaction tax in India.
+// @param gst float, the goodes & services tax in India.
+// @param turnoverFee float, the SEBI turnover charges.
+// @param stampDuty float, the stamp duty charges.
+// @returns totalCharges float, the remaining quantity after the scale down.
+// @returns description string, the description of all brokerage & taxes.
+//
+export calculateCharges(float entryPrice, float exitPrice, float qty, int direction, float makerFee, float takerFee, float flatFee=0.0, float txnFee=0.0, float stt=0.0, float gst=0.0, float turnoverFee=0.0, float stampDuty=0.0) =>
+
+    float entryPosition = entryPrice * math.round(qty, 2)
+    float exitPosition = exitPrice * math.round(qty, 2)
+    float makerFeeAmount = entryPosition * makerFee/100
+    float takerFeeAmount = exitPosition * takerFee/100
+    float brokerage = 0.0
+    if flatFee == 0.0
+        // Note that lmarket-orders are required to be calculated using taker-fee. Ignoring this aspect for now.
+        brokerage := makerFeeAmount // Assuming positions are entered using limit-orders
+        brokerage := brokerage + takerFeeAmount // Assuming positions are exited using market-orders
+    else
+        // This calculation considers discount brokers like Zerodha
+        brokerage := makerFeeAmount > flatFee ? flatFee : makerFeeAmount // 1st Leg
+        brokerage := brokerage + (makerFeeAmount > flatFee ? flatFee : makerFeeAmount) // 2nd Leg (No maker/taker fee concept with Indian brokers. So treat maker-fee as the main brokerage percentage)
+
+    float totalCharges = brokerage
+    float turnover = math.round(entryPosition + exitPosition, 1)
+
+    // Add STT/CTT on the sell side
+    float sttAmount = math.round(direction > 0 ? exitPosition * stt/100 : entryPosition * stt/100)
+    totalCharges := totalCharges + sttAmount
+
+    // Add exchange transaction charges on the turnover
+    float exchangeTurnoverFeeAmount = math.round(turnover * txnFee/100, 2)
+    totalCharges := totalCharges + exchangeTurnoverFeeAmount
+
+    // Add GST on brokerage & transaction charges
+    float gstAmount = math.round((brokerage + exchangeTurnoverFeeAmount) * gst/100, 2)
+    totalCharges := totalCharges + gstAmount
+
+    // Add SEBI charges on the turnover
+    float turnoverFeeAmount = math.round(turnover * turnoverFee/10000000, 2)
+    totalCharges := totalCharges + turnoverFeeAmount
+
+    // Add stamp duty on the buy side
+    float stampDutyAmount = math.round(direction > 0 ? entryPosition * stampDuty/100 : exitPosition * stampDuty/100, 2)
+    totalCharges := totalCharges + stampDutyAmount
+
+    string description = str.format("Brokerage({0, number, currency}) + STT({1}) + NSE({2}) + GST({3}) + SEBI({4}) + Stamp({5}) = {6} on {7} turnover", brokerage, sttAmount, exchangeTurnoverFeeAmount, gstAmount, turnoverFeeAmount, stampDutyAmount, totalCharges, turnover)
+
+    [totalCharges, description]
+

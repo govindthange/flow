@@ -21,7 +21,7 @@
 //
 indicator("Thange Woodwind Playbook v3.0", shorttitle="Thange/Clarinet", overlay=true, max_labels_count=250, max_lines_count=500)
 import govindthange/WoodwindYardDev/37 as yard
-import govindthange/WoodwindVault/3 as vault
+import govindthange/WoodwindVaultDev/1 as vault
 import govindthange/ThangeVault/1 as util
 import ed56/debugger/2 as debug
 
@@ -41,6 +41,18 @@ log(string msg) =>
 
 fromDateInput = input.time(timestamp("1 Apr 2021 05:30 +0300"), title="Backtest From Date")
 toDateInput = input.time(timestamp("31 Dec 2021 05:30 +0300"), title="Backtest To Date")
+
+bool includeBrokerage = input.bool(true, title="Include brokerage in PnL")
+float makerFee = input.float(0.02, minval=0.0, step=0.01, title="Maker Fee")
+float takerFee = input.float(0.04, minval=0.0, step=0.01, title="Taker Fee")
+
+bool applyIndianBrokerageStructure = input.bool(true, title="Apply Indian brokerage structure")
+float flatFee = input.float(0, minval=0.0, step=1, title="Flat Fee Per Executed Order")
+float stt = input.float(0.01, minval=0.0, step=0.01, title="Securities Transaction Tax")
+float exchangeTxnFee = input.float(0.002, minval=0.0, step=0.001, title="Exchange Transaction Charges (NSE/BSE)")
+float gst = input.float(18, minval=0.0, title="Goods & Services Tax")
+float turnoverFee = input.float(10, minval=0, step=10, title="SEBI Turnover Fee (₹ per 1 Crore)")
+float stampDuty = input.float(0.002, minval=0, step=100, title="Stamp Duty")
 
 float accountSize = input.float(1000, minval=0.0, title="Account Size")
 float maxRisk = input.float(25, minval=0.0, title="Maximum Risk Per Position") / 100
@@ -1120,28 +1132,68 @@ var float maxProfit = 0.0
 var float maxLoss = 0.0
 
 float realtime = 0.0
+float totalCharges = 0.0
+string chargeDescrption = na
+
 if inLongTrade or inShortTrade
     realtime := (close - entryPrice) * remainingExitQty * f_tradeDirection(inLongTrade, inShortTrade)
 
+    if includeBrokerage
+        float averageExitPrice = ((entryPrice * qty) + pnl + realtime) / qty
+        if applyIndianBrokerageStructure
+            [_charges, _chargeDesc] = vault.calculateCharges(entryPrice, averageExitPrice, qty, f_tradeDirection(inLongTrade, inShortTrade), makerFee, takerFee,
+                                                                 flatFee = flatFee,
+                                                                 txnFee = exchangeTxnFee,
+                                                                 stt = stt,
+                                                                 gst = gst,
+                                                                 turnoverFee = turnoverFee,
+                                                                 stampDuty = stampDuty)
+            totalCharges := _charges
+            chargeDescrption := _chargeDesc
+        else
+            [_charges, _chargeDesc] = vault.calculateCharges(entryPrice, averageExitPrice, qty, f_tradeDirection(inLongTrade, inShortTrade), makerFee, takerFee)
+            totalCharges := _charges
+            chargeDescrption := _chargeDesc
+
 if (activeTradeLabel != na
      and (inLongTrade or inShortTrade))
-    label.set_color(activeTradeLabel, ((pnl+realtime) > 0 ? pnlLabelProfitBgColor : pnlLabelLossBgColor))
-    label.set_textcolor(activeTradeLabel, ((pnl+realtime) > 0 ? pnlLabelProfitColor : pnlLabelLossColor))
-    label.set_text(activeTradeLabel, str.format("{0, number, currency}\n{1, number, #0.00%}", pnl+realtime, (pnl+realtime)/tradeSize))
-    label.set_tooltip(activeTradeLabel, str.format("{0}\n{1}⟶ {2, number, #0.00%} RoI", activeTradeInfo, (remainingExitQty > 0 ? str.format("{0} Balance Units\n", remainingExitQty) : ""), (pnl + realtime)/tradeSize))
+    
+    float tempPnl = pnl + realtime - totalCharges
+    label.set_color(activeTradeLabel, (tempPnl > 0 ? pnlLabelProfitBgColor : pnlLabelLossBgColor))
+    label.set_textcolor(activeTradeLabel, (tempPnl > 0 ? pnlLabelProfitColor : pnlLabelLossColor))
+    label.set_text(activeTradeLabel, str.format("{0, number, currency}\n{1, number, #0.00%}", tempPnl, tempPnl/tradeSize))
+    label.set_tooltip(activeTradeLabel, str.format("{0}\n{1}\n{2}\n⟶ {3, number, #0.00%} RoI", activeTradeInfo, (remainingExitQty > 0 ? str.format("{0} Balance Units\n", remainingExitQty) : ""), chargeDescrption, tempPnl/tradeSize))
 
 if withinTestRange
      and (didLongPositionClose or didShortPositionClose)
      
     realtime := 0.0
+
+    if includeBrokerage
+        float averageExitPrice = ((entryPrice * qty) + pnl) / qty
+        if applyIndianBrokerageStructure
+            [_charges, _chargeDesc] = vault.calculateCharges(entryPrice, averageExitPrice, qty, f_tradeDirection(inLongTrade, inShortTrade), makerFee, takerFee,
+                                                                 flatFee = flatFee,
+                                                                 txnFee = exchangeTxnFee,
+                                                                 stt = stt,
+                                                                 gst = gst,
+                                                                 turnoverFee = turnoverFee,
+                                                                 stampDuty = stampDuty)
+            totalCharges := _charges
+            chargeDescrption := _chargeDesc
+        else
+            [_charges, _chargeDesc] = vault.calculateCharges(entryPrice, averageExitPrice, qty, f_tradeDirection(inLongTrade, inShortTrade), makerFee, takerFee)
+            totalCharges := _charges
+            chargeDescrption := _chargeDesc
     
     label.set_color(activeTradeLabel, (pnl > 0 ? pnlLabelProfitBgColor : pnlLabelLossBgColor))
     label.set_textcolor(activeTradeLabel, (pnl > 0 ? pnlLabelProfitColor : pnlLabelLossColor))
     label.set_text(activeTradeLabel, str.format("{0, number, currency}\n{1, number, #0.00%}", pnl, pnl/tradeSize))
-    label.set_tooltip(activeTradeLabel, str.format("{0}\n⟶ {1, number, #0.00%} RoI", activeTradeInfo, pnl/tradeSize))
+    label.set_tooltip(activeTradeLabel, str.format("{0}\n{1}\n⟶ {2, number, #0.00%} RoI", activeTradeInfo, chargeDescrption, pnl/tradeSize))
     
     totalTrades := totalTrades + 1
     
+    pnl := pnl - totalCharges
     totalPnl := totalPnl + pnl
     totalPnlPercent := totalPnlPercent + (pnl/tradeSize)
     if pnl > 0
@@ -1352,8 +1404,8 @@ if showTradePlan and horizontalTradePlan
         table.cell(tradeTable, 12, 2, str.tostring(tenkanExitGains10, str.tostring(util.tickFormat())), text_color = (tenkanExitGains10 > 0 ? color.rgb(182, 209, 186) : color.rgb(182, 153, 153)), text_size = size.small)
         table.cell(tradeTable, 13, 2, str.tostring(chikouExitGains, str.tostring(util.tickFormat())), text_color = (kijunExitGains > 0 ? color.rgb(182, 209, 186) : color.rgb(182, 153, 153)), text_size = size.small)
         table.cell(tradeTable, 14, 2, str.tostring(kijunExitGains, str.tostring(util.tickFormat())), text_color = (kijunExitGains > 0 ? color.rgb(182, 209, 186) : color.rgb(182, 153, 153)), text_size = size.small)
-        table.cell(tradeTable, 15, 2, str.format("{0, number, currency}", pnl+realtime), text_color = (pnl+realtime > 0 ? color.green : color.red), text_size = size.small)
-        table.cell(tradeTable, 16, 2, str.format("{0, number, #0.00%}", (pnl+realtime)/tradeSize), text_color = (pnl+realtime > 0 ? color.green : color.red), text_size = size.small)
+        table.cell(tradeTable, 15, 2, str.format("{0, number, currency}", pnl+realtime-totalCharges), text_color = (pnl+realtime-totalCharges > 0 ? color.green : color.red), text_size = size.small)
+        table.cell(tradeTable, 16, 2, str.format("{0, number, #0.00%}", (pnl+realtime-totalCharges)/tradeSize), text_color = (pnl+realtime-totalCharges > 0 ? color.green : color.red), text_size = size.small)
 else if showTradePlan
     var table tradeTable = table.new(position.bottom_left, 4, 17, bgcolor = color.rgb(0, 0, 0, 30), frame_width = 2, frame_color = color.black)
     if (barstate.islast)
@@ -1405,8 +1457,8 @@ else if showTradePlan
         table.cell(tradeTable, 2, 12, str.tostring(tenkanExitGains10, str.tostring(util.tickFormat())), text_color = (tenkanExitGains10 > 0 ? color.rgb(182, 209, 186) : color.rgb(182, 153, 153)), text_size = size.small)
         table.cell(tradeTable, 2, 13, str.tostring(chikouExitGains, str.tostring(util.tickFormat())), text_color = (kijunExitGains > 0 ? color.rgb(182, 209, 186) : color.rgb(182, 153, 153)), text_size = size.small)
         table.cell(tradeTable, 2, 14, str.tostring(kijunExitGains, str.tostring(util.tickFormat())), text_color = (kijunExitGains > 0 ? color.rgb(182, 209, 186) : color.rgb(182, 153, 153)), text_size = size.small)
-        table.cell(tradeTable, 2, 15, str.format("{0, number, currency}", pnl+realtime), text_color = (pnl+realtime > 0 ? color.green : color.red), text_size = size.small)
-        table.cell(tradeTable, 2, 16, str.format("{0, number, percent}", (pnl+realtime)/tradeSize), text_color = (pnl+realtime > 0 ? color.green : color.red), text_size = size.small)
+        table.cell(tradeTable, 2, 15, str.format("{0, number, currency}", pnl+realtime-totalCharges), text_color = (pnl+realtime-totalCharges > 0 ? color.green : color.red), text_size = size.small)
+        table.cell(tradeTable, 2, 16, str.format("{0, number, percent}", (pnl+realtime-totalCharges)/tradeSize), text_color = (pnl+realtime-totalCharges > 0 ? color.green : color.red), text_size = size.small)
 
 // Display confluence information
 var table confluenceTable = table.new(position.top_right, 2, 22, bgcolor = color.rgb(0, 0, 0, 30), frame_width = 2, frame_color = color.black)
