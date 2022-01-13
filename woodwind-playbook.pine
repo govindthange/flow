@@ -112,11 +112,11 @@ NO = 0.0
 sessionColor = color.rgb(0, 0, 0, 100)
 exitSignalColor = color.orange
 
-longBgColor = color.rgb(0,255,0,94)
+longBgColor = color.rgb(0,255,0,96)
 longLineColor = color.rgb(29, 176, 12, 0)
 longPrimarySignalColor = color.rgb(29, 176, 12, 30)
 longSecondarySignalColor = color.new(longPrimarySignalColor, 60)
-shortBgColor = color.rgb(255,0,0,92)
+shortBgColor = color.rgb(255,0,0,94)
 shortLineColor = color.rgb(242, 10, 10, 0)
 shortPrimarySignalColor = color.rgb(242, 10, 10, 30)
 shortSecondarySignalColor = color.new(shortPrimarySignalColor, 60)
@@ -1276,7 +1276,7 @@ if withinTestRange
 //░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░
 
 // Display PnL summary
-var table pnlTable = table.new(position.bottom_right, 7, 3, bgcolor = color.rgb(0, 0, 0, 30), frame_color = color.black)
+var table pnlTable = table.new(position.bottom_left, 7, 3, bgcolor = color.rgb(0, 0, 0, 30), frame_color = color.black)
 if (barstate.islast and showPnl)
     table.cell(pnlTable, 0, 0, "Winners (HS)", text_halign = text.align_center, text_color = color.white, text_size = size.small)
     table.cell(pnlTable, 0, 1, str.format("{0} ({1})", winners, maxHotStreak), text_color = color.green, text_halign = text.align_center, text_size = size.small)
@@ -1287,18 +1287,18 @@ if (barstate.islast and showPnl)
     table.cell(pnlTable, 2, 0, "Total", text_halign = text.align_center, text_color = color.white, text_size = size.small)
     table.cell(pnlTable, 2, 1, str.tostring(totalTrades), text_halign = text.align_center, text_color = color.silver, text_size = size.small)
     table.cell(pnlTable, 2, 2, str.format("{0, number, percent}", winners/totalTrades), text_halign = text.align_center, text_color = color.blue, text_size = size.small)
-    table.cell(pnlTable, 3, 0, "W/L-PnL", text_halign = text.align_center, text_color = color.white, text_size = size.small)
-    table.cell(pnlTable, 3, 1, str.format("{0, number, currency}", totalProfit), text_halign = text.align_center, text_color = color.rgb(182, 209, 186), text_size = size.small)
-    table.cell(pnlTable, 3, 2, str.format("{0, number, currency}", totalLoss), text_halign = text.align_center, text_color = color.rgb(182, 153, 153), text_size = size.small)
-    table.cell(pnlTable, 4, 0, "Capital", text_halign = text.align_center, text_color = color.white, text_size = size.small)
-    table.cell(pnlTable, 4, 1, str.format("{0, number, currency}", maxCapital), text_halign = text.align_center, text_color = color.silver, text_size = size.small)
-    table.cell(pnlTable, 4, 2, str.format("{0, number, currency}", cumulativeCapital/totalTrades), text_halign = text.align_center, text_color = color.gray, text_size = size.small)
-    table.cell(pnlTable, 5, 0, "Total PnL (*)", text_halign = text.align_center, text_color = color.white, text_size = size.small)
-    table.cell(pnlTable, 5, 1, str.format("{0, number, currency}", totalPnl), text_halign = text.align_center, text_color =  (totalPnl > 0 ? color.rgb(182, 209, 186) : color.rgb(182, 153, 153)), text_size = size.small)
-    table.cell(pnlTable, 5, 2, str.format("{0, number, #0.00%}\n({1, number, #0.00%})", totalPnlPercent, totalPnl/maxCapital), text_halign = text.align_center, text_color =   (totalPnl > 0 ? color.green : color.red), text_size = size.small)
-    table.cell(pnlTable, 6, 0, "Days", text_halign = text.align_center, text_color = color.white, text_size = size.small)
-    table.cell(pnlTable, 6, 1, str.format("{0, number}", (toDateInput - fromDateInput)/ (24 * 60 * 60 * 1000)), text_halign = text.align_center, text_color = color.silver, text_size = size.small)
-    table.cell(pnlTable, 6, 2, str.tostring(totalCandles), text_halign = text.align_center, text_color = color.gray, text_size = size.small)
+    table.cell(pnlTable, 3, 0, "W/L-PnL (Avg)", text_halign = text.align_center, text_color = color.white, text_size = size.small)
+    table.cell(pnlTable, 3, 1, str.format("{0, number, currency}\n({1, number, currency})", totalProfit, totalProfit/winners), text_halign = text.align_center, text_color = color.rgb(182, 209, 186), text_size = size.small)
+    table.cell(pnlTable, 3, 2, str.format("{0, number, currency}\n({1, number, currency})", totalLoss, totalLoss/loosers), text_halign = text.align_center, text_color = color.rgb(182, 153, 153), text_size = size.small)
+    table.cell(pnlTable, 4, 0, "Total PnL (Avg)", text_halign = text.align_center, text_color = color.white, text_size = size.small)
+    table.cell(pnlTable, 4, 1, str.format("{0, number, currency}\n({1, number, currency})", totalPnl, totalPnl/totalTrades), text_halign = text.align_center, text_color =  (totalPnl > 0 ? color.rgb(182, 209, 186) : color.rgb(182, 153, 153)), text_size = size.small)
+    table.cell(pnlTable, 4, 2, str.format("{0, number, #0.00%}\n({1, number, #0.00%})", totalPnlPercent, totalPnlPercent/totalTrades), text_halign = text.align_center, text_color =   (totalPnlPercent > 0 ? color.green : color.red), text_size = size.small)
+    table.cell(pnlTable, 5, 0, "Days", text_halign = text.align_center, text_color = color.white, text_size = size.small)
+    table.cell(pnlTable, 5, 1, str.format("{0, number}", (toDateInput - fromDateInput)/ (24 * 60 * 60 * 1000)), text_halign = text.align_center, text_color = color.silver, text_size = size.small)
+    table.cell(pnlTable, 5, 2, str.tostring(totalCandles), text_halign = text.align_center, text_color = color.gray, text_size = size.small)
+    table.cell(pnlTable, 6, 0, "Capital", text_halign = text.align_center, text_color = color.white, text_size = size.small)
+    table.cell(pnlTable, 6, 1, str.format("{0, number, currency}", maxCapital), text_halign = text.align_center, text_color = color.silver, text_size = size.small)
+    table.cell(pnlTable, 6, 2, str.format("{0, number, currency}", cumulativeCapital/totalTrades), text_halign = text.align_center, text_color = color.gray, text_size = size.small)
 
 // Display trade information
 if showTradePlan and horizontalTradePlan
