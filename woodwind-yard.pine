@@ -100,18 +100,20 @@ export getBias(float fast, float slow) =>
 
 //
 // @function checks crossover of 2 moving averages and establishes whether its bullish or bearish.
+// @param prevFast float, the pervious fast moving line.
+// @param prevSlow float, the previous slow moving lline.
 // @param fast float, the fast moving line.
 // @param slow float, the slow moving lline.
 // @returns string, it returns "bullish" if fast moving line cosses above the slow moving line o/w returns "bearish".
 //
-export getBiasFromCrossover(float fast, float slow, bool allowPrematureCross) =>
+export getBiasFromCrossover(float prevFast, float prevSlow, float fast, float slow, bool allowPrematureCross) =>
     string view = na
-    if (fast[1] <= slow[1] and fast > slow)
+    if (prevFast <= prevSlow and fast > slow)
         view := "bullish"
-    else if (fast[1] >= slow[1] and fast < slow)
+    else if (prevFast >= prevSlow and fast < slow)
         view := "bearish"
     else if (allowPrematureCross
-             and fast[1] == slow[1] and fast == slow)
+             and prevFast == prevSlow and fast == slow)
         view := "neutral"
     
     view
