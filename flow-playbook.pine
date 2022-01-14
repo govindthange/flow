@@ -1,18 +1,4 @@
-//░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░
-//░██╗░░░░░░░██╗░█████╗░░█████╗░██████╗░░██╗░░░░░░░██╗██╗███╗░░██╗██████╗░░
-//░██║░░██╗░░██║██╔══██╗██╔══██╗██╔══██╗░██║░░██╗░░██║██║████╗░██║██╔══██╗░
-//░╚██╗████╗██╔╝██║░░██║██║░░██║██║░░██║░╚██╗████╗██╔╝██║██╔██╗██║██║░░██║░
-//░░████╔═████║░██║░░██║██║░░██║██║░░██║░░████╔═████║░██║██║╚████║██║░░██║░
-//░░╚██╔╝░╚██╔╝░╚█████╔╝╚█████╔╝██████╔╝░░╚██╔╝░╚██╔╝░██║██║░╚███║██████╔╝░
-//░░░╚═╝░░░╚═╝░░░╚════╝░░╚════╝░╚═════╝░░░░╚═╝░░░╚═╝░░╚═╝╚═╝░░╚══╝╚═════╝░░
-//░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░
-//░░░░██████╗░██╗░░░░░░█████╗░██╗░░░██╗██████╗░░█████╗░░█████╗░██╗░░██╗░░░░
-//░░░░██╔══██╗██║░░░░░██╔══██╗╚██╗░██╔╝██╔══██╗██╔══██╗██╔══██╗██║░██╔╝░░░░
-//░░░░██████╔╝██║░░░░░███████║░╚████╔╝░██████╦╝██║░░██║██║░░██║█████═╝░░░░░
-//░░░░██╔═══╝░██║░░░░░██╔══██║░░╚██╔╝░░██╔══██╗██║░░██║██║░░██║██╔═██╗░░░░░
-//░░░░██║░░░░░███████╗██║░░██║░░░██║░░░██████╦╝╚█████╔╝╚█████╔╝██║░╚██╗░░░░
-//░░░░╚═╝░░░░░╚══════╝╚═╝░░╚═╝░░░╚═╝░░░╚═════╝░░╚════╝░░╚════╝░╚═╝░░╚═╝░░░░
-//░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░
+// Ⓣⓗⓐⓝⓖⓔ 🅕🅛🅞🅦
 // © 2022
 // @ govindthange
 //
@@ -57,47 +43,49 @@ float stampDuty = input.float(0.002, minval=0, step=100, title="Stamp Duty")
 
 float accountSize = input.float(1000, minval=0.0, title="Account Size")
 float maxRisk = input.float(25, minval=0.0, title="Maximum Risk Per Position") / 100
-float riskToRewardRatio = input.float(1.0, minval=0.1, step=0.1, title="Risk/Reward Ratio")
+float riskToRewardRatio = input.float(2.0, minval=0.1, step=0.1, title="Risk/Reward Ratio")
 float ratioWrtRiskToBeginTrailingSL = input.float (1.0, minval=0.0, title="Nurture Phase Ratio", tooltip="It is a ratio w.r.t R/R. Until this level the programme will not show any exit signals. You should start trailing stop-loss only after the price crosses this level. This level shown by a red/green dotted line above/below the entry signal.")
-float exitPercent = input.float(100, minval=0.0, title="Scale-Out %") / 100
+float exitPercent = input.float(0, minval=0.0, title="Scale-Out %") / 100
 float chikouExitPercent = input.float(0, minval=0.0, title="Lagging-Span Exit %", tooltip="This signal will only appear once.") / 100
-float takeProfitPercent = input.float(100, minval=0.0, title="Take-Profit %") / 100
+float takeProfitPercent = input.float(10, minval=0.0, title="Take-Profit %") / 100
 int atrLength = input.int(9, minval=0, title="ATR Length", tooltip="Choose higher values for lower timeframes. In BTC use 30 for 4H, and 9 for 5m/15m/1H/6H/12H/D/3D.")
-float atrStopMultiplier = input.float(0.1, minval=0.0, title="ATR Stop Multiplier (ATR x ?)", tooltip="In BTC use 0.1 for 1H, and 1 for 4H/6H/12H/D/3D.")
+float atrStopMultiplier = input.float(3, minval=0.0, title="ATR Stop Multiplier (ATR x ?)", tooltip="In BTC use 0.1 for 1H, and 1 for 4H/6H/12H/D/3D.")
 float atrBreakoutMultiplier = input.float(0.0, minval=0.0, title="ATR Breakout Multiplier (ATR x ?)")
 
-bool allowPrematureRibbonTwistForTrade = input.bool(true, title="Show entry signal even when short-term MA crosses mid-term MA prematurely", tooltip="A premature cross occurs when short-term moving-average (MA) overlaps mid-term moving-average but does not cross it.")
-bool ribbonTwistExitEnabled = input.bool(true, title="Show exit signals when short-term MA crosses mid-term MA")
-bool allowRibbonTwistExitInNurturePhase = input.bool(true, title="Show exit signals when short-term MA crosses mid-term MA in nurture phase")
-bool disregardPriceBeyondKumo = input.bool(true, title="Do not require price to be beyond resistance band for entry signals")
-bool disregardLeadingKumoColor = input.bool(true, title="Disregard leading resistance band bias for entry signals")
-bool allowNeutralLeadingKumo = input.bool(false, title="Allow neutral leading resistance band valid for entry signals", tooltip="Enable it in BTC for 4H.")
-bool allEmaExitToCascade = input.bool(false, title="Allow crossover of short-term equilibrium-point (STEP) to cascade exit signals", tooltip="When false and price reverses to cross the short-term equilibrium point then only one exit signal will appear. The next signal can only come if price again reverses in your favor and touches or goes beyond the short-term equilibrium point. Essentially by turning OFF you will be able to ride the trend better and longer but at a risk of not scaling out. Enable it in BTC for 4H.")
-bool requireHiLoBreachToInvalidateEmaExit = input.bool(false, title="Enforce Rule: After price reverses and crosses-over the STEP to open below/above it then show next STEP exit signal only after the price again attempts to breach the STEP to the up/down side for long/short position respectively.", tooltip="Disabling improves performance as you get early exit signals to minimize losses. Disable it in BTC for 5m/15m/1H/4H/6H/12H/1D.")
+bool ribbonTwistExitEnabled = input.bool(false, title="Show exit signals when ribbon twists")
+bool allowPrematureRibbonTwistForTrade = input.bool(false, title="Show entry signal even when ribbon twists prematurely", tooltip="A premature twist occurs when all the EMAs have not come to the opposite side.")
+bool allowRibbonTwistExitInNurturePhase = input.bool(true, title="Show exit signals when ribbon twists in nurture phase")
+bool allEmaExitToCascade = input.bool(false, title="Allow exit signals to cascade when price crosses EMAs")
+bool requireHiLoBreachToInvalidateEmaExit = input.bool(false, title="Enforce Rule: After price reverses and crosses-over the STEP to open below/above it then show next STEP exit signal only after the price again attempts to breach the STEP to the up/down side for long/short position respectively.")
 bool showSignalsUponBreakout = input.bool(true, "Show entry signal upon 9-period high/low breakout", tooltip="Do not disable it! When enabled you should place a limit order for entry right at the price dipicted by the gray/green/red line.")
 bool allowEntryUponGaps = input.bool(false, "Show entry signals even on gap-up/down candles ( ! )", tooltip="This is not recommended! This setting is only for study purposes.")
-bool allowManualExitOnLimitOrderCandles = input.bool(true, "Show exit signals on candles that triggerred Entry, Stop-Loss, or Take-Profit limit-orders", tooltip="Although enabling this shows high profitability it is very difficult to catch the volatility of the market and do entries and exits on the same candle. Disable it if you want more realistic entry/exit signals.")
+bool allowManualExitOnLimitOrderCandles = input.bool(false, "Show exit signals on candles that triggerred Entry, Stop-Loss, or Take-Profit limit-orders", tooltip="Although enabling this shows high profitability it is very difficult to catch the volatility of the market and do entries and exits on the same candle. Disable it if you want more realistic entry/exit signals.")
 bool useEmaPeriodFarthestPointAsStop = input.bool(false, title="Use short-term period's farthest high/low point for stop-loss ( ! )", tooltip="This is for study purpose. Enabling this gives mixed performance.")
 float breakevenRatio = input.float(0, minval = 0, title="Stop-Loss Breakeven Ratio ( ! )", tooltip="It is a ratio w.r.t the risk. When price reaches this level in nurture phase the stop-loss should be shifted to breakeven. 0 means no breakeven concept to be used. This setting is for study purpose and performance drops drastically for values greater than 0.")
 
-bool useMtf = input.bool(false, "Use Multi-Timeframe Analysis", group="Multi-Timeframe Analysis")
+bool useMtf = input.bool(false, "Use Multi-Timeframe Analysis")
 string htfResolution1 = input.timeframe("240", title="1st Order Higher Timeframe")
 int htfMagnitude1 = input.int(4, minval=3, maxval=6, step=1, title="1st Order Higher Timeframe Magnitude (Current Timeframe x ?)")
-bool disregardKumoBiasInHtf = input.bool(false, title="Disregard resistance band bias in higher timeframes for entry signals", group="Multi-Timeframe Analysis")
-bool allowPriceWithinKumoOnHtf = input.bool(false, "Show entry signal even if price is within long-term resistance band on higher timeframe", group="Multi-Timeframe Analysis")
-bool showSignalsUponBreakoutOfHtf = input.bool(false, "Show entry signal upon 9-period high/low breakout of higher timeframe", group="Multi-Timeframe Analysis")
-
-string equilibriumScheme = input.string("Scalper", title="Equilibrium Scheme", options=["Custom", "Standard", "Scalper", "5 Day Week", "Popular", "Ideal", "Trend Finder", "Conservative"], tooltip="In BTC use Scalper or 5-Day-Week for 5m/15m/1H, Popular or Ideal for 15m/1H/4H, and Standard for 6H. 5-Day-Week w/ 1H perform slightly better than Scalper w/ 1H.")
-int ema1Period = input.int(9, minval=1, title="Short-Term Period")
-int ribbonPeriod = input.int(26, minval=1, title="Mid-Term Period")
-int senkouSpanPeriod = input.int(52, minval=1, title="Long-Term Period")
-int displacement = input.int(26, minval=1, title="Displacement")
+bool showSignalsUponBreakoutOfHtf = input.bool(false, "Show entry signal upon 9-period high/low breakout of higher timeframe")
 
 bool showPnl = input.bool(true, title="Show profit & loss summary")
 bool showConfluenceInfo = input.bool(true, title="Show confluence Summary")
 bool showTradePlan = input.bool(false, title="Show realtime trade plan in a separate table")
 bool horizontalTradePlan = input.bool(true, title="Show trade plan table horizontally")
 bool highlightTradesWithBackgroundColor = input.bool(true, "Highlight trades with background colors")
+
+int ribbonHighLowCandleSpan = input.int(38, minval=1, title="Ribbon high-low candle span for breakout")
+src = input.source(close, title="EMA Ribbon Source")
+ema1Period = input.int(20, minval=1, title="EMA-1 period")
+ema2Period = input.int(25, minval=1, title="EMA-2 period")
+ema3Period = input.int(30, minval=1, title="EMA-3 period")
+ema4Period = input.int(35, minval=1, title="EMA-4 period")
+ema5Period = input.int(40, minval=1, title="EMA-5 period")
+ema6Period = input.int(45, minval=1, title="EMA-6 period")
+ema7Period = input.int(50, minval=1, title="EMA-7 period")
+ema8Period = input.int(55, minval=1, title="EMA-8 period")
+trendPeriod = input.int(200, minval=1, title="Trend Period")
+dropCandles = input.int(1, minval=0, title="Drop first N candles")
 
 
 //########################################################
@@ -268,6 +256,39 @@ var preemptiveExitGains = 0.0
 var chikouExitGains = 0.0
 
 
+dropn(src, n) =>
+    na(src[n]) ? na : src
+
+price = dropn(src, dropCandles)
+
+ema1 = ta.ema(price, ema1Period)
+ema2 = ta.ema(price, ema2Period)
+ema3 = ta.ema(price, ema3Period)
+ema4 = ta.ema(price, ema4Period)
+ema5 = ta.ema(price, ema5Period)
+ema6 = ta.ema(price, ema6Period)
+ema7 = ta.ema(price, ema7Period)
+ema8 = ta.ema(price, ema8Period)
+emaForTrend = ta.ema(price, trendPeriod)
+
+e1 = plot(ema1, title="MA-1", color=color.new(#fddffd, 70), linewidth=1)
+e2 = plot(ema2, title="MA-2", color=color.new(#fdbcfd, 70), linewidth=1)
+fill(e1, e2, color=color.new(#fdbcfd, 70))
+e3 = plot(ema3, title="MA-3", color=color.new(#fd92fd, 70), linewidth=1)
+fill(e2, e3, color=color.new(#fd92fd, 70))
+e4 = plot(ema4, title="MA-4", color=color.new(#ff52ff, 70), linewidth=1)
+fill(e3, e4, color=color.new(#ff52ff, 70))
+e5 = plot(ema5, title="MA-5", color=color.new(#ff24ff, 70), linewidth=1)
+fill(e4, e5, color=color.new(#ff24ff, 70))
+e6 = plot(ema6, title="MA-6", color=color.new(#d600d6, 70), linewidth=1)
+fill(e5, e6, color=color.new(#d600d6, 70))
+e7 = plot(ema7, title="MA-7", color=color.new(#ad00ad, 70), linewidth=1)
+fill(e6, e7, color=color.new(#ad00ad, 70))
+e8 = plot(ema8, title="MA-8", color=color.new(#7a067a, 70), linewidth=1)
+fill(e7, e8, color=color.new(#7a067a, 70))
+plot(emaForTrend, title="EMA-Trend", color=color.new(#7900d6, 20), linewidth=2)
+
+
 //░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░
 //░░██╗░░██╗████████╗███████╗░░░█████╗░░██████╗░██████╗███████╗░██████╗░██████╗███╗░░░███╗███████╗███╗░░██╗████████╗░░
 //░░██║░░██║╚══██╔══╝██╔════╝░░██╔══██╗██╔════╝██╔════╝██╔════╝██╔════╝██╔════╝████╗░████║██╔════╝████╗░██║╚══██╔══╝░░
@@ -305,7 +326,7 @@ lowHtf1 = low[htfOffset]
      highestRibbonBarHtf1,
      highestRibbonValueHtf1,
      lowestRibbonBarHtf1,
-     lowestRibbonValueHtf1] = yard.getHighestHighAndLowestLowSet(highHtf1, lowHtf1, ema1Period * htfMagnitude1, ribbonPeriod * htfMagnitude1)
+     lowestRibbonValueHtf1] = yard.getHighestHighAndLowestLowSet(highHtf1, lowHtf1, ema1Period * htfMagnitude1, ribbonHighLowCandleSpan * htfMagnitude1)
 
 
 // Establish market view in 1st order higher timeframe
@@ -323,21 +344,34 @@ if useMtf
 //░░░╚════╝░░░░╚═╝░░░╚═╝░░░░░░░╚═╝░░╚═╝╚═════╝░╚═════╝░╚══════╝╚═════╝░╚═════╝░╚═╝░░░░░╚═╝╚══════╝╚═╝░░╚══╝░░░╚═╝░░░░░
 //░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░
 
-bool useEmaForConfluence = input.bool(false, title="Use EMA for confluence")
-int fastEmaLength = input.int(9, minval=0, title="Fast EMA Length")
-int slowEmaLength = input.int(50, minval=0, title="Slow EMA Length")
-int trendEmaLength = input.int(200, minval=0, title="EMA length for trend")
+ribbon = emaForTrend
 
-ema1 = ta.ema(close, fastEmaLength)
-slowEma = ta.ema(close, slowEmaLength)
-trendEma = ta.ema(close, trendEmaLength)
-
-ribbon = slowEma
-chikouWrtPrice = "within"
 priceWrtRibbon = "within"
+if close > ema1 and close >= ema2 and close >= ema3 and close >= ema4 and close >= ema5 and close >= ema6 and close >= ema7 and close >= ema8
+    priceWrtRibbon := "above"
+else if close < ema1 and close <= ema2 and close <= ema3 and close <= ema4 and close <= ema5 and close <= ema6 and close <= ema7 and close <= ema8
+    priceWrtRibbon := "below"
+
+chikouWrtPrice = priceWrtRibbon
 
 // Establish market view through confluence 
 string marketView = "conslidating"
+if ema1 >= ema2 and ema2 >= ema3 and ema3 >= ema4 and ema4 >= ema5 and ema5 >= ema6 and ema7 >= ema8
+    //  and not (ema1[1] >= ema2[1] and ema2[1] >= ema3[1] and ema3[1] >= ema4[1] and ema4[1] >= ema5[1] and ema5[1] >= ema6[1] and ema7[1] >= ema8[1])
+    //  and not (ema1[2] >= ema2[2] and ema2[2] >= ema3[2] and ema3[2] >= ema4[2] and ema4[2] >= ema5[2] and ema5[2] >= ema6[2] and ema7[2] >= ema8[2])
+     and ema8 >= emaForTrend
+     and priceWrtRibbon == "above"
+    marketView := "bullish"
+else if ema1 <= ema2 and ema2 <= ema3 and ema3 <= ema4 and ema4 <= ema5 and ema5 <= ema6 and ema7 <= ema8
+     and ema8 <= emaForTrend
+    //  and not (ema1[1] <= ema2[1] and ema2[1] <= ema3[1] and ema3[1] <= ema4[1] and ema4[1] <= ema5[1] and ema5[1] <= ema6[1] and ema7[1] <= ema8[1])
+    //  and not (ema1[2] <= ema2[2] and ema2[2] <= ema3[2] and ema3[2] <= ema4[2] and ema4[2] <= ema5[2] and ema5[2] <= ema6[2] and ema7[2] <= ema8[2])
+     and ema8 <= emaForTrend
+     and priceWrtRibbon == "below"
+    marketView := "bearish"
+
+log(str.format("marketView: {0}", marketView))
+
 [highestEmaBar,
      highestEmaValue,
      lowestEmaBar,
@@ -345,7 +379,7 @@ string marketView = "conslidating"
      highestRibbonBar,
      highestRibbonValue,
      lowestRibbonBar,
-     lowestRibbonValue] = yard.getHighestHighAndLowestLowSet(high[1], low[1], ema1Period, ribbonPeriod)
+     lowestRibbonValue] = yard.getHighestHighAndLowestLowSet(high[1], low[1], ribbonHighLowCandleSpan, ribbonHighLowCandleSpan)
 // log(str.format("Before highest Bar: {0} ({1}), lowest Bar: {2}({3})", highestEmaValue, highestEmaBar, lowestEmaValue, lowestEmaBar))
 
 
@@ -399,7 +433,6 @@ lowestBreakoutPrice := lowestBreakoutPrice - (atr * atrBreakoutMultiplier)
 bool withinTestRange = (time >= fromDateInput and time <= toDateInput)
 
 bool didCandleGap = (open > high[1] and low > high[1]) or (open < low[1] and high < low[1])
-//plotshape(not allowEntryUponGaps and didCandleGap, title= "Candle Gap Up/Down", location=location.belowbar, color=color.gray, style=shape.arrowup, text="", size=size.normal, editable=false)
 
 //
 // Long Entry Strategy
@@ -557,21 +590,21 @@ if ((inLongTrade and high >= takeProfit)
     label.set_tooltip(activeTradeLabel, activeTradeInfo)
 
 
-if ((inLongTrade and chikouWrtPrice == "below" and high < low[displacement-1] and high[1] >= low[displacement-1-1])
-         or (inShortTrade and chikouWrtPrice == "above" and low > high[displacement-1] and low[1] <= high[displacement-1-1]))
-     and not didExitOnRsi
-     and remainingExitQty > 0
-     and qtyPerRsiExit > 0
+// if ((inLongTrade and chikouWrtPrice == "below")
+//          or (inShortTrade and chikouWrtPrice == "above"))
+//      and not didExitOnRsi
+//      and remainingExitQty > 0
+//      and qtyPerRsiExit > 0
     
-    shouldExitOnRsi := true
-    chikouExit := close
-    [_qty, _remainingQty, _gains] = vault.computeExitGains(entryPrice, close, qtyPerRsiExit, remainingExitQty, f_tradeDirection(inLongTrade, inShortTrade))
-    chikouExitQty := _qty
-    chikouExitGains := _gains
-    pnl := pnl + _gains
-    remainingExitQty := _remainingQty
-    activeTradeInfo += str.format("\nCE {0, number} @ {1, number, currency} = {2, number, currency}/{3, number, currency}", _qty, close, _gains, pnl)
-    label.set_tooltip(activeTradeLabel, activeTradeInfo)
+//     shouldExitOnRsi := true
+//     chikouExit := close
+//     [_qty, _remainingQty, _gains] = vault.computeExitGains(entryPrice, close, qtyPerRsiExit, remainingExitQty, f_tradeDirection(inLongTrade, inShortTrade))
+//     chikouExitQty := _qty
+//     chikouExitGains := _gains
+//     pnl := pnl + _gains
+//     remainingExitQty := _remainingQty
+//     activeTradeInfo += str.format("\nCE {0, number} @ {1, number, currency} = {2, number, currency}/{3, number, currency}", _qty, close, _gains, pnl)
+//     label.set_tooltip(activeTradeLabel, activeTradeInfo)
 
 
 if (inLongTrade and high > f_get(IDX_PriceLevelToBeginTrailingStopLoss))
@@ -589,7 +622,7 @@ if ((inLongTrade and high >= breakevenTrigger)
 
 
 //
-// Since kijun is a trailing stop-loss, the old stop-loss order is valid only
+// Since Price-Ribbon-Crossover event is for trailing the stop-loss, the old stop-loss order is valid only
 // if the trade is in nurture phase (i.e. IDX_CanExitAfterRibbonCrossOrTwist = false)
 //
 if ((inLongTrade and low <= stopLoss)
@@ -609,20 +642,19 @@ else if ((inLongTrade and priceWrtRibbon == "below")
          or (inShortTrade and priceWrtRibbon == "above"))
      and f_true(IDX_CanExitAfterRibbonCrossOrTwist)
      and (allowManualExitOnLimitOrderCandles
-             or ribbon[1] == ribbon[0]
              or (bar_index != entryBar and bar_index != stopLossBar and bar_index != takeProfitBar))
     
     shouldExitOnRibbonCross := true
-    ribbonExit := ribbon
+    ribbonExit := close
     if (inLongTrade and ribbonExit < stopLoss)
          or (inShortTrade and ribbonExit > stopLoss)
         ribbonExitGains := (stopLoss - entryPrice) * remainingExitQty * f_tradeDirection(inLongTrade, inShortTrade)
         pnl := pnl + ribbonExitGains
-        activeTradeInfo += str.format("\nKE~SL {0} @ {1, number, currency} = {2, number, currency}/{3, number, currency}", str.tostring(remainingExitQty), stopLoss, ribbonExitGains, pnl)
+        activeTradeInfo += str.format("\nRE~SL {0} @ {1, number, currency} = {2, number, currency}/{3, number, currency}", str.tostring(remainingExitQty), stopLoss, ribbonExitGains, pnl)
     else
         ribbonExitGains := (ribbonExit - entryPrice) * remainingExitQty * f_tradeDirection(inLongTrade, inShortTrade)
         pnl := pnl + ribbonExitGains
-        activeTradeInfo += str.format("\nKE {0} @ {1, number, currency} = {2, number, currency}/{3, number, currency}", str.tostring(remainingExitQty), ribbonExit, ribbonExitGains, pnl)
+        activeTradeInfo += str.format("\nRE {0} @ {1, number, currency} = {2, number, currency}/{3, number, currency}", str.tostring(remainingExitQty), ribbonExit, ribbonExitGains, pnl)
     label.set_tooltip(activeTradeLabel, activeTradeInfo)
     remainingExitQty := 0
 
@@ -646,7 +678,8 @@ else if ((inLongTrade and marketView == "bearish")
 // the kijun-exit (a trailing stop) or the stop-loss (automatically triggerred order) are not triggerred yet.
 // You'll also not bother scaling out gains by placing a tenkan-exit order when a ribbon-twist/preemptive-exits has occurred.
 //
-else if ((allEmaExitToCascade
+else if exitPercent > 0
+     and ((allEmaExitToCascade
              and ((inLongTrade
                          and open < ema1
                          and ((requireHiLoBreachToInvalidateEmaExit and high <= ema1) or not requireHiLoBreachToInvalidateEmaExit))
@@ -669,7 +702,7 @@ else if ((allEmaExitToCascade
     [_qty, _remainingQty, _gains] = vault.computeExitGains(entryPrice, close, qtyPerExit, remainingExitQty, f_tradeDirection(inLongTrade, inShortTrade))
     pnl := pnl + _gains
     remainingExitQty := _remainingQty
-    activeTradeInfo += str.format("\nTE {0, number} @ {1, number, currency} = {2, number, currency}/{3, number, currency}", _qty, close, _gains, pnl)
+    activeTradeInfo += str.format("\nEE {0, number} @ {1, number, currency} = {2, number, currency}/{3, number, currency}", _qty, close, _gains, pnl)
         
     if (emaExit1 == 0.0)
         emaExit1 := close
@@ -750,15 +783,13 @@ if showSignalsUponBreakout and canPrepareForShort
     if showSignalsUponBreakout
         hasSignaledForShort := true
 
-plotshape(inLongTrade and ((showSignalsUponBreakout and shouldGoLong) or (not showSignalsUponBreakout and canPrepareForLong)), title="Long Entry A", location=location.belowbar, color=longPrimarySignalColor, style=shape.triangleup, text="", size=size.small, editable=false)
-plotshape(inLongTrade and ((showSignalsUponBreakout and shouldGoLong) or (not showSignalsUponBreakout and canPrepareForLong)), title="Long Entry B", location=location.belowbar, color=longPrimarySignalColor, style=shape.triangleup, text="", size=size.tiny, editable=false)
+plotshape(inLongTrade and ((showSignalsUponBreakout and shouldGoLong) or (not showSignalsUponBreakout and canPrepareForLong)), title="Long Entry", location=location.belowbar, color=longPrimarySignalColor, style=shape.triangleup, text="", size=size.small, editable=false)
 if not showSignalsUponBreakout
     canPrepareForLong := false
 else if shouldGoLong
     shouldGoLong := false
 
-plotshape(inShortTrade and ((showSignalsUponBreakout and shouldGoShort) or (not showSignalsUponBreakout and canPrepareForShort)), title= "Short Entry A", location=location.abovebar, color=shortPrimarySignalColor, style=shape.triangledown, text="", size=size.small, editable=false)
-plotshape(inShortTrade and ((showSignalsUponBreakout and shouldGoShort) or (not showSignalsUponBreakout and canPrepareForShort)), title= "Short Entry B", location=location.abovebar, color=shortPrimarySignalColor, style=shape.triangledown, text="", size=size.tiny, editable=false)
+plotshape(inShortTrade and ((showSignalsUponBreakout and shouldGoShort) or (not showSignalsUponBreakout and canPrepareForShort)), title= "Short Entry", location=location.abovebar, color=shortPrimarySignalColor, style=shape.triangledown, text="", size=size.small, editable=false)
 if not showSignalsUponBreakout
     canPrepareForShort := false
 else if shouldGoShort
@@ -1060,7 +1091,7 @@ if withinTestRange
 //░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░
 
 // Display PnL summary
-var table pnlTable = table.new(position.bottom_left, 7, 3, bgcolor = color.rgb(0, 0, 0, 30), frame_color = color.black)
+var table pnlTable = table.new(position.bottom_right, 7, 3, bgcolor = color.rgb(0, 0, 0, 30), frame_color = color.black)
 if (barstate.islast and showPnl)
     table.cell(pnlTable, 0, 0, "Winners (HS)", text_halign = text.align_center, text_color = color.white, text_size = size.small)
     table.cell(pnlTable, 0, 1, str.format("{0} ({1})", winners, maxHotStreak), text_color = color.green, text_halign = text.align_center, text_size = size.small)
